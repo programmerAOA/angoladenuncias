@@ -13,9 +13,14 @@ type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "user
 interface Article {
   id: string;
   title: string;
+  summary?: string;
+  content?: string;
   category: string;
-  published: boolean | null;
+  image_url?: string;
   author: string | null;
+  is_hero?: boolean | null;
+  is_breaking?: boolean | null;
+  published: boolean | null;
   views: number | null;
   created_at: string;
 }
@@ -23,10 +28,13 @@ interface Article {
 interface VideoItem {
   id: string;
   title: string;
+  description?: string;
+  video_url: string;
+  thumbnail_url?: string;
+  duration: string | null;
   category: string | null;
   published: boolean | null;
   views: number | null;
-  duration: string | null;
   created_at: string;
 }
 
@@ -41,6 +49,9 @@ interface Opinion {
   id: string;
   title: string;
   author: string;
+  content?: string;
+  excerpt?: string;
+  avatar_url?: string;
   published: boolean | null;
   created_at: string;
 }
@@ -78,12 +89,13 @@ const AdminPage = () => {
   const [dataLoading, setDataLoading] = useState(false);
 
   // Article form
-  const [articleForm, setArticleForm] = useState({ title: "", summary: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
+  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [showArticleForm, setShowArticleForm] = useState(false);
 
   // Video form
   const [videoForm, setVideoForm] = useState({ title: "", description: "", video_url: "", thumbnail_url: "", duration: "", category: "Vídeo" });
+  const [editingVideo, setEditingVideo] = useState<string | null>(null);
   const [showVideoForm, setShowVideoForm] = useState(false);
 
   // Opinion form
@@ -113,24 +125,33 @@ const AdminPage = () => {
     setDataLoading(true);
     try {
       if (tab === "dashboard" || tab === "articles") {
-        const { data, error } = await supabase.from("news_articles").select("id,title,category,published,author,views,created_at").order("created_at", { ascending: false });
-        if (error) console.error("Error loading articles:", error);
+        const { data, error } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false });
+        if (error) {
+          console.error("Error loading articles:", error);
+          toast.error("Erro ao carregar artigos: " + error.message);
+        }
         if (data) {
           setArticles(data);
           if (tab === "dashboard") setStats(s => ({ ...s, articles: data.length }));
         }
       }
       if (tab === "dashboard" || tab === "videos") {
-        const { data, error } = await supabase.from("video_news").select("id,title,category,published,views,duration,created_at").order("created_at", { ascending: false });
-        if (error) console.error("Error loading videos:", error);
+        const { data, error } = await supabase.from("video_news").select("*").order("created_at", { ascending: false });
+        if (error) {
+          console.error("Error loading videos:", error);
+          toast.error("Erro ao carregar vídeos: " + error.message);
+        }
         if (data) {
           setVideos(data);
           if (tab === "dashboard") setStats(s => ({ ...s, videos: data.length }));
         }
       }
       if (tab === "dashboard" || tab === "opinions") {
-        const { data, error } = await supabase.from("opinion_articles").select("id,title,author,published,created_at").order("created_at", { ascending: false });
-        if (error) console.error("Error loading opinions:", error);
+        const { data, error } = await supabase.from("opinion_articles").select("*").order("created_at", { ascending: false });
+        if (error) {
+          console.error("Error loading opinions:", error);
+          toast.error("Erro ao carregar opiniões: " + error.message);
+        }
         if (data) {
           setOpinions(data);
           if (tab === "dashboard") setStats(s => ({ ...s, opinions: data.length }));
@@ -148,11 +169,16 @@ const AdminPage = () => {
         }
       }
       if (tab === "users") {
-        const { data } = await supabase.from("user_roles").select("*");
+        const { data, error } = await supabase.from("user_roles").select("*");
+        if (error) {
+          console.error("Error loading user roles:", error);
+          toast.error("Erro ao carregar perfis: " + error.message);
+        }
         if (data) setUserRoles(data);
       }
     } catch (err) {
       console.error("Unexpected error in loadData:", err);
+      toast.error("Erro inesperado ao carregar dados.");
     } finally {
       setDataLoading(false);
     }
@@ -184,23 +210,34 @@ const AdminPage = () => {
       toast.error("O título é obrigatório");
       return;
     }
-    const { error } = editingArticle
-      ? await supabase.from("news_articles").update(articleForm).eq("id", editingArticle)
-      : await supabase.from("news_articles").insert({ ...articleForm, published: true });
 
-    if (error) {
-      toast.error("Erro ao guardar artigo: " + error.message);
-    } else {
-      toast.success("Artigo guardado com sucesso");
-      setShowArticleForm(false);
-      setEditingArticle(null);
-      setArticleForm({ title: "", summary: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
-      loadData("articles");
+    setDataLoading(true);
+    try {
+      const payload = { ...articleForm, published: true };
+
+      const result = editingArticle
+        ? await supabase.from("news_articles").update(articleForm).eq("id", editingArticle).select()
+        : await supabase.from("news_articles").insert(payload).select();
+
+      if (result.error) {
+        toast.error("Erro ao guardar artigo: " + result.error.message);
+      } else if (!result.data || result.data.length === 0) {
+        toast.error("O artigo não foi guardado. Verifique as suas permissões.");
+      } else {
+        toast.success("Artigo guardado com sucesso!");
+        setShowArticleForm(false);
+        setEditingArticle(null);
+        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
+        loadData("articles");
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + (err?.message || String(err)));
+    } finally {
+      setDataLoading(false);
     }
   };
 
   const saveVideo = async () => {
-    console.log("Saving video triggered. Form data:", videoForm);
     if (!videoForm.title || !videoForm.video_url) {
       toast.error("Título e URL do vídeo são obrigatórios");
       return;
@@ -208,22 +245,25 @@ const AdminPage = () => {
 
     setDataLoading(true);
     try {
-      console.log("Attempting Supabase insert into video_news...");
-      const { data, error } = await supabase.from("video_news").insert({ ...videoForm, published: true }).select();
+      const payload = { ...videoForm, published: true };
 
-      if (error) {
-        console.error("Supabase insert error details:", error);
-        toast.error("Erro ao guardar vídeo: " + error.message);
+      const result = editingVideo
+        ? await supabase.from("video_news").update(videoForm).eq("id", editingVideo).select()
+        : await supabase.from("video_news").insert(payload).select();
+
+      if (result.error) {
+        toast.error("Erro ao guardar vídeo: " + result.error.message);
+      } else if (!result.data || result.data.length === 0) {
+        toast.error("O vídeo não foi guardado. Verifique as suas permissões.");
       } else {
-        console.log("Video saved successfully. Data returned:", data);
-        toast.success("Vídeo guardado com sucesso");
+        toast.success("Vídeo guardado com sucesso!");
         setShowVideoForm(false);
+        setEditingVideo(null);
         setVideoForm({ title: "", description: "", video_url: "", thumbnail_url: "", duration: "", category: "Vídeo" });
         loadData("videos");
       }
-    } catch (err) {
-      console.error("Unexpected error during saveVideo:", err);
-      toast.error("Erro inesperado ao guardar o vídeo. Verifique a consola.");
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + (err?.message || String(err)));
     } finally {
       setDataLoading(false);
     }
@@ -234,23 +274,34 @@ const AdminPage = () => {
       toast.error("Título e autor são obrigatórios");
       return;
     }
-    const { error } = editingOpinion
-      ? await supabase.from("opinion_articles").update(opinionForm).eq("id", editingOpinion)
-      : await supabase.from("opinion_articles").insert({ ...opinionForm, published: true });
 
-    if (error) {
-      toast.error("Erro ao guardar opinião: " + error.message);
-    } else {
-      toast.success("Artigo de opinião guardado com sucesso");
-      setShowOpinionForm(false);
-      setEditingOpinion(null);
-      setOpinionForm({ title: "", author: "", content: "", excerpt: "", avatar_url: "" });
-      loadData("opinions");
+    setDataLoading(true);
+    try {
+      const payload = { ...opinionForm, published: true };
+
+      const result = editingOpinion
+        ? await supabase.from("opinion_articles").update(opinionForm).eq("id", editingOpinion).select()
+        : await supabase.from("opinion_articles").insert(payload).select();
+
+      if (result.error) {
+        toast.error("Erro ao guardar opinião: " + result.error.message);
+      } else if (!result.data || result.data.length === 0) {
+        toast.error("A opinião não foi guardada. Verifique as suas permissões.");
+      } else {
+        toast.success("Artigo de opinião guardado com sucesso!");
+        setShowOpinionForm(false);
+        setEditingOpinion(null);
+        setOpinionForm({ title: "", author: "", content: "", excerpt: "", avatar_url: "" });
+        loadData("opinions");
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + (err?.message || String(err)));
+    } finally {
+      setDataLoading(false);
     }
   };
 
   const saveBreaking = async () => {
-    console.log("Saving breaking news:", breakingForm);
     if (!breakingForm) {
       toast.error("O texto é obrigatório");
       return;
@@ -258,20 +309,19 @@ const AdminPage = () => {
 
     setDataLoading(true);
     try {
-      const { data, error } = await supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
-      if (error) {
-        console.error("Breaking news insert error:", error);
-        toast.error("Erro ao adicionar notícia: " + error.message);
+      const result = await supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
+      if (result.error) {
+        toast.error("Erro ao adicionar notícia: " + result.error.message);
+      } else if (!result.data || result.data.length === 0) {
+        toast.error("A notícia não foi guardada. Verifique as suas permissões.");
       } else {
-        console.log("Breaking news added successfully:", data);
-        toast.success("Notícia de última hora adicionada");
+        toast.success("Notícia de última hora adicionada!");
         setShowBreakingForm(false);
         setBreakingForm("");
         loadData("breaking");
       }
-    } catch (err) {
-      console.error("Unexpected error in saveBreaking:", err);
-      toast.error("Erro inesperado. Verifique a consola.");
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + (err?.message || String(err)));
     } finally {
       setDataLoading(false);
     }
@@ -348,7 +398,7 @@ const AdminPage = () => {
             <Shield className="w-4 h-4 text-primary" />
             <span className="text-xs font-semibold uppercase tracking-wider text-primary">Admin</span>
           </div>
-          <h1 className="font-heading text-xl font-black tracking-tight text-foreground uppercase">OBSERVADOR</h1>
+          <h1 className="font-heading text-xl font-black tracking-tight text-foreground uppercase">Angola Denúncias</h1>
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{user?.email}</p>
         </div>
 
@@ -508,6 +558,16 @@ const AdminPage = () => {
                         placeholder="https://..."
                       />
                     </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Conteúdo</label>
+                      <textarea
+                        value={articleForm.content}
+                        onChange={e => setArticleForm(f => ({ ...f, content: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+                        rows={10}
+                        placeholder="Conteúdo completo do artigo"
+                      />
+                    </div>
                     <div className="flex items-center gap-6">
                       <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
                         <input type="checkbox" checked={articleForm.is_hero} onChange={e => setArticleForm(f => ({ ...f, is_hero: e.target.checked }))} className="accent-primary" />
@@ -571,7 +631,16 @@ const AdminPage = () => {
                             <button
                               onClick={() => {
                                 setEditingArticle(article.id);
-                                setArticleForm({ title: article.title, summary: "", category: article.category, author: article.author || "Redação", image_url: "", is_hero: false, is_breaking: false });
+                                setArticleForm({
+                                  title: article.title,
+                                  summary: article.summary || "",
+                                  content: article.content || "",
+                                  category: article.category,
+                                  author: article.author || "Redação",
+                                  image_url: article.image_url || "",
+                                  is_hero: !!article.is_hero,
+                                  is_breaking: !!article.is_breaking
+                                });
                                 setShowArticleForm(true);
                               }}
                               className="text-muted-foreground hover:text-foreground transition-colors"
@@ -607,7 +676,7 @@ const AdminPage = () => {
               <div className="flex items-center justify-between mb-6">
                 <p className="text-sm text-muted-foreground">{videos.length} vídeos no total</p>
                 <button
-                  onClick={() => setShowVideoForm(true)}
+                  onClick={() => { setShowVideoForm(true); setEditingVideo(null); }}
                   className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
                 >
                   <Plus className="w-4 h-4" />
@@ -617,7 +686,9 @@ const AdminPage = () => {
 
               {showVideoForm && (
                 <div className="bg-card border border-border p-6 mb-6">
-                  <h3 className="font-heading font-semibold text-foreground mb-4">Novo vídeo</h3>
+                  <h3 className="font-heading font-semibold text-foreground mb-4">
+                    {editingVideo ? "Editar vídeo" : "Novo vídeo"}
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título *</label>
@@ -673,8 +744,25 @@ const AdminPage = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
-                            <button onClick={() => togglePublished("video_news", v.id, v.published)} className="text-muted-foreground hover:text-foreground transition-colors">
+                            <button onClick={() => togglePublished("video_news", v.id, v.published)} className="text-muted-foreground hover:text-foreground transition-colors" title={v.published ? "Despublicar" : "Publicar"}>
                               {v.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingVideo(v.id);
+                                setVideoForm({
+                                  title: v.title,
+                                  description: v.description || "",
+                                  video_url: v.video_url,
+                                  thumbnail_url: v.thumbnail_url || "",
+                                  duration: v.duration || "",
+                                  category: v.category || "Vídeo"
+                                });
+                                setShowVideoForm(true);
+                              }}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
                             </button>
                             <button onClick={() => deleteRecord("video_news", v.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                               <Trash2 className="w-4 h-4" />
@@ -766,9 +854,21 @@ const AdminPage = () => {
                 <button
                   onClick={async () => {
                     if (!newUserEmail) return;
-                    const { error } = await supabase.from("user_roles").insert({ user_id: newUserEmail, role: newUserRole });
-                    if (error) toast.error("Erro: " + error.message);
-                    else { toast.success("Função atribuída com sucesso"); setNewUserEmail(""); loadData("users"); }
+                    setDataLoading(true);
+                    try {
+                      const { error } = await supabase.from("user_roles").insert({ user_id: newUserEmail, role: newUserRole });
+                      if (error) toast.error("Erro: " + error.message);
+                      else {
+                        toast.success("Função atribuída com sucesso");
+                        setNewUserEmail("");
+                        loadData("users");
+                      }
+                    } catch (err) {
+                      console.error("Error assigning role:", err);
+                      toast.error("Erro inesperado ao atribuir função.");
+                    } finally {
+                      setDataLoading(false);
+                    }
                   }}
                   className="mt-3 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90"
                 >
@@ -921,19 +1021,16 @@ const AdminPage = () => {
                               {op.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             </button>
                             <button
-                              onClick={async () => {
-                                const { data } = await supabase.from("opinion_articles").select("*").eq("id", op.id).single();
-                                if (data) {
-                                  setEditingOpinion(op.id);
-                                  setOpinionForm({
-                                    title: data.title,
-                                    author: data.author,
-                                    content: data.content || "",
-                                    excerpt: data.excerpt || "",
-                                    avatar_url: data.avatar_url || ""
-                                  });
-                                  setShowOpinionForm(true);
-                                }
+                              onClick={() => {
+                                setEditingOpinion(op.id);
+                                setOpinionForm({
+                                  title: op.title,
+                                  author: op.author,
+                                  content: op.content || "",
+                                  excerpt: op.excerpt || "",
+                                  avatar_url: op.avatar_url || ""
+                                });
+                                setShowOpinionForm(true);
                               }}
                               className="text-muted-foreground hover:text-foreground transition-colors"
                             >

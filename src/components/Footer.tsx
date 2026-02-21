@@ -32,10 +32,10 @@ const Footer = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="font-heading font-black text-xl text-foreground uppercase tracking-tight">
-            OBSERVADOR
+            Angola Denúncias
           </span>
           <span className="text-xs text-muted-foreground">
-            © 2026 Observador. Todos os direitos reservados.
+            © 2026 Angola Denúncias. Todos os direitos reservados.
           </span>
         </div>
       </div>

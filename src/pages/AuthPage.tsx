@@ -57,7 +57,7 @@ const AuthPage = () => {
             <Newspaper className="w-6 h-6 text-primary" />
           </div>
           <h1 className="font-heading text-3xl font-black tracking-tight text-foreground uppercase">
-            OBSERVADOR
+            Angola Denúncias
           </h1>
           <p className="text-muted-foreground text-sm mt-1">Portal de notícias</p>
         </div>
@@ -66,21 +66,19 @@ const AuthPage = () => {
           {/* Tabs */}
           <div className="flex mb-6 border-b border-border">
             <button
-              className={`flex-1 pb-3 text-sm font-semibold uppercase tracking-wider transition-colors ${
-                mode === "login"
+              className={`flex-1 pb-3 text-sm font-semibold uppercase tracking-wider transition-colors ${mode === "login"
                   ? "text-primary border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
               onClick={() => { setMode("login"); setError(""); setSuccess(""); }}
             >
               Entrar
             </button>
             <button
-              className={`flex-1 pb-3 text-sm font-semibold uppercase tracking-wider transition-colors ${
-                mode === "signup"
+              className={`flex-1 pb-3 text-sm font-semibold uppercase tracking-wider transition-colors ${mode === "signup"
                   ? "text-primary border-b-2 border-primary"
                   : "text-muted-foreground hover:text-foreground"
-              }`}
+                }`}
               onClick={() => { setMode("signup"); setError(""); setSuccess(""); }}
             >
               Criar conta
