@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState, ReactNode } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { withTimeout } from "@/lib/utils";
 
 interface AuthContextType {
   user: User | null;
@@ -28,11 +29,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const checkRoles = async (userId: string) => {
+    console.log("[Auth] Checking roles for:", userId);
     try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      const { data, error } = await withTimeout(
+        supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId),
+        15000
+      ) as any;
 
       if (error) {
         console.error("[Auth] Role check error:", error);
@@ -101,12 +106,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Safety timeout: Never stay stuck in loading more than 5 seconds
+    // Safety timeout: Never stay stuck in loading more than 10 seconds
     const safetyTimeout = setTimeout(() => {
       if (mounted && loading) {
         setLoading(false);
       }
-    }, 5000);
+    }, 10000);
 
     return () => {
       mounted = false;
@@ -118,12 +123,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+    } catch (err) {
+      console.error("[Auth] Sign out call failed:", err);
+    } finally {
+      // Always clear local state to prevent UI lock
       setIsAdmin(false);
       setIsEditor(false);
       setSession(null);
       setUser(null);
-    } catch (err) {
-      console.error("[Auth] Sign out failed:", err);
     }
   };
 

@@ -1,8 +1,37 @@
-import { topArticles, latestArticles, opinionArticles } from "@/data/newsData";
+import { useNavigate } from "react-router-dom";
 import NewsCard from "./NewsCard";
 import { MessageSquare } from "lucide-react";
 
-const NewsGrid = () => {
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  image: string;
+  timestamp: string;
+  author: string;
+}
+
+interface Opinion {
+  id: string;
+  title: string;
+  author: string;
+  timestamp: string;
+}
+
+interface NewsGridProps {
+  topArticles?: Article[];
+  latestArticles?: Article[];
+  opinionArticles?: Opinion[];
+}
+
+const NewsGrid = ({
+  topArticles = [],
+  latestArticles = [],
+  opinionArticles = []
+}: NewsGridProps) => {
+  const navigate = useNavigate();
+
   return (
     <div className="container py-8">
       {/* Destaques Section */}
@@ -45,6 +74,7 @@ const NewsGrid = () => {
             {opinionArticles.map((article, i) => (
               <article
                 key={article.id}
+                onClick={() => navigate(`/opinion/${article.id}`)}
                 className="py-4 border-b border-border last:border-0 group cursor-pointer"
               >
                 <h4 className="news-headline news-headline-hover text-base">

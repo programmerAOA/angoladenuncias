@@ -1,12 +1,34 @@
-import { heroArticle, topArticles } from "@/data/newsData";
+import { useNavigate } from "react-router-dom";
 import NewsCard from "./NewsCard";
 
-const HeroSection = () => {
+interface Article {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  image: string;
+  timestamp: string;
+  author: string;
+}
+
+interface HeroSectionProps {
+  heroArticle?: Article | null;
+  sideArticles?: Article[];
+}
+
+const HeroSection = ({ heroArticle, sideArticles = [] }: HeroSectionProps) => {
+  const navigate = useNavigate();
+
+  if (!heroArticle) return null;
+
   return (
     <section className="container py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main hero */}
-        <div className="lg:col-span-2 group cursor-pointer">
+        <div
+          className="lg:col-span-2 group cursor-pointer"
+          onClick={() => navigate(`/article/${heroArticle.id}`)}
+        >
           <div className="overflow-hidden">
             <img
               src={heroArticle.image}
@@ -33,7 +55,7 @@ const HeroSection = () => {
         {/* Side articles */}
         <div className="border-t lg:border-t-0 lg:border-l border-border lg:pl-6 pt-4 lg:pt-0">
           <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">Últimas</h3>
-          {topArticles.slice(0, 4).map((article) => (
+          {sideArticles.slice(0, 4).map((article) => (
             <NewsCard key={article.id} article={article} variant="compact" />
           ))}
         </div>

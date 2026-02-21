@@ -1,4 +1,14 @@
-import type { NewsArticle } from "@/data/newsData";
+import { useNavigate } from "react-router-dom";
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  summary: string;
+  category: string;
+  image: string;
+  timestamp: string;
+  author: string;
+}
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -6,9 +16,18 @@ interface NewsCardProps {
 }
 
 const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
+  const navigate = useNavigate();
+
+  const handleNavigate = () => {
+    navigate(`/article/${article.id}`);
+  };
+
   if (variant === "compact") {
     return (
-      <article className="group flex gap-3 py-3 border-b border-border last:border-0">
+      <article
+        onClick={handleNavigate}
+        className="group flex gap-3 py-3 border-b border-border last:border-0 cursor-pointer"
+      >
         <img
           src={article.image}
           alt={article.title}
@@ -28,7 +47,10 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
 
   if (variant === "horizontal") {
     return (
-      <article className="group flex gap-4 py-4 border-b border-border last:border-0">
+      <article
+        onClick={handleNavigate}
+        className="group flex gap-4 py-4 border-b border-border last:border-0 cursor-pointer"
+      >
         <img
           src={article.image}
           alt={article.title}
@@ -54,7 +76,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
   }
 
   return (
-    <article className="group">
+    <article onClick={handleNavigate} className="group cursor-pointer">
       <div className="overflow-hidden">
         <img
           src={article.image}

@@ -1,11 +1,14 @@
+import { useNavigate } from "react-router-dom";
+
 const footerSections = [
   { title: "Secções", links: ["Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia"] },
   { title: "Opinião", links: ["Editoriais", "Colunistas", "Cartas dos Leitores", "Debates"] },
   { title: "Multimédia", links: ["Vídeos", "Podcasts", "Fotogalerias", "Infografias"] },
-  { title: "Sobre", links: ["Quem Somos", "Contactos", "Publicidade", "Termos de Uso", "Política de Privacidade"] },
 ];
 
 const Footer = () => {
+  const navigate = useNavigate();
+
   return (
     <footer className="bg-secondary border-t border-border mt-12">
       <div className="container py-12">
@@ -18,7 +21,7 @@ const Footer = () => {
               <ul className="space-y-2">
                 {section.links.map((link) => (
                   <li key={link}>
-                    <button className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    <button className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left w-full">
                       {link}
                     </button>
                   </li>
@@ -26,16 +29,71 @@ const Footer = () => {
               </ul>
             </div>
           ))}
+
+          {/* Contact Section */}
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">
+              Contacto
+            </h4>
+            <ul className="space-y-3">
+              <li>
+                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Email Geral</span>
+                <a
+                  href="mailto:geral@angolasemfiltros.com"
+                  className="text-sm text-foreground hover:text-primary transition-colors font-medium break-all"
+                >
+                  geral@angolasemfiltros.com
+                </a>
+              </li>
+              <li>
+                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Publicidade</span>
+                <button
+                  onClick={() => navigate("/publicidade")}
+                  className="text-sm text-foreground hover:text-primary transition-colors font-medium text-left bg-primary/5 px-2 py-1 rounded border border-primary/10 w-full"
+                >
+                  Anuncie connosco
+                </button>
+              </li>
+              <li>
+                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Documentos</span>
+                <div className="flex flex-col gap-1">
+                  <button
+                    onClick={() => navigate("/termos")}
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors text-left"
+                  >
+                    Termos de Uso
+                  </button>
+                  <button
+                    onClick={() => navigate("/privacidade")}
+                    className="text-xs text-muted-foreground hover:text-primary transition-colors text-left"
+                  >
+                    Política de Privacidade
+                  </button>
+                </div>
+              </li>
+              <li>
+                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">WhatsApp</span>
+                <a
+                  href="https://wa.me/244923065614"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-foreground hover:text-primary transition-colors font-medium"
+                >
+                  +244 923 065 614
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <div className="section-divider my-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <span className="font-heading font-black text-xl text-foreground uppercase tracking-tight">
-            Angola Denúncias
+            Sem Filtros
           </span>
           <span className="text-xs text-muted-foreground">
-            © 2026 Angola Denúncias. Todos os direitos reservados.
+            © 2026 Sem Filtros. Todos os direitos reservados.
           </span>
         </div>
       </div>

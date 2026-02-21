@@ -1,10 +1,16 @@
 import { useState, useRef, useEffect } from "react";
 import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-const STREAM_URL = "http://102.222.150.46:8800/GirassolFM";
+// Lista de URLs possíveis para a Rádio Girassol
+const STREAM_SOURCES = [
+    "http://102.222.150.46:8800/GirassolFM",
+    "https://stream.redegirassol.com/fm", // Placeholder para URL HTTPS futura
+];
 
 const RadioPlayer = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
+    const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -16,20 +22,37 @@ const RadioPlayer = () => {
         audio.preload = "none";
         audioRef.current = audio;
 
-        audio.addEventListener("waiting", () => setIsLoading(true));
-        audio.addEventListener("playing", () => { setIsLoading(false); setIsPlaying(true); });
-        audio.addEventListener("pause", () => setIsPlaying(false));
-        audio.addEventListener("error", () => { setIsLoading(false); setIsPlaying(false); });
+        const handleWaiting = () => setIsLoading(true);
+        const handlePlaying = () => { setIsLoading(false); setIsPlaying(true); };
+        const handlePause = () => setIsPlaying(false);
+        const handleError = () => {
+            console.error("Radio Error: Falha ao carregar stream", STREAM_SOURCES[currentSourceIndex]);
+            setIsLoading(false);
+            setIsPlaying(false);
+
+            // Tentar próxima fonte se falhar
+            if (currentSourceIndex < STREAM_SOURCES.length - 1) {
+                console.log("Tentando fonte alternativa...");
+                setCurrentSourceIndex(prev => prev + 1);
+            } else {
+                toast.error("Não foi possível conectar à Rádio Girassol. Verifique a sua ligação ou tente mais tarde.");
+            }
+        };
+
+        audio.addEventListener("waiting", handleWaiting);
+        audio.addEventListener("playing", handlePlaying);
+        audio.addEventListener("pause", handlePause);
+        audio.addEventListener("error", handleError);
 
         return () => {
             audio.pause();
             audio.src = "";
-            audio.removeEventListener("waiting", () => { });
-            audio.removeEventListener("playing", () => { });
-            audio.removeEventListener("pause", () => { });
-            audio.removeEventListener("error", () => { });
+            audio.removeEventListener("waiting", handleWaiting);
+            audio.removeEventListener("playing", handlePlaying);
+            audio.removeEventListener("pause", handlePause);
+            audio.removeEventListener("error", handleError);
         };
-    }, []);
+    }, [currentSourceIndex]);
 
     const togglePlay = () => {
         const audio = audioRef.current;
@@ -37,15 +60,24 @@ const RadioPlayer = () => {
 
         if (isPlaying) {
             audio.pause();
-            audio.src = "";
+            audio.src = ""; // Reset source on pause to avoid background data usage
         } else {
             setIsLoading(true);
-            audio.src = STREAM_URL;
+
+            // Verificar Mixed Content Policy (HTTP em HTTPS)
+            if (window.location.protocol === "https:" && STREAM_SOURCES[currentSourceIndex].startsWith("http:")) {
+                console.warn("Mixed Content: Tentando carregar stream HTTP em site HTTPS.");
+                toast.warning("A stream da rádio usa uma ligação não segura (HTTP) e pode ser bloqueada pelo seu navegador.");
+            }
+
+            audio.src = STREAM_SOURCES[currentSourceIndex];
             audio.volume = volume;
             audio.muted = isMuted;
-            audio.play().catch(() => {
+            audio.play().catch((err) => {
+                console.error("Playback error:", err);
                 setIsLoading(false);
                 setIsPlaying(false);
+                toast.error("Erro ao iniciar a rádio.");
             });
         }
     };
@@ -105,8 +137,8 @@ const RadioPlayer = () => {
                     </div>
                     <div>
                         <h3 className="text-white font-bold text-sm tracking-wide">Girassol FM</h3>
-                        <p className="text-white/70 text-xs">
-                            {isPlaying ? "🔴 Em directo" : isLoading ? "A conectar..." : "Offline"}
+                        <p className="text-white/70 text-xs text-balance pr-4">
+                            {isPlaying ? "🔴 Em directo" : isLoading ? "A conectar..." : "Offline (Clique para ouvir)"}
                         </p>
                     </div>
                 </div>

@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Menu, X, User, LogOut, Shield, Loader2 } from "lucide-react";
-import { categories } from "@/data/newsData";
+import { categories } from "@/constants/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import { toast } from "sonner";
 
 interface HeaderProps {
   selectedCategory?: string;
@@ -33,6 +34,7 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
   const handleAuthClick = async () => {
     if (user) {
       await signOut();
+      toast.success("Sessão encerrada com sucesso");
       navigate("/");
     } else {
       navigate("/auth");
@@ -125,7 +127,7 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
           }}
           className="font-heading text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-foreground mx-auto lg:mx-0 uppercase cursor-pointer"
         >
-          Angola Denúncias
+          Sem Filtros
         </h1>
 
         <div className="flex items-center gap-2">

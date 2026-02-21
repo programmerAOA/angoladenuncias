@@ -4,11 +4,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap,
-  Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw
+  Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
+  Globe, Bot, Search as SearchIcon, Sparkles, Wand2
 } from "lucide-react";
 import { toast } from "sonner";
+import { formatRelativeDate, withTimeout } from "@/lib/utils";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery";
 
 interface Article {
   id: string;
@@ -87,19 +89,27 @@ const AdminPage = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0 });
   const [dataLoading, setDataLoading] = useState(false);
+  const [savingArticle, setSavingArticle] = useState(false);
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [savingOpinion, setSavingOpinion] = useState(false);
+  const [savingBreaking, setSavingBreaking] = useState(false);
+
 
   // Article form
   const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
+  const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [showArticleForm, setShowArticleForm] = useState(false);
 
   // Video form
   const [videoForm, setVideoForm] = useState({ title: "", description: "", video_url: "", thumbnail_url: "", duration: "", category: "Vídeo" });
+  const [videoThumbnailFile, setVideoThumbnailFile] = useState<File | null>(null);
   const [editingVideo, setEditingVideo] = useState<string | null>(null);
   const [showVideoForm, setShowVideoForm] = useState(false);
 
   // Opinion form
   const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "" });
+  const [opinionAvatarFile, setOpinionAvatarFile] = useState<File | null>(null);
   const [editingOpinion, setEditingOpinion] = useState<string | null>(null);
   const [showOpinionForm, setShowOpinionForm] = useState(false);
 
@@ -110,6 +120,22 @@ const AdminPage = () => {
   // User role form
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "editor">("editor");
+
+  // AI Discovery & Adaptation state
+  const [discoveryQuery, setDiscoveryQuery] = useState("");
+  const [discoveryResults, setDiscoveryResults] = useState<any[]>([]);
+  const [isDiscovering, setIsDiscovering] = useState(false);
+  const [aiWorkspace, setAiWorkspace] = useState({
+    sourceUrl: "",
+    sourceTitle: "",
+    sourceContent: "",
+    editorialLine: "Informativa",
+    adaptedContent: "",
+    adaptedTitle: "",
+    adaptedSummary: "",
+    category: "Geral"
+  });
+  const [isAdapting, setIsAdapting] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -125,7 +151,7 @@ const AdminPage = () => {
     setDataLoading(true);
     try {
       if (tab === "dashboard" || tab === "articles") {
-        const { data, error } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false });
+        const { data, error } = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }), 20000) as any;
         if (error) {
           console.error("Error loading articles:", error);
           toast.error("Erro ao carregar artigos: " + error.message);
@@ -136,7 +162,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "videos") {
-        const { data, error } = await supabase.from("video_news").select("*").order("created_at", { ascending: false });
+        const { data, error } = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }), 20000) as any;
         if (error) {
           console.error("Error loading videos:", error);
           toast.error("Erro ao carregar vídeos: " + error.message);
@@ -147,7 +173,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "opinions") {
-        const { data, error } = await supabase.from("opinion_articles").select("*").order("created_at", { ascending: false });
+        const { data, error } = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }), 20000) as any;
         if (error) {
           console.error("Error loading opinions:", error);
           toast.error("Erro ao carregar opiniões: " + error.message);
@@ -158,7 +184,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "breaking") {
-        const { data, error } = await supabase.from("breaking_news").select("*").order("created_at", { ascending: false });
+        const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }), 20000) as any;
         if (error) {
           console.error("Error loading breaking news:", error);
           toast.error("Erro ao carregar notícias: " + error.message);
@@ -169,7 +195,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "users") {
-        const { data, error } = await supabase.from("user_roles").select("*");
+        const { data, error } = await withTimeout(supabase.from("user_roles").select("*"), 20000) as any;
         if (error) {
           console.error("Error loading user roles:", error);
           toast.error("Erro ao carregar perfis: " + error.message);
@@ -205,21 +231,57 @@ const AdminPage = () => {
     }
   };
 
+  const uploadFile = async (file: File, bucket: string = "news") => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError, data } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
   const saveArticle = async () => {
     if (!articleForm.title) {
       toast.error("O título é obrigatório");
       return;
     }
 
-    setDataLoading(true);
+    setSavingArticle(true);
+    console.log("Save Article: Starting...", articleForm, editingArticle);
     try {
-      const payload = { ...articleForm, published: true };
+      let currentImageUrl = articleForm.image_url;
 
-      const result = editingArticle
-        ? await supabase.from("news_articles").update(articleForm).eq("id", editingArticle).select()
-        : await supabase.from("news_articles").insert(payload).select();
+      if (articleImageFile) {
+        console.log("Save Article: Uploading file...", articleImageFile.name);
+        toast.info("A carregar imagem (isso pode demorar em ligações lentas)...");
+        currentImageUrl = await withTimeout(uploadFile(articleImageFile));
+        console.log("Save Article: Upload success, URL:", currentImageUrl);
+      }
+
+      const payload = { ...articleForm, image_url: currentImageUrl, published: true };
+      console.log("Save Article: Sending payload to DB...", payload);
+
+      const query = editingArticle
+        ? supabase.from("news_articles").update(payload).eq("id", editingArticle).select()
+        : supabase.from("news_articles").insert(payload).select();
+
+      const result = await withTimeout(query);
+
+      console.log("Save article result:", result);
 
       if (result.error) {
+        console.error("Supabase error saving article:", result.error);
         toast.error("Erro ao guardar artigo: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("O artigo não foi guardado. Verifique as suas permissões.");
@@ -227,13 +289,15 @@ const AdminPage = () => {
         toast.success("Artigo guardado com sucesso!");
         setShowArticleForm(false);
         setEditingArticle(null);
+        setArticleImageFile(null);
         setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
         loadData("articles");
       }
     } catch (err: any) {
+      console.error("Unexpected error in saveArticle:", err);
       toast.error("Erro inesperado: " + (err?.message || String(err)));
     } finally {
-      setDataLoading(false);
+      setSavingArticle(false);
     }
   };
 
@@ -243,15 +307,31 @@ const AdminPage = () => {
       return;
     }
 
-    setDataLoading(true);
+    setSavingVideo(true);
+    console.log("Save Video: Starting...", videoForm, editingVideo);
     try {
-      const payload = { ...videoForm, published: true };
+      let currentThumbnailUrl = videoForm.thumbnail_url;
 
-      const result = editingVideo
-        ? await supabase.from("video_news").update(videoForm).eq("id", editingVideo).select()
-        : await supabase.from("video_news").insert(payload).select();
+      if (videoThumbnailFile) {
+        console.log("Save Video: Uploading thumbnail...", videoThumbnailFile.name);
+        toast.info("A carregar miniatura...");
+        currentThumbnailUrl = await withTimeout(uploadFile(videoThumbnailFile));
+        console.log("Save Video: Thumbnail upload success:", currentThumbnailUrl);
+      }
+
+      const payload = { ...videoForm, thumbnail_url: currentThumbnailUrl, published: true };
+      console.log("Save Video: Sending payload to DB...", payload);
+
+      const query = editingVideo
+        ? supabase.from("video_news").update(payload).eq("id", editingVideo).select()
+        : supabase.from("video_news").insert(payload).select();
+
+      const result = await withTimeout(query);
+
+      console.log("Save video result:", result);
 
       if (result.error) {
+        console.error("Supabase error saving video:", result.error);
         toast.error("Erro ao guardar vídeo: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("O vídeo não foi guardado. Verifique as suas permissões.");
@@ -259,13 +339,15 @@ const AdminPage = () => {
         toast.success("Vídeo guardado com sucesso!");
         setShowVideoForm(false);
         setEditingVideo(null);
+        setVideoThumbnailFile(null);
         setVideoForm({ title: "", description: "", video_url: "", thumbnail_url: "", duration: "", category: "Vídeo" });
         loadData("videos");
       }
     } catch (err: any) {
+      console.error("Unexpected error in saveVideo:", err);
       toast.error("Erro inesperado: " + (err?.message || String(err)));
     } finally {
-      setDataLoading(false);
+      setSavingVideo(false);
     }
   };
 
@@ -275,15 +357,31 @@ const AdminPage = () => {
       return;
     }
 
-    setDataLoading(true);
+    setSavingOpinion(true);
+    console.log("Save Opinion: Starting...", opinionForm, editingOpinion);
     try {
-      const payload = { ...opinionForm, published: true };
+      let currentAvatarUrl = opinionForm.avatar_url;
 
-      const result = editingOpinion
-        ? await supabase.from("opinion_articles").update(opinionForm).eq("id", editingOpinion).select()
-        : await supabase.from("opinion_articles").insert(payload).select();
+      if (opinionAvatarFile) {
+        console.log("Save Opinion: Uploading avatar...", opinionAvatarFile.name);
+        toast.info("A carregar avatar...");
+        currentAvatarUrl = await withTimeout(uploadFile(opinionAvatarFile));
+        console.log("Save Opinion: Avatar upload success:", currentAvatarUrl);
+      }
+
+      const payload = { ...opinionForm, avatar_url: currentAvatarUrl, published: true };
+      console.log("Save Opinion: Sending payload to DB...", payload);
+
+      const query = editingOpinion
+        ? supabase.from("opinion_articles").update(payload).eq("id", editingOpinion).select()
+        : supabase.from("opinion_articles").insert(payload).select();
+
+      const result = await withTimeout(query);
+
+      console.log("Save opinion result:", result);
 
       if (result.error) {
+        console.error("Supabase error saving opinion:", result.error);
         toast.error("Erro ao guardar opinião: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("A opinião não foi guardada. Verifique as suas permissões.");
@@ -291,13 +389,15 @@ const AdminPage = () => {
         toast.success("Artigo de opinião guardado com sucesso!");
         setShowOpinionForm(false);
         setEditingOpinion(null);
+        setOpinionAvatarFile(null);
         setOpinionForm({ title: "", author: "", content: "", excerpt: "", avatar_url: "" });
         loadData("opinions");
       }
     } catch (err: any) {
+      console.error("Unexpected error in saveOpinion:", err);
       toast.error("Erro inesperado: " + (err?.message || String(err)));
     } finally {
-      setDataLoading(false);
+      setSavingOpinion(false);
     }
   };
 
@@ -307,10 +407,14 @@ const AdminPage = () => {
       return;
     }
 
-    setDataLoading(true);
+    setSavingBreaking(true);
+    console.log("Saving breaking news...", breakingForm);
     try {
-      const result = await supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
+      const query = supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
+      const result = await withTimeout(query);
+      console.log("Save breaking news result:", result);
       if (result.error) {
+        console.error("Supabase error saving breaking news:", result.error);
         toast.error("Erro ao adicionar notícia: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("A notícia não foi guardada. Verifique as suas permissões.");
@@ -321,9 +425,10 @@ const AdminPage = () => {
         loadData("breaking");
       }
     } catch (err: any) {
+      console.error("Unexpected error in saveBreaking:", err);
       toast.error("Erro inesperado: " + (err?.message || String(err)));
     } finally {
-      setDataLoading(false);
+      setSavingBreaking(false);
     }
   };
 
@@ -337,7 +442,123 @@ const AdminPage = () => {
     }
   };
 
-  const categories = ["Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
+  const handleDiscoverNews = async () => {
+    if (!discoveryQuery.trim()) return;
+    setIsDiscovering(true);
+    console.log("Discovery: Searching for:", discoveryQuery);
+    try {
+      // Em produção, isto chamaria uma Edge Function que faz scraping ou usa NewsAPI
+      // Para demonstração, vamos simular resultados baseados na query
+      await new Promise(r => setTimeout(r, 1500));
+
+      const mockResults = [
+        {
+          title: "UNITA denuncia espionagem a jornalista angolano Teixeira Cândido",
+          source: "Angola24Horas",
+          date: "Hoje",
+          category: "Política",
+          snippet: "A UNITA denunciou a alegada espionagem ao jornalista Teixeira Cândido através do spyware Predator e exigiu uma investigação ao Ministério Público.",
+          content: "A UNITA denunciou hoje a alegada espionagem ao jornalista angolano Teixeira Cândido, utilizando ferramentas de vigilância avançadas. O partido exige uma investigação profunda por parte do Ministério Público para apurar as responsabilidades e proteger a liberdade de imprensa no país."
+        },
+        {
+          title: "Apenas 21% da população empregada em Angola está no setor formal",
+          source: "Correio Kianda",
+          date: "Hoje",
+          category: "Economia",
+          snippet: "Dados recentes do INE revelam que a grande maioria da força de trabalho angolana continua no setor informal, destacando desafios económicos.",
+          content: "Segundo o Instituto Nacional de Estatística (INE), apenas cerca de 21% dos angolanos empregados possuem um vínculo formal de trabalho. Este dado sublinha a enorme dependência da economia informal e a necessidade de políticas de formalização mais robustas."
+        },
+        {
+          title: "Entra em vigor cessar-fogo proposto por Angola para crise no Leste da RDC",
+          source: "Jornal de Angola",
+          date: "Hoje",
+          category: "Mundo",
+          snippet: "O acordo de cessar-fogo mediado por Angola entre o Governo congolês e o grupo M23 começou a ser implementado este sábado.",
+          content: "O cessar-fogo proposto pela mediação angolana para a crise no leste da República Democrática do Congo (RDC) entrou em vigor hoje. Apesar do início oficial, já existem relatos de trocas de acusações entre as partes envolvidas sobre alegadas violações do acordo."
+        }
+      ];
+
+      setDiscoveryResults(mockResults);
+      toast.success("Pesquisa OSINT concluída com 3 resultados.");
+    } catch (err) {
+      toast.error("Erro na descoberta de notícias.");
+    } finally {
+      setIsDiscovering(false);
+    }
+  };
+
+  const handleAdaptToEditorial = (item: any) => {
+    setAiWorkspace({
+      ...aiWorkspace,
+      sourceTitle: item.title,
+      sourceContent: item.content || item.snippet,
+      sourceUrl: item.url || "",
+      adaptedContent: "",
+      adaptedTitle: "",
+      adaptedSummary: "",
+      category: item.category || "Geral"
+    });
+    toast.info("Notícia enviada para o espaço de trabalho IA.");
+  };
+
+  const handleGenerateAI = async () => {
+    if (!aiWorkspace.sourceContent) return;
+    setIsAdapting(true);
+    console.log("AI: Generating rewrite with line:", aiWorkspace.editorialLine);
+
+    try {
+      // Chamada à futura Edge Function 'ai-rewrite'
+      const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+        body: {
+          content: aiWorkspace.sourceContent,
+          title: aiWorkspace.sourceTitle,
+          line: aiWorkspace.editorialLine
+        }
+      });
+
+      if (error) throw error;
+
+      setAiWorkspace({
+        ...aiWorkspace,
+        adaptedTitle: data.title,
+        adaptedContent: data.content,
+        adaptedSummary: data.summary
+      });
+      toast.success("Notícia reestruturada com sucesso pela IA!");
+    } catch (err: any) {
+      console.error("AI Error:", err);
+      // Fallback para demonstração se a function não existir ainda
+      toast.warning("Erro na Edge Function. Usando simulação local...");
+      await new Promise(r => setTimeout(r, 2000));
+      setAiWorkspace({
+        ...aiWorkspace,
+        adaptedTitle: `[${aiWorkspace.editorialLine}] ${aiWorkspace.sourceTitle}`,
+        adaptedContent: `Esta é uma versão reestruturada pela IA seguindo a linha editorial ${aiWorkspace.editorialLine}.\n\nO conteúdo original foi adaptado para manter o formato de notícia profissional, assegurando que os factos principais sobre ${aiWorkspace.sourceTitle} são preservados enquanto o tom é ajustado para ser mais ${aiWorkspace.editorialLine.toLowerCase()}.\n\n${aiWorkspace.sourceContent}`,
+        adaptedSummary: `Notícia adaptada sobre ${aiWorkspace.sourceTitle}.`
+      });
+    } finally {
+      setIsAdapting(false);
+    }
+  };
+
+  const handleFinalizeAIArticle = () => {
+    // Preencher o formulário de artigos com os dados da IA
+    setArticleForm({
+      title: aiWorkspace.adaptedTitle,
+      summary: aiWorkspace.adaptedSummary || "Notícia adaptada via IA.",
+      content: aiWorkspace.adaptedContent,
+      category: aiWorkspace.category,
+      author: "Redação / IA",
+      image_url: "",
+      is_hero: false,
+      is_breaking: false
+    });
+    setActiveTab("articles");
+    setShowArticleForm(true);
+    toast.success("Dados transferidos para o formulário de publicação.");
+  };
+
+  const categories = ["Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
 
   if (loading) {
     return (
@@ -385,6 +606,7 @@ const AdminPage = () => {
     { id: "videos" as Tab, label: "Vídeos", icon: Video },
     { id: "opinions" as Tab, label: "Opinião", icon: MessageSquare },
     { id: "breaking" as Tab, label: "Última Hora", icon: Zap },
+    { id: "ai-discovery" as Tab, label: "Descoberta IA", icon: Sparkles },
     { id: "users" as Tab, label: "Utilizadores", icon: Users },
   ];
 
@@ -398,7 +620,7 @@ const AdminPage = () => {
             <Shield className="w-4 h-4 text-primary" />
             <span className="text-xs font-semibold uppercase tracking-wider text-primary">Admin</span>
           </div>
-          <h1 className="font-heading text-xl font-black tracking-tight text-foreground uppercase">Angola Denúncias</h1>
+          <h1 className="font-heading text-xl font-black tracking-tight text-foreground uppercase">Sem Filtros</h1>
           <p className="text-xs text-muted-foreground mt-0.5 truncate">{user?.email}</p>
         </div>
 
@@ -432,7 +654,7 @@ const AdminPage = () => {
             Reiniciar Sessão
           </button>
           <button
-            onClick={() => { signOut(); navigate("/"); }}
+            onClick={async () => { await signOut(); navigate("/"); }}
             className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider font-semibold"
           >
             <LogOut className="w-4 h-4" />
@@ -550,13 +772,37 @@ const AdminPage = () => {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL da imagem</label>
-                      <input
-                        value={articleForm.image_url}
-                        onChange={e => setArticleForm(f => ({ ...f, image_url: e.target.value }))}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                        placeholder="https://..."
-                      />
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Imagem do Artigo</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setArticleImageFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">Selecione um ficheiro para carregar para o servidor (recomendado)</p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={articleForm.image_url}
+                            onChange={e => setArticleForm(f => ({ ...f, image_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou cole o URL da imagem da internet..."
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">Apenas para links diretos externos</p>
+                        </div>
+                      </div>
+                      {(articleImageFile || articleForm.image_url) && (
+                        <div className="mt-4 p-2 border border-dashed border-border rounded bg-secondary/30 flex items-center gap-4">
+                          <img
+                            src={articleImageFile ? URL.createObjectURL(articleImageFile) : articleForm.image_url}
+                            alt="Preview"
+                            className="w-20 h-12 object-cover rounded"
+                          />
+                          <span className="text-xs text-muted-foreground">Pré-visualização da imagem</span>
+                        </div>
+                      )}
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Conteúdo</label>
@@ -580,9 +826,13 @@ const AdminPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <button onClick={saveArticle} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity">
+                    <button
+                      onClick={saveArticle}
+                      disabled={savingArticle}
+                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
                       <Check className="w-4 h-4" />
-                      Guardar
+                      {savingArticle ? "A guardar..." : "Guardar"}
                     </button>
                     <button onClick={() => setShowArticleForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
                       <X className="w-4 h-4" />
@@ -698,9 +948,37 @@ const AdminPage = () => {
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL do vídeo (YouTube/Vimeo) *</label>
                       <input value={videoForm.video_url} onChange={e => setVideoForm(f => ({ ...f, video_url: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary" placeholder="https://youtube.com/watch?v=..." />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Thumbnail URL</label>
-                      <input value={videoForm.thumbnail_url} onChange={e => setVideoForm(f => ({ ...f, thumbnail_url: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary" />
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Miniatura do Vídeo</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setVideoThumbnailFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">Selecione uma imagem para a miniatura</p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={videoForm.thumbnail_url}
+                            onChange={e => setVideoForm(f => ({ ...f, thumbnail_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou URL da miniatura..."
+                          />
+                        </div>
+                      </div>
+                      {(videoThumbnailFile || videoForm.thumbnail_url) && (
+                        <div className="mt-4 p-2 border border-dashed border-border rounded bg-secondary/30 flex items-center gap-4">
+                          <img
+                            src={videoThumbnailFile ? URL.createObjectURL(videoThumbnailFile) : videoForm.thumbnail_url}
+                            alt="Preview"
+                            className="w-20 h-11 object-cover rounded"
+                          />
+                          <span className="text-xs text-muted-foreground">Pré-visualização da miniatura</span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Duração (ex: 12:34)</label>
@@ -712,8 +990,13 @@ const AdminPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <button onClick={saveVideo} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">
-                      <Check className="w-4 h-4" /> Guardar
+                    <button
+                      onClick={saveVideo}
+                      disabled={savingVideo}
+                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" />
+                      {savingVideo ? "A guardar..." : "Guardar"}
                     </button>
                     <button onClick={() => setShowVideoForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted">
                       <X className="w-4 h-4" /> Cancelar
@@ -795,8 +1078,13 @@ const AdminPage = () => {
                   <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Texto da notícia *</label>
                   <input value={breakingForm} onChange={e => setBreakingForm(e.target.value)} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary mb-3" placeholder="Texto que aparece no ticker..." />
                   <div className="flex gap-3">
-                    <button onClick={saveBreaking} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">
-                      <Check className="w-4 h-4" /> Adicionar
+                    <button
+                      onClick={saveBreaking}
+                      disabled={savingBreaking}
+                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" />
+                      {savingBreaking ? "A adicionar..." : "Adicionar"}
                     </button>
                     <button onClick={() => setShowBreakingForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted">
                       <X className="w-4 h-4" /> Cancelar
@@ -939,6 +1227,37 @@ const AdminPage = () => {
                         placeholder="Título da opinião"
                       />
                     </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Avatar do Autor</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setOpinionAvatarFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={opinionForm.avatar_url}
+                            onChange={e => setOpinionForm(f => ({ ...f, avatar_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou URL do avatar..."
+                          />
+                        </div>
+                      </div>
+                      {(opinionAvatarFile || opinionForm.avatar_url) && (
+                        <div className="mt-4 p-2 border border-dashed border-border rounded bg-secondary/30 flex items-center gap-4">
+                          <img
+                            src={opinionAvatarFile ? URL.createObjectURL(opinionAvatarFile) : opinionForm.avatar_url}
+                            alt="Preview"
+                            className="w-12 h-12 object-cover rounded-full"
+                          />
+                          <span className="text-xs text-muted-foreground">Pré-visualização do avatar</span>
+                        </div>
+                      )}
+                    </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Autor *</label>
                       <input
@@ -976,9 +1295,13 @@ const AdminPage = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
-                    <button onClick={saveOpinion} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity">
+                    <button
+                      onClick={saveOpinion}
+                      disabled={savingOpinion}
+                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
                       <Check className="w-4 h-4" />
-                      Guardar
+                      {savingOpinion ? "A guardar..." : "Guardar"}
                     </button>
                     <button onClick={() => setShowOpinionForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
                       <X className="w-4 h-4" />
@@ -1055,6 +1378,165 @@ const AdminPage = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {/* AI Discovery & News OSINT */}
+          {activeTab === "ai-discovery" && (
+            <div className="space-y-6">
+              <div className="bg-card border border-border p-6">
+                <h3 className="font-heading text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                  <SearchIcon className="w-5 h-5 text-primary" />
+                  Pesquisa Inteligente de Notícias (OSINT)
+                </h3>
+                <div className="flex gap-2">
+                  <input
+                    value={discoveryQuery}
+                    onChange={(e) => setDiscoveryQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleDiscoverNews()}
+                    placeholder="Pesquise por temas ou fontes (ex: 'Economia Angola' ou 'Notícias de Luanda')..."
+                    className="flex-1 bg-secondary border border-border text-foreground px-4 py-2 text-sm focus:outline-none focus:border-primary"
+                  />
+                  <button
+                    onClick={handleDiscoverNews}
+                    disabled={isDiscovering}
+                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isDiscovering ? <RefreshCw className="w-4 h-4 animate-spin" /> : <SearchIcon className="w-4 h-4" />}
+                    Pesquisar
+                  </button>
+                </div>
+                <div className="flex items-center gap-4 mt-3">
+                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
+                  <div className="flex gap-2">
+                    {["Tudo", "Angola", "Mundo", "Política", "Finanças"].map(f => (
+                      <button key={f} className="text-[10px] px-2 py-0.5 bg-secondary text-muted-foreground border border-border hover:border-primary/50 transition-colors uppercase font-bold tracking-tighter">
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Workspace for AI Adaptation */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Discovery Results */}
+                <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
+                  <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <Globe className="w-3.5 h-3.5" />
+                      Resultados da Descoberta
+                    </h4>
+                    <span className="text-[10px] text-muted-foreground">{discoveryResults.length} resultados encontrados</span>
+                  </div>
+                  <div className="flex-1 overflow-auto p-4 space-y-4">
+                    {discoveryResults.map((item, idx) => (
+                      <div key={idx} className="bg-secondary/20 border border-border p-4 rounded hover:border-primary/30 transition-all group">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
+                          <span className="text-[10px] text-muted-foreground italic">{item.date}</span>
+                        </div>
+                        <h5 className="text-sm font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.title}</h5>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{item.snippet}</p>
+                        <button
+                          onClick={() => handleAdaptToEditorial(item)}
+                          className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 transition-all py-1.5 text-xs font-bold uppercase tracking-wider"
+                        >
+                          <Wand2 className="w-3.5 h-3.5" />
+                          Adaptar Linha Editorial
+                        </button>
+                      </div>
+                    ))}
+                    {!isDiscovering && discoveryResults.length === 0 && (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                        <Globe className="w-8 h-8 text-muted/30 mb-2" />
+                        <p className="text-sm text-muted-foreground">Utilize o campo de pesquisa acima para descobrir notícias recentes de diversas fontes.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Adaptation Workspace */}
+                <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
+                  <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-primary" />
+                      Espaço de Trabalho IA
+                    </h4>
+                    {aiWorkspace.sourceTitle && (
+                      <button
+                        onClick={() => setAiWorkspace({ ...aiWorkspace, sourceTitle: "", sourceContent: "", adaptedContent: "", adaptedTitle: "", adaptedSummary: "" })}
+                        className="text-[10px] font-bold uppercase text-destructive hover:underline"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-auto p-4 space-y-6">
+                    {/* Linha Editorial Selector */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Linha Editorial Desejada</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {["Informativa", "Investigativa", "Crítica", "Formal", "Popular", "Analítica"].map(line => (
+                          <button
+                            key={line}
+                            onClick={() => setAiWorkspace({ ...aiWorkspace, editorialLine: line })}
+                            className={`px-3 py-2 text-xs font-semibold border transition-all ${aiWorkspace.editorialLine === line ? "bg-primary text-primary-foreground border-primary" : "bg-secondary border-border text-muted-foreground hover:border-primary/50"}`}
+                          >
+                            {line}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Source Preview */}
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Original (Fonte)</label>
+                      <div className="p-3 bg-secondary/10 border border-border rounded">
+                        <h6 className="text-xs font-bold mb-1">{aiWorkspace.sourceTitle || "Nenhuma notícia selecionada"}</h6>
+                        <p className="text-[11px] text-muted-foreground italic h-24 overflow-auto">{aiWorkspace.sourceContent || "Selecione uma notícia dos resultados ou cole o texto aqui..."}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleGenerateAI}
+                      disabled={isAdapting || !aiWorkspace.sourceTitle}
+                      className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
+                    >
+                      {isAdapting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bot className="w-5 h-5" />}
+                      {isAdapting ? "A Reestruturar Notícia..." : "Gerar com IA / Reestruturar"}
+                    </button>
+
+                    {/* AI Result */}
+                    {aiWorkspace.adaptedContent && (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                        <div className="border-t border-border pt-4">
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Resultado da IA (Revisar)</label>
+                          <input
+                            value={aiWorkspace.adaptedTitle}
+                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedTitle: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-bold mb-2 focus:outline-none focus:border-primary"
+                            placeholder="Título adaptado..."
+                          />
+                          <textarea
+                            value={aiWorkspace.adaptedContent}
+                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedContent: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[200px]"
+                            placeholder="Conteúdo reestruturado..."
+                          />
+                        </div>
+                        <button
+                          onClick={handleFinalizeAIArticle}
+                          className="w-full bg-green-600 text-white py-2.5 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
+                        >
+                          <Check className="w-4 h-4" />
+                          Encaminhar para Publicação
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}

@@ -1,24 +1,86 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Header from "@/components/Header";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 import HeroSection from "@/components/HeroSection";
 import NewsGrid from "@/components/NewsGrid";
-import VideoSection from "@/components/VideoSection";
+import VideoSection, { VideoItem } from "@/components/VideoSection";
 import Footer from "@/components/Footer";
 import RadioPlayer from "@/components/RadioPlayer";
-import { heroArticle, topArticles, latestArticles } from "@/data/newsData";
+import { supabase } from "@/integrations/supabase/client";
+import { formatRelativeDate, withTimeout } from "@/lib/utils";
+import { NewsArticle } from "@/components/NewsCard";
+
+import { categories } from "@/constants/categories";
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("Destaque");
   const [searchQuery, setSearchQuery] = useState("");
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [videos, setVideos] = useState<VideoItem[]>([]);
+  const [opinions, setOpinions] = useState<any[]>([]);
+  const [breakingHeadlines, setBreakingHeadlines] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      console.log("Index: Iniciar carregamento de dados...");
+      setLoading(true);
+      try {
+        // Sequencial mas protegido por timeouts maiores para não quebrar a UI
+        console.log("Index: Carregar artigos...");
+        const articlesRes = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }), 30000) as any;
+        if (articlesRes.data) {
+          console.log(`Index: ${articlesRes.data.length} artigos recebidos`);
+          setArticles(articlesRes.data.map((a: any) => ({
+            id: a.id, title: a.title, summary: a.summary, category: a.category,
+            image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
+            timestamp: formatRelativeDate(a.created_at), author: a.author || "Redação"
+          })));
+        } else if (articlesRes.error) {
+          console.error("Index: Erro artigos:", articlesRes.error);
+        }
+
+        console.log("Index: Carregar vídeos...");
+        const videosRes = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(6), 20000) as any;
+        if (videosRes.data) {
+          setVideos(videosRes.data.map((v: any) => ({
+            id: v.id, title: v.title, description: v.description || "",
+            thumbnail: v.thumbnail_url || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
+            duration: v.duration || "0:00", views: String(v.views || 0), category: v.category || "Geral",
+            video_url: v.video_url
+          })));
+        }
+
+        console.log("Index: Carregar opiniões...");
+        const opinionsRes = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(5), 20000) as any;
+        if (opinionsRes.data) {
+          setOpinions(opinionsRes.data.map((o: any) => ({
+            id: o.id, title: o.title, author: o.author, timestamp: formatRelativeDate(o.created_at)
+          })));
+        }
+
+        console.log("Index: Carregar última hora...");
+        const breakingRes = await withTimeout(supabase.from("breaking_news").select("text").eq("active", true).order("created_at", { ascending: false }), 20000) as any;
+        if (breakingRes.data) {
+          setBreakingHeadlines(breakingRes.data.map((b: any) => b.text));
+        }
+
+        console.log("Index: Carregamento completo.");
+      } catch (error) {
+        console.error("Index: Erro de carregamento fatal:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   // Filtrar artigos com base na categoria e/ou pesquisa
   const isFiltering = selectedCategory !== "Destaque" || searchQuery.trim() !== "";
 
   const filteredArticles = useMemo(() => {
-    const allArticles = [heroArticle, ...topArticles, ...latestArticles];
-
-    return allArticles.filter((article) => {
+    return articles.filter((article) => {
       const matchesCategory =
         selectedCategory === "Destaque" || article.category === selectedCategory;
       const matchesSearch =
@@ -27,7 +89,13 @@ const Index = () => {
         article.summary.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [articles, selectedCategory, searchQuery]);
+
+  // Artigo em destaque (o mais recente da lista geral)
+  const heroArticle = articles.length > 0 ? articles[0] : null;
+  const sideArticles = articles.slice(1, 5);
+  const gridTopArticles = articles.slice(5, 9);
+  const gridLatestArticles = articles.slice(9);
 
   return (
     <div className="min-h-screen bg-background">
@@ -36,9 +104,14 @@ const Index = () => {
         onCategoryChange={setSelectedCategory}
         onSearch={setSearchQuery}
       />
-      <BreakingNewsTicker />
+      <BreakingNewsTicker headlines={breakingHeadlines} />
       <main>
-        {isFiltering ? (
+        {loading ? (
+          <div className="container py-20 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">A carregar conteúdo...</p>
+          </div>
+        ) : isFiltering ? (
           <div className="container py-8">
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-xl font-heading font-bold text-foreground">
@@ -106,9 +179,13 @@ const Index = () => {
           </div>
         ) : (
           <>
-            <HeroSection />
-            <VideoSection />
-            <NewsGrid />
+            <HeroSection heroArticle={heroArticle} sideArticles={sideArticles} />
+            <VideoSection videos={videos} />
+            <NewsGrid
+              topArticles={gridTopArticles}
+              latestArticles={gridLatestArticles}
+              opinionArticles={opinions}
+            />
           </>
         )}
       </main>

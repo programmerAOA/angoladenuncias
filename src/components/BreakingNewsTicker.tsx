@@ -1,13 +1,14 @@
 import { Zap } from "lucide-react";
 
-const headlines = [
-  "Governo anuncia novo pacote de medidas para combater a crise habitacional",
-  "Inflação recua para 2,1% em fevereiro",
-  "UE aprova novo pacto de defesa com investimento recorde",
-  "Seleção Nacional prepara eliminatórias do Mundial",
-];
+interface BreakingNewsTickerProps {
+  headlines?: string[];
+}
 
-const BreakingNewsTicker = () => {
+const BreakingNewsTicker = ({ headlines = [] }: BreakingNewsTickerProps) => {
+  const displayHeadlines = headlines.length > 0 ? headlines : [
+    "A carregar notícias de última hora...",
+  ];
+
   return (
     <div className="bg-primary text-primary-foreground overflow-hidden">
       <div className="container flex items-center">
@@ -17,7 +18,7 @@ const BreakingNewsTicker = () => {
         </div>
         <div className="overflow-hidden relative flex-1">
           <div className="flex animate-[scroll_30s_linear_infinite] whitespace-nowrap gap-12 py-2">
-            {[...headlines, ...headlines].map((h, i) => (
+            {[...displayHeadlines, ...displayHeadlines].map((h, i) => (
               <span key={i} className="text-sm font-medium cursor-pointer hover:underline">
                 {h}
               </span>
