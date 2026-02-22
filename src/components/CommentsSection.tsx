@@ -23,7 +23,7 @@ const CommentsSection = ({ articleId }: CommentsSectionProps) => {
     const [anonName, setAnonName] = useState("");
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const { user, isAdmin } = useContext(AuthContext);
+    const { user, isAdmin, isEditor } = useContext(AuthContext);
 
     const fetchComments = async () => {
         try {
@@ -183,7 +183,7 @@ const CommentsSection = ({ articleId }: CommentsSectionProps) => {
                                         </span>
                                     </div>
                                 </div>
-                                {(isAdmin || (user && user.id === comment.user_id)) && (
+                                {(isAdmin || isEditor || (user && user.id === comment.user_id)) && (
                                     <button
                                         onClick={() => handleDelete(comment.id)}
                                         className="p-2 text-muted-foreground hover:text-destructive transition-colors rounded-lg hover:bg-destructive/10"

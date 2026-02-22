@@ -18,7 +18,7 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, isAdmin, isEditor, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
   const todayDate = format(new Date(), "EEEE, d 'de' MMMM 'de' yyyy", { locale: pt });
@@ -75,7 +75,7 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
         <span className="news-timestamp hidden sm:block">{formattedDate}</span>
         <div className="flex items-center gap-4">
           <button className="nav-link text-xs">Newsletter</button>
-          {isAdmin && (
+          {(isAdmin || isEditor) && (
             <button
               onClick={() => navigate("/admin")}
               className="nav-link text-xs flex items-center gap-1 text-primary"

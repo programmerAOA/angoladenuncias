@@ -65,7 +65,7 @@ interface UserRole {
 }
 
 const AdminPage = () => {
-  const { user, isAdmin, loading, signOut } = useAuth();
+  const { user, isAdmin, isEditor, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
   // Capture global errors and show as toasts
@@ -139,12 +139,12 @@ const AdminPage = () => {
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
-    if (!loading && user && !isAdmin) navigate("/");
+    if (!loading && user && !isAdmin && !isEditor) navigate("/");
   }, [user, isAdmin, loading, navigate]);
 
   useEffect(() => {
-    if (isAdmin) loadData(activeTab);
-  }, [activeTab, isAdmin]);
+    if (isAdmin || isEditor) loadData(activeTab);
+  }, [activeTab, isAdmin, isEditor]);
 
   const loadData = async (tab: Tab) => {
     console.log("Loading data for tab:", tab);
@@ -607,7 +607,7 @@ const AdminPage = () => {
     { id: "opinions" as Tab, label: "Opinião", icon: MessageSquare },
     { id: "breaking" as Tab, label: "Última Hora", icon: Zap },
     { id: "ai-discovery" as Tab, label: "Descoberta IA", icon: Sparkles },
-    { id: "users" as Tab, label: "Utilizadores", icon: Users },
+    ...(isAdmin ? [{ id: "users" as Tab, label: "Utilizadores", icon: Users }] : []),
   ];
 
   return (
