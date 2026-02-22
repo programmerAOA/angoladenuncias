@@ -125,6 +125,7 @@ const AdminPage = () => {
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [discoveryResults, setDiscoveryResults] = useState<any[]>([]);
   const [isDiscovering, setIsDiscovering] = useState(false);
+  const [discoveryFilter, setDiscoveryFilter] = useState("Tudo");
   const [aiWorkspace, setAiWorkspace] = useState({
     sourceUrl: "",
     sourceTitle: "",
@@ -442,46 +443,32 @@ const AdminPage = () => {
     }
   };
 
-  const handleDiscoverNews = async () => {
+  const handleDiscoverNews = async (filterOverride?: string) => {
     if (!discoveryQuery.trim()) return;
     setIsDiscovering(true);
-    console.log("Discovery: Searching for:", discoveryQuery);
+    const activeFilter = filterOverride || discoveryFilter;
+    console.log("Discovery: Searching for:", discoveryQuery, "filter:", activeFilter);
     try {
-      // Em produção, isto chamaria uma Edge Function que faz scraping ou usa NewsAPI
-      // Para demonstração, vamos simular resultados baseados na query
-      await new Promise(r => setTimeout(r, 1500));
-
-      const mockResults = [
-        {
-          title: "UNITA denuncia espionagem a jornalista angolano Teixeira Cândido",
-          source: "Angola24Horas",
-          date: "Hoje",
-          category: "Política",
-          snippet: "A UNITA denunciou a alegada espionagem ao jornalista Teixeira Cândido através do spyware Predator e exigiu uma investigação ao Ministério Público.",
-          content: "A UNITA denunciou hoje a alegada espionagem ao jornalista angolano Teixeira Cândido, utilizando ferramentas de vigilância avançadas. O partido exige uma investigação profunda por parte do Ministério Público para apurar as responsabilidades e proteger a liberdade de imprensa no país."
-        },
-        {
-          title: "Apenas 21% da população empregada em Angola está no setor formal",
-          source: "Correio Kianda",
-          date: "Hoje",
-          category: "Economia",
-          snippet: "Dados recentes do INE revelam que a grande maioria da força de trabalho angolana continua no setor informal, destacando desafios económicos.",
-          content: "Segundo o Instituto Nacional de Estatística (INE), apenas cerca de 21% dos angolanos empregados possuem um vínculo formal de trabalho. Este dado sublinha a enorme dependência da economia informal e a necessidade de políticas de formalização mais robustas."
-        },
-        {
-          title: "Entra em vigor cessar-fogo proposto por Angola para crise no Leste da RDC",
-          source: "Jornal de Angola",
-          date: "Hoje",
-          category: "Mundo",
-          snippet: "O acordo de cessar-fogo mediado por Angola entre o Governo congolês e o grupo M23 começou a ser implementado este sábado.",
-          content: "O cessar-fogo proposto pela mediação angolana para a crise no leste da República Democrática do Congo (RDC) entrou em vigor hoje. Apesar do início oficial, já existem relatos de trocas de acusações entre as partes envolvidas sobre alegadas violações do acordo."
+      const { data, error } = await supabase.functions.invoke('news-search', {
+        body: {
+          query: discoveryQuery,
+          filter: activeFilter,
+          max: 10
         }
-      ];
+      });
 
-      setDiscoveryResults(mockResults);
-      toast.success("Pesquisa OSINT concluída com 3 resultados.");
-    } catch (err) {
-      toast.error("Erro na descoberta de notícias.");
+      if (error) throw error;
+
+      if (data?.results && data.results.length > 0) {
+        setDiscoveryResults(data.results);
+        toast.success(`Pesquisa OSINT concluída com ${data.results.length} resultados.`);
+      } else {
+        setDiscoveryResults([]);
+        toast.info("Nenhum resultado encontrado. Tente outra pesquisa.");
+      }
+    } catch (err: any) {
+      console.error("Discovery error:", err);
+      toast.error("Erro na descoberta de notícias: " + (err?.message || "Erro desconhecido"));
     } finally {
       setIsDiscovering(false);
     }
@@ -527,14 +514,14 @@ const AdminPage = () => {
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
       console.error("AI Error:", err);
-      // Fallback para demonstração se a function não existir ainda
-      toast.warning("Erro na Edge Function. Usando simulação local...");
-      await new Promise(r => setTimeout(r, 2000));
+      toast.warning("A IA não está disponível. Verifique se a OPENAI_API_KEY está configurada no Supabase.");
+      // Fallback: usar o conteúdo original como base para edição manual
+      await new Promise(r => setTimeout(r, 500));
       setAiWorkspace({
         ...aiWorkspace,
-        adaptedTitle: `[${aiWorkspace.editorialLine}] ${aiWorkspace.sourceTitle}`,
-        adaptedContent: `Esta é uma versão reestruturada pela IA seguindo a linha editorial ${aiWorkspace.editorialLine}.\n\nO conteúdo original foi adaptado para manter o formato de notícia profissional, assegurando que os factos principais sobre ${aiWorkspace.sourceTitle} são preservados enquanto o tom é ajustado para ser mais ${aiWorkspace.editorialLine.toLowerCase()}.\n\n${aiWorkspace.sourceContent}`,
-        adaptedSummary: `Notícia adaptada sobre ${aiWorkspace.sourceTitle}.`
+        adaptedTitle: aiWorkspace.sourceTitle,
+        adaptedContent: aiWorkspace.sourceContent,
+        adaptedSummary: aiWorkspace.sourceContent.substring(0, 200) + (aiWorkspace.sourceContent.length > 200 ? "..." : "")
       });
     } finally {
       setIsAdapting(false);
@@ -1411,7 +1398,17 @@ const AdminPage = () => {
                   <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
                   <div className="flex gap-2">
                     {["Tudo", "Angola", "Mundo", "Política", "Finanças"].map(f => (
-                      <button key={f} className="text-[10px] px-2 py-0.5 bg-secondary text-muted-foreground border border-border hover:border-primary/50 transition-colors uppercase font-bold tracking-tighter">
+                      <button
+                        key={f}
+                        onClick={() => {
+                          setDiscoveryFilter(f);
+                          if (discoveryQuery.trim()) handleDiscoverNews(f);
+                        }}
+                        className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
+                          }`}
+                      >
                         {f}
                       </button>
                     ))}
