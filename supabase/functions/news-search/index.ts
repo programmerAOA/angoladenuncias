@@ -31,23 +31,34 @@ Deno.serve(async (req: Request) => {
         let url = '';
         const isAngolaFilter = filter === 'Angola' || !filter;
 
-        // Domain blacklist to avoid Brazil news leakage in Angola filter
-        const brBlacklist = [
+        // Domain blacklist (Mostly Brazilian and non-Angolan Portuguese sources)
+        const blacklist = [
             'uol.com.br', 'globo.com', 'terra.com.br', 'r7.com',
             'folha.uol.com.br', 'estadao.com.br', 'ig.com.br', 'metropoles.com',
-            'gazetadopovo.com.br', 'cnnbrasil.com.br'
+            'gazetadopovo.com.br', 'cnnbrasil.com.br', 'lance.com.br', 'espn.com.br',
+            'jn.pt', 'publico.pt', 'dn.pt', 'sicnoticias.pt', 'rtp.pt', 'iol.pt',
+            'maisfutebol.iol.pt', 'record.pt', 'abola.pt', 'ojogo.pt'
+        ];
+
+        // Whitelist for Angola priority
+        const angolaWhitelist = [
+            'angop.ao', 'jornaldeangola.ao', 'novojornal.co.ao', 'expansao.co.ao',
+            'angola24horas.com', 'club-k.net', 'folha8.net', 'jornalf8.net',
+            'angonoticias.com', 'platinaline.com', 'angorussia.com',
+            'operanewsapp.com', 'portal-ao.operanewsapp.com', 'imparcialpress.net',
+            'angolahoje.ao', 'menha.ao', 'valor-economico.co.ao', 'verangola.net',
+            'tpa.ao', 'rna.ao'
         ];
 
         if (isAngolaFilter) {
-            // Force "Angola" in the query if it's a generic search
-            const effectiveQuery = (!searchQuery || cleanQuery === 'notícias' || cleanQuery === 'recentes')
-                ? 'Angola'
-                : searchQuery;
+            // For Angola, we strictly require "Angola" in the query if not present
+            let effectiveQuery = searchQuery;
+            if (!cleanQuery.includes('angola')) {
+                effectiveQuery = searchQuery ? `Angola ${searchQuery}` : 'Angola';
+            }
 
-            // Use search with country parameter if possible, or just strict query
-            // country=ao is good but some international news about AO might not have it.
-            // We will combine: query with "Angola" + optional country parameter
-            url = `${baseUrl}/search?q=${encodeURIComponent(effectiveQuery)}&country=ao&lang=${lang}&max=${maxResults}&sortby=publishedAt&apikey=${apiKey}`;
+            // We still use country=ao as a hint, but we will filter results manually
+            url = `${baseUrl}/search?q=${encodeURIComponent(effectiveQuery)}&country=ao&lang=${lang}&max=${maxResults * 2}&sortby=publishedAt&apikey=${apiKey}`;
             console.log(`Searching strictly for Angola: ${effectiveQuery}`);
         } else {
             // Regular search for other filters
@@ -72,11 +83,38 @@ Deno.serve(async (req: Request) => {
 
         let articles = data.articles || [];
 
-        // Apply domain blacklist if it's the Angola filter
+        // Filtering and Prioritization logic
         if (isAngolaFilter) {
+            // 1. Filter out obvious Brazilian/Portuguese non-Angolan domains
             articles = articles.filter((article: any) => {
                 const articleUrl = (article.url || '').toLowerCase();
-                return !brBlacklist.some(domain => articleUrl.includes(domain));
+                const articleTitle = (article.title || '').toLowerCase();
+                const siteName = (article.source?.name || '').toLowerCase();
+
+                const isBlacklisted = blacklist.some(domain => articleUrl.includes(domain));
+                if (isBlacklisted) return false;
+
+                // 2. If it's in the whitelist, it's definitely in
+                const isWhitelisted = angolaWhitelist.some(domain => articleUrl.includes(domain));
+                if (isWhitelisted) return true;
+
+                // 3. If not in whitelist, it MUST mention Angola in title or be from a relevant source
+                // This avoids generic "Jornalista" news from random PT/BR sites that slipped through
+                const mentionsAngola = articleTitle.includes('angola') || (article.description || '').toLowerCase().includes('angola');
+
+                return mentionsAngola;
+            });
+
+            // Sort to prioritize whitelisted domains (Opera News, etc.)
+            articles.sort((a: any, b: any) => {
+                const urlA = (a.url || '').toLowerCase();
+                const urlB = (b.url || '').toLowerCase();
+                const isAWhitelisted = angolaWhitelist.some(domain => urlA.includes(domain));
+                const isBWhitelisted = angolaWhitelist.some(domain => urlB.includes(domain));
+
+                if (isAWhitelisted && !isBWhitelisted) return -1;
+                if (!isAWhitelisted && isBWhitelisted) return 1;
+                return 0; // Maintain date sort for same priority
             });
         }
 
@@ -84,7 +122,7 @@ Deno.serve(async (req: Request) => {
         const eightHoursInMs = 8 * 60 * 60 * 1000;
         const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
 
-        // First attempt: filter by 8 hours
+        // Time window filtering
         let filteredArticles = articles.filter((article: any) => {
             if (!article.publishedAt) return false;
             const pubDate = new Date(article.publishedAt);
@@ -103,7 +141,10 @@ Deno.serve(async (req: Request) => {
             }
         }
 
-        const results = filteredArticles.map((article: any) => {
+        // Limit to requested max
+        const finalArticles = filteredArticles.slice(0, max || maxResults);
+
+        const results = finalArticles.map((article: any) => {
             let category = 'Geral';
             const titleLower = (article.title || '').toLowerCase();
             const descLower = (article.description || '').toLowerCase();
@@ -145,7 +186,7 @@ Deno.serve(async (req: Request) => {
             JSON.stringify({
                 results: results,
                 total: results.length,
-                info: usingFallback ? "Exibindo notícias das últimas 24h para Angola (nenhum resultado em 8h)." : null
+                info: usingFallback ? "Exibindo notícias das últimas 24h (priorizando fontes de Angola)." : null
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
