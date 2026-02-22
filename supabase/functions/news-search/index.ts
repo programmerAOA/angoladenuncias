@@ -21,21 +21,19 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const maxResults = max || 10;
-        let searchQuery = query || 'Angola';
-
-        // Calcular data de 8 horas atrás
-        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString();
-
+        const searchQuery = query || 'Angola';
         const baseUrl = 'https://gnews.io/api/v4';
         const lang = 'pt';
+
+        // We fetch the most recent ones first WITHOUT the strict 'from' filter to avoid empty results from API.
+        // We will filter them internally to respect the 8h requirement.
+        const commonParams = `&lang=${lang}&max=10&sortby=publishedAt&apikey=${apiKey}`;
+
         let url = '';
-
-        const commonParams = `&lang=${lang}&max=${maxResults}&from=${eightHoursAgo}&apikey=${apiKey}`;
-
         switch (filter) {
             case 'Angola':
-                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery)}&country=ao${commonParams}`;
+                // Removed country=ao to increase chances of finding news in the last 8h
+                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery)}${commonParams}`;
                 break;
             case 'Mundo':
                 url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery)}${commonParams}`;
@@ -51,23 +49,31 @@ Deno.serve(async (req: Request) => {
                 break;
         }
 
-        console.log('GNews URL (with 8h filter):', url.replace(apiKey, '***'));
-
+        console.log(`Searching: ${searchQuery} | Filter: ${filter}`);
         const response = await fetch(url);
-        const rawText = await response.text();
+        const data = await response.json();
 
         if (!response.ok) {
-            console.error('GNews API error status:', response.status, rawText);
             return new Response(
-                JSON.stringify({ error: 'Erro na API de notícias: ' + response.status }),
+                JSON.stringify({ error: 'Erro na API GNews: ' + response.status, detail: data }),
                 { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
-        const data = JSON.parse(rawText);
         const articles = data.articles || [];
+        const now = new Date();
+        const eightHoursInMs = 8 * 60 * 60 * 1000;
 
-        const results = articles.map((article: any) => {
+        // Filter articles to only include those within the last 8 hours
+        const filteredArticles = articles.filter((article: any) => {
+            if (!article.publishedAt) return false;
+            const pubDate = new Date(article.publishedAt);
+            return (now.getTime() - pubDate.getTime()) <= eightHoursInMs;
+        });
+
+        console.log(`GNews total: ${articles.length} | Within 8h: ${filteredArticles.length}`);
+
+        const results = filteredArticles.map((article: any) => {
             let category = 'Geral';
             const titleLower = (article.title || '').toLowerCase();
             const descLower = (article.description || '').toLowerCase();
@@ -89,19 +95,9 @@ Deno.serve(async (req: Request) => {
                 category = 'Sociedade';
             }
 
-            let dateStr = 'Agora';
-            if (article.publishedAt) {
-                const pubDate = new Date(article.publishedAt);
-                const now = new Date();
-                const diffMs = now.getTime() - pubDate.getTime();
-                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-
-                if (diffHours < 1) {
-                    dateStr = 'Agora';
-                } else {
-                    dateStr = `Há ${diffHours}h`;
-                }
-            }
+            const pubDate = new Date(article.publishedAt);
+            const diffHours = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60));
+            const dateStr = diffHours < 1 ? 'Agora' : `Há ${diffHours}h`;
 
             return {
                 title: article.title || 'Sem título',
@@ -116,12 +112,12 @@ Deno.serve(async (req: Request) => {
         });
 
         return new Response(
-            JSON.stringify({ results: results, total: data.totalArticles || results.length }),
+            JSON.stringify({ results: results, total: results.length }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
 
     } catch (error) {
-        console.error('Error in news-search:', error);
+        console.error('Error:', error);
         return new Response(
             JSON.stringify({ error: error.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
