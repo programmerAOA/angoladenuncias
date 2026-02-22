@@ -24,14 +24,36 @@ Deno.serve(async (req: Request) => {
         let searchQuery = (query || '').trim();
         const cleanQuery = searchQuery.toLowerCase();
 
+        const isAngolaFilter = filter === 'Angola' || !filter;
+        const maxResults = max || 10;
+        const now = new Date();
+        const eightHoursInMs = 8 * 60 * 60 * 1000;
+        const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+
+        // --- 1. Fetch from GNews ---
         const baseUrl = 'https://gnews.io/api/v4';
         const lang = 'pt';
-        const maxResults = 10;
+        let gnewsUrl = '';
 
-        let url = '';
-        const isAngolaFilter = filter === 'Angola' || !filter;
+        if (isAngolaFilter) {
+            let effectiveQuery = searchQuery;
+            if (!cleanQuery.includes('angola')) {
+                effectiveQuery = searchQuery ? `Angola ${searchQuery}` : 'Angola';
+            }
+            gnewsUrl = `${baseUrl}/search?q=${encodeURIComponent(effectiveQuery)}&country=ao&lang=${lang}&max=20&sortby=publishedAt&apikey=${apiKey}`;
+        } else {
+            let filterPrefix = '';
+            if (filter === 'Política') filterPrefix = ' política';
+            if (filter === 'Finanças') filterPrefix = ' economia finanças';
+            const q = encodeURIComponent(searchQuery + filterPrefix);
+            gnewsUrl = `${baseUrl}/search?q=${q}&lang=${lang}&max=${maxResults}&sortby=publishedAt&apikey=${apiKey}`;
+        }
 
-        // Domain blacklist (Mostly Brazilian and non-Angolan Portuguese sources)
+        const gnewsResponse = await fetch(gnewsUrl);
+        const gnewsData = await gnewsResponse.json();
+        let gnewsArticles = gnewsData.articles || [];
+
+        // Blacklist/Whitelist logic for GNews
         const blacklist = [
             'uol.com.br', 'globo.com', 'terra.com.br', 'r7.com',
             'folha.uol.com.br', 'estadao.com.br', 'ig.com.br', 'metropoles.com',
@@ -39,155 +61,104 @@ Deno.serve(async (req: Request) => {
             'jn.pt', 'publico.pt', 'dn.pt', 'sicnoticias.pt', 'rtp.pt', 'iol.pt',
             'maisfutebol.iol.pt', 'record.pt', 'abola.pt', 'ojogo.pt'
         ];
-
-        // Whitelist for Angola priority
-        const angolaWhitelist = [
-            'angop.ao', 'jornaldeangola.ao', 'novojornal.co.ao', 'expansao.co.ao',
-            'angola24horas.com', 'club-k.net', 'folha8.net', 'jornalf8.net',
-            'angonoticias.com', 'platinaline.com', 'angorussia.com',
-            'operanewsapp.com', 'portal-ao.operanewsapp.com', 'imparcialpress.net',
-            'angolahoje.ao', 'menha.ao', 'valor-economico.co.ao', 'verangola.net',
-            'tpa.ao', 'rna.ao'
-        ];
+        const angolaWhitelist = ['angop.ao', 'jornaldeangola.ao', 'novojornal.co.ao', 'club-k.net', 'angola24horas.com'];
 
         if (isAngolaFilter) {
-            // For Angola, we strictly require "Angola" in the query if not present
-            let effectiveQuery = searchQuery;
-            if (!cleanQuery.includes('angola')) {
-                effectiveQuery = searchQuery ? `Angola ${searchQuery}` : 'Angola';
-            }
-
-            // We still use country=ao as a hint, but we will filter results manually
-            url = `${baseUrl}/search?q=${encodeURIComponent(effectiveQuery)}&country=ao&lang=${lang}&max=${maxResults * 2}&sortby=publishedAt&apikey=${apiKey}`;
-            console.log(`Searching strictly for Angola: ${effectiveQuery}`);
-        } else {
-            // Regular search for other filters
-            let filterPrefix = '';
-            if (filter === 'Política') filterPrefix = ' política';
-            if (filter === 'Finanças') filterPrefix = ' economia finanças';
-
-            const q = encodeURIComponent(searchQuery + filterPrefix);
-            url = `${baseUrl}/search?q=${q}&lang=${lang}&max=${maxResults}&sortby=publishedAt&apikey=${apiKey}`;
-            console.log(`Regular search: ${searchQuery} | filter: ${filter}`);
-        }
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        if (!response.ok) {
-            return new Response(
-                JSON.stringify({ error: 'Erro na API GNews: ' + response.status, detail: data }),
-                { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-        }
-
-        let articles = data.articles || [];
-
-        // Filtering and Prioritization logic
-        if (isAngolaFilter) {
-            // 1. Filter out obvious Brazilian/Portuguese non-Angolan domains
-            articles = articles.filter((article: any) => {
-                const articleUrl = (article.url || '').toLowerCase();
-                const articleTitle = (article.title || '').toLowerCase();
-                const siteName = (article.source?.name || '').toLowerCase();
-
-                const isBlacklisted = blacklist.some(domain => articleUrl.includes(domain));
+            gnewsArticles = gnewsArticles.filter((article: any) => {
+                const url = (article.url || '').toLowerCase();
+                const title = (article.title || '').toLowerCase();
+                const isBlacklisted = blacklist.some(d => url.includes(d));
                 if (isBlacklisted) return false;
-
-                // 2. If it's in the whitelist, it's definitely in
-                const isWhitelisted = angolaWhitelist.some(domain => articleUrl.includes(domain));
+                const isWhitelisted = angolaWhitelist.some(d => url.includes(d));
                 if (isWhitelisted) return true;
-
-                // 3. If not in whitelist, it MUST mention Angola in title or be from a relevant source
-                // This avoids generic "Jornalista" news from random PT/BR sites that slipped through
-                const mentionsAngola = articleTitle.includes('angola') || (article.description || '').toLowerCase().includes('angola');
-
-                return mentionsAngola;
-            });
-
-            // Sort to prioritize whitelisted domains (Opera News, etc.)
-            articles.sort((a: any, b: any) => {
-                const urlA = (a.url || '').toLowerCase();
-                const urlB = (b.url || '').toLowerCase();
-                const isAWhitelisted = angolaWhitelist.some(domain => urlA.includes(domain));
-                const isBWhitelisted = angolaWhitelist.some(domain => urlB.includes(domain));
-
-                if (isAWhitelisted && !isBWhitelisted) return -1;
-                if (!isAWhitelisted && isBWhitelisted) return 1;
-                return 0; // Maintain date sort for same priority
+                return title.includes('angola') || (article.description || '').toLowerCase().includes('angola');
             });
         }
 
-        const now = new Date();
-        const eightHoursInMs = 8 * 60 * 60 * 1000;
-        const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
+        // --- 2. Fetch from Opera News RSS (if Angola filter) ---
+        let operaArticles: any[] = [];
+        if (isAngolaFilter) {
+            try {
+                const operaRssUrl = "https://blogs.opera.com/mobile/category/opera-news/feed/";
+                const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(operaRssUrl)}`;
+                const operaResponse = await fetch(rss2JsonUrl);
+                const operaData = await operaResponse.json();
+
+                if (operaData.status === 'ok') {
+                    operaArticles = (operaData.items || []).map((item: any) => ({
+                        title: item.title,
+                        description: item.description || item.content,
+                        content: item.content || item.description,
+                        url: item.link,
+                        image: item.enclosure?.link || item.thumbnail || '',
+                        publishedAt: item.pubDate,
+                        source: { name: 'Opera News' }
+                    }));
+                    console.log(`Fetched ${operaArticles.length} articles from Opera News RSS`);
+                }
+            } catch (e) {
+                console.error('Error fetching Opera News RSS:', e);
+            }
+        }
+
+        // --- 3. Merge and Filter by Time ---
+        let combinedArticles = [...operaArticles, ...gnewsArticles];
+
+        // Deduplicate by URL
+        const seenUrls = new Set();
+        combinedArticles = combinedArticles.filter(a => {
+            if (seenUrls.has(a.url)) return false;
+            seenUrls.add(a.url);
+            return true;
+        });
 
         // Time window filtering
-        let filteredArticles = articles.filter((article: any) => {
-            if (!article.publishedAt) return false;
-            const pubDate = new Date(article.publishedAt);
+        let filtered = combinedArticles.filter((a: any) => {
+            if (!a.publishedAt) return false;
+            const pubDate = new Date(a.publishedAt);
             return (now.getTime() - pubDate.getTime()) <= eightHoursInMs;
         });
 
-        let usingFallback = false;
-        // Fallback: if 8h is empty, try 24h
-        if (filteredArticles.length === 0 && articles.length > 0) {
-            filteredArticles = articles.filter((article: any) => {
-                const pubDate = new Date(article.publishedAt);
+        let info = null;
+        if (filtered.length === 0 && combinedArticles.length > 0) {
+            filtered = combinedArticles.filter((a: any) => {
+                const pubDate = new Date(a.publishedAt);
                 return (now.getTime() - pubDate.getTime()) <= twentyFourHoursInMs;
             });
-            if (filteredArticles.length > 0) {
-                usingFallback = true;
+            if (filtered.length > 0) {
+                info = "Exibindo notícias das últimas 24h (nenhum resultado em 8h).";
             }
         }
 
-        // Limit to requested max
-        const finalArticles = filteredArticles.slice(0, max || maxResults);
+        // Sort by date (newest first)
+        filtered.sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-        const results = finalArticles.map((article: any) => {
+        // --- 4. Format Results ---
+        const results = filtered.slice(0, maxResults).map((article: any) => {
             let category = 'Geral';
-            const titleLower = (article.title || '').toLowerCase();
-            const descLower = (article.description || '').toLowerCase();
-            const combined = titleLower + ' ' + descLower;
-
-            if (combined.includes('polític') || combined.includes('governo') || combined.includes('presidente') || combined.includes('parlamento') || combined.includes('eleição') || combined.includes('deputado')) {
-                category = 'Política';
-            } else if (combined.includes('econom') || combined.includes('finanç') || combined.includes('banco') || combined.includes('inflação') || combined.includes('petróleo') || combined.includes('kwanza')) {
-                category = 'Economia';
-            } else if (combined.includes('desport') || combined.includes('futebol') || combined.includes('seleção') || combined.includes('girabola')) {
-                category = 'Desporto';
-            } else if (combined.includes('tecnolog') || combined.includes('digital') || combined.includes('internet')) {
-                category = 'Tecnologia';
-            } else if (combined.includes('saúde') || combined.includes('hospital') || combined.includes('doença') || combined.includes('médic')) {
-                category = 'Saúde';
-            } else if (combined.includes('cultur') || combined.includes('music') || combined.includes('festival') || combined.includes('cinema')) {
-                category = 'Cultura';
-            } else if (combined.includes('socied') || combined.includes('educação') || combined.includes('escola') || combined.includes('juventude')) {
-                category = 'Sociedade';
-            }
+            const text = `${article.title} ${article.description}`.toLowerCase();
+            if (text.includes('polític') || text.includes('governo')) category = 'Política';
+            else if (text.includes('econom') || text.includes('finanç')) category = 'Finanças';
+            else if (text.includes('futebol') || text.includes('desporto')) category = 'Desporto';
 
             const pubDate = new Date(article.publishedAt);
             const diffHrs = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60));
             const dateStr = diffHrs < 1 ? 'Agora' : `Há ${diffHrs}h`;
 
             return {
-                title: article.title || 'Sem título',
-                source: article.source?.name || 'Fonte Desconhecida',
+                title: article.title,
+                source: article.source?.name || 'Fonte',
                 date: dateStr,
                 category: category,
                 snippet: article.description || '',
                 content: article.content || article.description || '',
-                url: article.url || '',
+                url: article.url,
                 image: article.image || ''
             };
         });
 
         return new Response(
-            JSON.stringify({
-                results: results,
-                total: results.length,
-                info: usingFallback ? "Exibindo notícias das últimas 24h (priorizando fontes de Angola)." : null
-            }),
+            JSON.stringify({ results, total: results.length, info }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
 
