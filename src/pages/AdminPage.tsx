@@ -1386,7 +1386,7 @@ const AdminPage = () => {
                     className="flex-1 bg-secondary border border-border text-foreground px-4 py-2 text-sm focus:outline-none focus:border-primary"
                   />
                   <button
-                    onClick={handleDiscoverNews}
+                    onClick={() => handleDiscoverNews()}
                     disabled={isDiscovering}
                     className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
                   >
@@ -1405,8 +1405,8 @@ const AdminPage = () => {
                           if (discoveryQuery.trim()) handleDiscoverNews(f);
                         }}
                         className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
                           }`}
                       >
                         {f}
