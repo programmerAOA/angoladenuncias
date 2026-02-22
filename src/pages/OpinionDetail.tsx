@@ -14,6 +14,31 @@ const OpinionDetail = () => {
     const [opinion, setOpinion] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
+    const handleShare = async () => {
+        if (!opinion) return;
+
+        const shareData = {
+            title: opinion.title,
+            text: `Opinião de ${opinion.author}`,
+            url: window.location.href,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+                toast.success("Opinião partilhada!");
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copiado para a área de transferência!");
+            }
+        } catch (err) {
+            console.error("Error sharing:", err);
+            if ((err as Error).name !== 'AbortError') {
+                toast.error("Erro ao partilhar opinião.");
+            }
+        }
+    };
+
     useEffect(() => {
         const fetchOpinion = async () => {
             setLoading(true);
@@ -92,8 +117,11 @@ const OpinionDetail = () => {
 
                     <div className="mt-12 pt-8 border-t border-border flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
-                                <Share2 className="w-4 h-4" /> Partilhar opinião
+                            <button
+                                onClick={handleShare}
+                                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group"
+                            >
+                                <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" /> Partilhar opinião
                             </button>
                         </div>
                     </div>

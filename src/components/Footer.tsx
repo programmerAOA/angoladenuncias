@@ -89,9 +89,12 @@ const Footer = () => {
         <div className="section-divider my-8" />
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-heading font-black text-xl text-foreground uppercase tracking-tight">
-            Sem Filtros
-          </span>
+          <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
+            <img src="/logo.png" alt="Sem Filtros" className="h-10 w-auto object-contain" />
+            <span className="font-heading font-black text-xl text-foreground uppercase tracking-tight ml-2 hidden sm:inline">
+              Sem Filtros
+            </span>
+          </div>
           <span className="text-xs text-muted-foreground">
             © 2026 Sem Filtros. Todos os direitos reservados.
           </span>

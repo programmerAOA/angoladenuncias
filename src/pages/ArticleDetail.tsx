@@ -14,6 +14,32 @@ const ArticleDetail = () => {
     const [article, setArticle] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
+    const handleShare = async () => {
+        if (!article) return;
+
+        const shareData = {
+            title: article.title,
+            text: article.summary || article.title,
+            url: window.location.href,
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+                toast.success("Artigo partilhado!");
+            } else {
+                await navigator.clipboard.writeText(window.location.href);
+                toast.success("Link copiado para a área de transferência!");
+            }
+        } catch (err) {
+            console.error("Error sharing:", err);
+            // Don't show error if user cancelled share menu
+            if ((err as Error).name !== 'AbortError') {
+                toast.error("Erro ao partilhar artigo.");
+            }
+        }
+    };
+
     useEffect(() => {
         const fetchArticle = async () => {
             setLoading(true);
@@ -76,7 +102,11 @@ const ArticleDetail = () => {
                             <Calendar className="w-4 h-4" />
                             <span className="text-sm">{formatRelativeDate(article.created_at)}</span>
                         </div>
-                        <button className="ml-auto text-muted-foreground hover:text-primary transition-colors">
+                        <button
+                            onClick={handleShare}
+                            className="ml-auto text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"
+                            title="Partilhar artigo"
+                        >
                             <Share2 className="w-5 h-5" />
                         </button>
                     </div>

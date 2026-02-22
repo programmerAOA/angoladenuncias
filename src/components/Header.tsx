@@ -120,15 +120,27 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
           {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
 
-        <h1
+        <div
           onClick={() => {
             navigate("/");
             onCategoryChange?.("Destaque");
           }}
-          className="font-heading text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-foreground mx-auto lg:mx-0 uppercase cursor-pointer"
+          className="flex items-center mx-auto lg:mx-0 cursor-pointer"
         >
-          Sem Filtros
-        </h1>
+          <img
+            src="/logo.png"
+            alt="Sem Filtros"
+            className="h-12 sm:h-16 md:h-20 w-auto object-contain transition-transform hover:scale-105"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.display = 'none';
+              const sib = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+              if (sib) sib.style.display = 'block';
+            }}
+          />
+          <h1 className="font-heading text-2xl sm:text-3xl md:text-3xl font-black tracking-tight text-foreground uppercase hidden">
+            Sem Filtros
+          </h1>
+        </div>
 
         <div className="flex items-center gap-2">
           {/* Campo de pesquisa expandível */}
