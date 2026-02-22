@@ -574,13 +574,13 @@ const AdminPage = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!isAdmin && !isEditor) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 text-center">
         <Shield className="w-12 h-12 text-destructive mb-4" />
         <h1 className="text-xl font-bold text-foreground mb-2">Acesso Negado</h1>
         <p className="text-muted-foreground text-sm mb-6 max-w-xs">
-          Não tem permissões de administrador. Se acabou de as receber, experimente reiniciar a sessão.
+          Não tem permissões de administrador ou editor. Se acabou de as receber, experimente reiniciar a sessão.
         </p>
         <div className="flex flex-col gap-3">
           <button
