@@ -21,35 +21,45 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const searchQuery = query || 'Angola';
+        let searchQuery = (query || '').trim();
+        const cleanQuery = searchQuery.toLowerCase();
+
         const baseUrl = 'https://gnews.io/api/v4';
         const lang = 'pt';
-
-        // We fetch the most recent ones first WITHOUT the strict 'from' filter to avoid empty results from API.
-        // We will filter them internally to respect the 8h requirement.
-        const commonParams = `&lang=${lang}&max=10&sortby=publishedAt&apikey=${apiKey}`;
+        const maxResults = 10;
 
         let url = '';
-        switch (filter) {
-            case 'Angola':
-                // Removed country=ao to increase chances of finding news in the last 8h
-                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery)}${commonParams}`;
-                break;
-            case 'Mundo':
-                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery)}${commonParams}`;
-                break;
-            case 'Política':
-                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery + ' política')}${commonParams}`;
-                break;
-            case 'Finanças':
-                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery + ' economia finanças')}${commonParams}`;
-                break;
-            default:
-                url = `${baseUrl}/search?q=${encodeURIComponent(searchQuery)}${commonParams}`;
-                break;
+        const isAngolaFilter = filter === 'Angola' || !filter;
+
+        // Domain blacklist to avoid Brazil news leakage in Angola filter
+        const brBlacklist = [
+            'uol.com.br', 'globo.com', 'terra.com.br', 'r7.com',
+            'folha.uol.com.br', 'estadao.com.br', 'ig.com.br', 'metropoles.com',
+            'gazetadopovo.com.br', 'cnnbrasil.com.br'
+        ];
+
+        if (isAngolaFilter) {
+            // Force "Angola" in the query if it's a generic search
+            const effectiveQuery = (!searchQuery || cleanQuery === 'notícias' || cleanQuery === 'recentes')
+                ? 'Angola'
+                : searchQuery;
+
+            // Use search with country parameter if possible, or just strict query
+            // country=ao is good but some international news about AO might not have it.
+            // We will combine: query with "Angola" + optional country parameter
+            url = `${baseUrl}/search?q=${encodeURIComponent(effectiveQuery)}&country=ao&lang=${lang}&max=${maxResults}&sortby=publishedAt&apikey=${apiKey}`;
+            console.log(`Searching strictly for Angola: ${effectiveQuery}`);
+        } else {
+            // Regular search for other filters
+            let filterPrefix = '';
+            if (filter === 'Política') filterPrefix = ' política';
+            if (filter === 'Finanças') filterPrefix = ' economia finanças';
+
+            const q = encodeURIComponent(searchQuery + filterPrefix);
+            url = `${baseUrl}/search?q=${q}&lang=${lang}&max=${maxResults}&sortby=publishedAt&apikey=${apiKey}`;
+            console.log(`Regular search: ${searchQuery} | filter: ${filter}`);
         }
 
-        console.log(`Searching: ${searchQuery} | Filter: ${filter}`);
         const response = await fetch(url);
         const data = await response.json();
 
@@ -60,18 +70,38 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        const articles = data.articles || [];
+        let articles = data.articles || [];
+
+        // Apply domain blacklist if it's the Angola filter
+        if (isAngolaFilter) {
+            articles = articles.filter((article: any) => {
+                const articleUrl = (article.url || '').toLowerCase();
+                return !brBlacklist.some(domain => articleUrl.includes(domain));
+            });
+        }
+
         const now = new Date();
         const eightHoursInMs = 8 * 60 * 60 * 1000;
+        const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
 
-        // Filter articles to only include those within the last 8 hours
-        const filteredArticles = articles.filter((article: any) => {
+        // First attempt: filter by 8 hours
+        let filteredArticles = articles.filter((article: any) => {
             if (!article.publishedAt) return false;
             const pubDate = new Date(article.publishedAt);
             return (now.getTime() - pubDate.getTime()) <= eightHoursInMs;
         });
 
-        console.log(`GNews total: ${articles.length} | Within 8h: ${filteredArticles.length}`);
+        let usingFallback = false;
+        // Fallback: if 8h is empty, try 24h
+        if (filteredArticles.length === 0 && articles.length > 0) {
+            filteredArticles = articles.filter((article: any) => {
+                const pubDate = new Date(article.publishedAt);
+                return (now.getTime() - pubDate.getTime()) <= twentyFourHoursInMs;
+            });
+            if (filteredArticles.length > 0) {
+                usingFallback = true;
+            }
+        }
 
         const results = filteredArticles.map((article: any) => {
             let category = 'Geral';
@@ -96,8 +126,8 @@ Deno.serve(async (req: Request) => {
             }
 
             const pubDate = new Date(article.publishedAt);
-            const diffHours = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60));
-            const dateStr = diffHours < 1 ? 'Agora' : `Há ${diffHours}h`;
+            const diffHrs = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60));
+            const dateStr = diffHrs < 1 ? 'Agora' : `Há ${diffHrs}h`;
 
             return {
                 title: article.title || 'Sem título',
@@ -112,7 +142,11 @@ Deno.serve(async (req: Request) => {
         });
 
         return new Response(
-            JSON.stringify({ results: results, total: results.length }),
+            JSON.stringify({
+                results: results,
+                total: results.length,
+                info: usingFallback ? "Exibindo notícias das últimas 24h para Angola (nenhum resultado em 8h)." : null
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
 
