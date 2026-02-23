@@ -12,6 +12,13 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/api/radio-stream": {
+        target: "http://102.222.150.46:8800/GirassolFM",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/radio-stream/, ""),
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

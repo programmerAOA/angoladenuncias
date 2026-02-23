@@ -4,8 +4,9 @@ import { toast } from "sonner";
 
 // Lista de URLs possíveis para a Rádio Girassol
 const STREAM_SOURCES = [
+    "/api/radio-stream",
     "http://102.222.150.46:8800/GirassolFM",
-    "https://stream.redegirassol.com/fm", // Placeholder para URL HTTPS futura
+    "https://stream.redegirassol.com/fm",
 ];
 
 const RadioPlayer = () => {

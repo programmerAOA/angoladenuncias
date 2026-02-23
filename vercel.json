@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/api/radio-stream",
+            "destination": "http://102.222.150.46:8800/GirassolFM"
+        },
+        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
