@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 Deno.serve(async (req) => {
-    // CORS header
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -14,29 +13,41 @@ Deno.serve(async (req) => {
     try {
         const { content, title, line } = await req.json();
 
+        // Check for OpenAI Key
         const apiKey = Deno.env.get("OPENAI_API_KEY");
-
         if (!apiKey) {
             console.error("Missing OPENAI_API_KEY");
             return new Response(
-                JSON.stringify({ error: "Configuração de IA em falta (API Key não encontrada)." }),
+                JSON.stringify({ error: "Configuração de IA em falta (OPENAI_API_KEY não encontrada no Supabase)." }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
-        // Prompt engineering based on the requested editorial line
+        // Clean content from common truncation markers
+        let cleanContent = (content || '').replace(/\[\+\d+\s+chars\]/gi, '').replace(/\[\d+\s+chars\]/gi, '').trim();
+
         const prompt = `
-      Você é um editor de notícias experiente. Sua tarefa é reescrever a notícia fornecida seguindo a linha editorial: "${line}".
+      Você é um jornalista sénior e editor de notícias para um portal em Angola. 
+      Sua tarefa é reescrever e EXPANDIR a notícia fornecida.
       
-      REGRAS:
-      1. Mantenha o formato de notícia profissional (Título, Resumo, Conteúdo).
-      2. Adapte o tom para ser ${line}.
-      3. Não perca os factos principais.
-      4. O idioma deve ser Português de Angola.
-      5. Retorne um JSON com os campos: "title", "summary", "content".
+      LINHA EDITORIAL: "${line}"
+      
+      IMPORTANTE:
+      - O conteúdo original pode estar incompleto ou truncado. Sua missão é DESENVOLVER a notícia, criando um texto completo, profissional e informativo.
+      - Use seu conhecimento geral para adicionar contexto relevante se necessário, mas mantenha a fidelidade aos factos centrais.
+      - O texto final deve ter pelo menos 4 a 6 parágrafos bem estruturados.
+      - O tom deve ser adequado para um portal de notícias de prestígio em Angola.
+      - REMOVA qualquer menção a "[+... chars]" ou marcadores de truncagem.
+
+      ESTRUTURA DE RETORNO (JSON):
+      {
+        "title": "Título impactante em Português de Angola",
+        "summary": "Um resumo atraente (2-3 frases)",
+        "content": "O corpo completo da notícia, dividido em parágrafos HTML (<p>...<p>)"
+      }
 
       TÍTULO ORIGINAL: ${title}
-      CONTEÚDO ORIGINAL: ${content}
+      CONTEÚDO ORIGINAL: ${cleanContent}
     `;
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -48,14 +59,24 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 model: "gpt-4o-mini",
                 messages: [
-                    { role: "system", content: "Você é um assistente especializado em jornalismo e edição de notícias." },
+                    { role: "system", content: "Você é um assistente especializado em jornalismo angolano. Você sempre responde com JSON válido." },
                     { role: "user", content: prompt }
                 ],
                 response_format: { type: "json_object" }
             }),
         });
 
+        if (!response.ok) {
+            const errorMsg = await response.text();
+            throw new Error(`OpenAI API Error: ${response.status} - ${errorMsg}`);
+        }
+
         const aiData = await response.json();
+
+        if (!aiData.choices || aiData.choices.length === 0) {
+            throw new Error("A IA não retornou nenhuma resposta válida.");
+        }
+
         const result = JSON.parse(aiData.choices[0].message.content);
 
         return new Response(JSON.stringify(result), {
@@ -64,9 +85,10 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
+        console.error('ai-rewrite error:', error);
         return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
+            status: 500,
         });
     }
 });
