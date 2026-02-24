@@ -108,11 +108,11 @@ const Index = () => {
     });
   }, [articles, selectedCategory, searchQuery]);
 
-  // Artigo em destaque (o mais recente da lista geral)
-  const heroArticle = articles.length > 0 ? articles[0] : null;
-  const sideArticles = articles.slice(1, 5);
-  const gridTopArticles = articles.slice(5, 9);
-  const gridLatestArticles = articles.slice(9);
+  // Artigos para o slideshow hero (os 5 mais recentes)
+  const heroArticles = articles.slice(0, 5);
+  const sideArticles = articles.slice(5, 9);
+  const gridTopArticles = articles.slice(9, 13);
+  const gridLatestArticles = articles.slice(13);
 
   return (
     <div className="min-h-screen bg-background">
@@ -197,7 +197,7 @@ const Index = () => {
           </div>
         ) : (
           <>
-            <HeroSection heroArticle={heroArticle} sideArticles={sideArticles} />
+            <HeroSection heroArticles={heroArticles} sideArticles={sideArticles} />
             <VideoSection videos={videos} />
             <NewsGrid
               topArticles={gridTopArticles}

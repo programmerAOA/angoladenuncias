@@ -1,5 +1,7 @@
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import NewsCard from "./NewsCard";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Article {
   id: string;
@@ -12,44 +14,104 @@ interface Article {
 }
 
 interface HeroSectionProps {
-  heroArticle?: Article | null;
+  heroArticles?: Article[];
   sideArticles?: Article[];
 }
 
-const HeroSection = ({ heroArticle, sideArticles = [] }: HeroSectionProps) => {
+const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps) => {
   const navigate = useNavigate();
+  const [current, setCurrent] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
 
-  if (!heroArticle) return null;
+  const count = heroArticles.length;
+
+  // Auto-slide every 5s, pause on hover
+  useEffect(() => {
+    if (count <= 1 || isHovering) return;
+    const interval = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % count);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [count, isHovering]);
+
+  const goTo = useCallback((dir: number) => {
+    setCurrent((prev) => (prev + dir + count) % count);
+  }, [count]);
+
+  if (count === 0) return null;
+
+  const article = heroArticles[current];
 
   return (
     <section className="container py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main hero */}
+        {/* Main hero slideshow */}
         <div
-          className="lg:col-span-2 group cursor-pointer"
-          onClick={() => navigate(`/article/${heroArticle.id}`)}
+          className="lg:col-span-2 relative group"
+          onMouseEnter={() => setIsHovering(true)}
+          onMouseLeave={() => setIsHovering(false)}
         >
-          <div className="overflow-hidden">
-            <img
-              src={heroArticle.image}
-              alt={heroArticle.title}
-              className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          </div>
-          <div className="pt-4">
-            <span className="news-category-badge mb-3 inline-block">{heroArticle.category}</span>
-            <h2 className="news-headline news-headline-hover text-2xl sm:text-3xl md:text-4xl">
-              {heroArticle.title}
-            </h2>
-            <p className="text-muted-foreground mt-3 text-sm sm:text-base leading-relaxed max-w-2xl">
-              {heroArticle.summary}
-            </p>
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-xs text-muted-foreground font-medium">{heroArticle.author}</span>
-              <span className="text-muted-foreground">·</span>
-              <span className="news-timestamp">{heroArticle.timestamp}</span>
+          <div
+            className="cursor-pointer"
+            onClick={() => navigate(`/article/${article.id}`)}
+          >
+            <div className="overflow-hidden relative">
+              <img
+                key={article.id}
+                src={article.image}
+                alt={article.title}
+                className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500 animate-fade-in"
+              />
+              {/* Gradient overlay for text legibility */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              {/* Text overlay on image */}
+              <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+                <span className="news-category-badge mb-2 inline-block">{article.category}</span>
+                <h2 className="text-white font-heading font-black text-xl sm:text-2xl md:text-3xl leading-tight drop-shadow-lg">
+                  {article.title}
+                </h2>
+                <p className="text-white/80 mt-2 text-sm leading-relaxed max-w-2xl line-clamp-2 drop-shadow">
+                  {article.summary}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-white/70 font-medium">{article.author}</span>
+                  <span className="text-white/50">·</span>
+                  <span className="text-xs text-white/60">{article.timestamp}</span>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* Navigation arrows */}
+          {count > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); goTo(-1); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 backdrop-blur-sm text-white flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); goTo(1); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-black/50 backdrop-blur-sm text-white flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/70"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              {/* Slide indicators */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                {heroArticles.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
+                    className={`h-1 rounded-full transition-all duration-300 ${i === current
+                        ? "w-6 bg-primary"
+                        : "w-2 bg-white/50 hover:bg-white/80"
+                      }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
         {/* Side articles */}
