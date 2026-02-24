@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import NewsCard from "./NewsCard";
+import AdCarousel from "./AdCarousel";
+import AdVerticalVideo from "./AdVerticalVideo";
 import { MessageSquare } from "lucide-react";
 
 interface Article {
@@ -51,7 +53,7 @@ const NewsGrid = ({
 
       <div className="section-divider my-10" />
 
-      {/* Two column: Latest + Opinion */}
+      {/* Two column: Latest + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Latest news */}
         <section className="lg:col-span-2">
@@ -64,8 +66,12 @@ const NewsGrid = ({
           ))}
         </section>
 
-        {/* Opinion */}
+        {/* Sidebar: Carousel + Opinion + Vertical Video */}
         <aside className="border-t lg:border-t-0 lg:border-l border-border lg:pl-6 pt-6 lg:pt-0">
+          {/* Ad Carousel */}
+          <AdCarousel />
+
+          {/* Opinion */}
           <div className="flex items-center gap-3 mb-6">
             <MessageSquare className="w-4 h-4 text-primary" />
             <h2 className="text-xl font-heading font-bold text-foreground">Opinião</h2>
@@ -87,6 +93,11 @@ const NewsGrid = ({
                 </div>
               </article>
             ))}
+          </div>
+
+          {/* Ad Vertical Video */}
+          <div className="mt-6">
+            <AdVerticalVideo />
           </div>
         </aside>
       </div>

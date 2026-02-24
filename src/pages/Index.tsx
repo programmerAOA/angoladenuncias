@@ -6,6 +6,7 @@ import NewsGrid from "@/components/NewsGrid";
 import VideoSection, { VideoItem } from "@/components/VideoSection";
 import Footer from "@/components/Footer";
 import RadioPlayer from "@/components/RadioPlayer";
+import AdBanner from "@/components/AdBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { NewsArticle } from "@/components/NewsCard";
@@ -19,6 +20,7 @@ const Index = () => {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [opinions, setOpinions] = useState<any[]>([]);
   const [breakingHeadlines, setBreakingHeadlines] = useState<string[]>([]);
+  const [tickerSpeed, setTickerSpeed] = useState(30);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,6 +67,21 @@ const Index = () => {
           setBreakingHeadlines(breakingRes.data.map((b: any) => b.text));
         }
 
+        console.log("Index: Carregar configurações do ticker...");
+        const { data: tickerSettings } = await supabase
+          .from("system_settings")
+          .select("value")
+          .eq("key", "ticker")
+          .single();
+
+        if (tickerSettings?.value && typeof tickerSettings.value === 'object') {
+          const value = tickerSettings.value as any;
+          if (value.speed) {
+            console.log("Index: Velocidade do ticker configurada para:", value.speed);
+            setTickerSpeed(Number(value.speed));
+          }
+        }
+
         console.log("Index: Carregamento completo.");
       } catch (error) {
         console.error("Index: Erro de carregamento fatal:", error);
@@ -104,7 +121,8 @@ const Index = () => {
         onCategoryChange={setSelectedCategory}
         onSearch={setSearchQuery}
       />
-      <BreakingNewsTicker headlines={breakingHeadlines} />
+      <BreakingNewsTicker headlines={breakingHeadlines} speed={tickerSpeed} />
+      <AdBanner slot="banner_top" />
       <main>
         {loading ? (
           <div className="container py-20 text-center">
@@ -189,6 +207,7 @@ const Index = () => {
           </>
         )}
       </main>
+      <AdBanner slot="banner_bottom" />
       <Footer />
       <RadioPlayer />
     </div>

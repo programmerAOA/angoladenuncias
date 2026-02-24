@@ -56,6 +56,45 @@ export type Database = {
           }
         ]
       }
+      advertisements: {
+        Row: {
+          id: string
+          slot: string
+          title: string
+          image_url: string | null
+          video_url: string | null
+          link_url: string | null
+          display_order: number
+          active: boolean | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slot: string
+          title: string
+          image_url?: string | null
+          video_url?: string | null
+          link_url?: string | null
+          display_order?: number
+          active?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slot?: string
+          title?: string
+          image_url?: string | null
+          video_url?: string | null
+          link_url?: string | null
+          display_order?: number
+          active?: boolean | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       breaking_news: {
         Row: {
           active: boolean | null
@@ -245,6 +284,27 @@ export type Database = {
           updated_at?: string
           video_url?: string
           views?: number | null
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          id: string
+          key: string
+          value: Json
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          value?: Json
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          value?: Json
+          updated_at?: string
         }
         Relationships: []
       }

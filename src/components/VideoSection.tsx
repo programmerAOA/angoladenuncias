@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Play, Clock, Eye } from "lucide-react";
 import { getYoutubeId } from "@/lib/utils";
+import Hls from "hls.js";
 
 export interface VideoItem {
   id: string;
@@ -18,6 +19,50 @@ interface VideoSectionProps {
   videos?: any[];
 }
 
+/** Detecta o tipo de URL do vídeo */
+const getVideoType = (url: string): "youtube" | "hls" | "direct" | "unknown" => {
+  if (!url) return "unknown";
+  if (getYoutubeId(url)) return "youtube";
+  if (url.includes(".m3u8")) return "hls";
+  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return "direct";
+  return "unknown";
+};
+
+/** Componente interno para reproduzir HLS */
+const HlsPlayer = ({ src, title }: { src: string; title: string }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls();
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => { });
+      });
+      return () => hls.destroy();
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari suporta HLS nativamente
+      video.src = src;
+      video.addEventListener("loadedmetadata", () => {
+        video.play().catch(() => { });
+      });
+    }
+  }, [src]);
+
+  return (
+    <video
+      ref={videoRef}
+      controls
+      className="w-full h-full object-contain bg-black"
+      title={title}
+    />
+  );
+};
+
 const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const [featuredVideo, setFeaturedVideo] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
@@ -34,6 +79,46 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   // Extrair ID do vídeo se for YouTube
   const rawUrl = featuredVideo.video_url || featuredVideo.videoUrl || "";
   const youtubeId = getYoutubeId(rawUrl);
+  const videoType = getVideoType(rawUrl);
+
+  /** Renderiza o player correto com base no tipo de URL */
+  const renderPlayer = () => {
+    if (videoType === "youtube" && youtubeId) {
+      return (
+        <iframe
+          src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
+          title={featuredVideo.title}
+          className="w-full h-full border-0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+    if (videoType === "hls") {
+      return <HlsPlayer src={rawUrl} title={featuredVideo.title} />;
+    }
+    if (videoType === "direct") {
+      return (
+        <video
+          src={rawUrl}
+          controls
+          autoPlay
+          className="w-full h-full object-contain bg-black"
+          title={featuredVideo.title}
+        />
+      );
+    }
+    // Fallback: tentar como vídeo direto
+    return (
+      <video
+        src={rawUrl}
+        controls
+        autoPlay
+        className="w-full h-full object-contain bg-black"
+        title={featuredVideo.title}
+      />
+    );
+  };
 
   return (
     <section className="bg-secondary border-y border-border py-10">
@@ -54,14 +139,8 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
           {/* Featured player */}
           <div className="lg:col-span-2">
             <div className="relative bg-background overflow-hidden group cursor-pointer aspect-video shadow-2xl">
-              {playing && youtubeId ? (
-                <iframe
-                  src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
-                  title={featuredVideo.title}
-                  className="w-full h-full border-0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+              {playing ? (
+                renderPlayer()
               ) : (
                 <div onClick={() => setPlaying(true)} className="relative w-full h-full">
                   <img

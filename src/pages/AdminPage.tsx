@@ -3,14 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap,
+  LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads";
 
 interface Article {
   id: string;
@@ -93,6 +93,15 @@ const AdminPage = () => {
   const [savingVideo, setSavingVideo] = useState(false);
   const [savingOpinion, setSavingOpinion] = useState(false);
   const [savingBreaking, setSavingBreaking] = useState(false);
+  const [tickerSpeed, setTickerSpeed] = useState(30);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Ads
+  const [advertisements, setAdvertisements] = useState<any[]>([]);
+  const [showAdForm, setShowAdForm] = useState(false);
+  const [editingAd, setEditingAd] = useState<string | null>(null);
+  const [savingAd, setSavingAd] = useState(false);
+  const [adForm, setAdForm] = useState({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 });
 
 
   // Article form
@@ -194,6 +203,13 @@ const AdminPage = () => {
           console.log("Breaking news loaded:", data);
           setBreakingNews(data);
         }
+
+        // Load ticker speed
+        const { data: settings } = await supabase.from("system_settings").select("value").eq("key", "ticker").single();
+        if (settings?.value && typeof settings.value === 'object') {
+          const val = settings.value as any;
+          if (val.speed) setTickerSpeed(Number(val.speed));
+        }
       }
       if (tab === "users") {
         const { data, error } = await withTimeout(supabase.from("user_roles").select("*"), 20000) as any;
@@ -202,6 +218,14 @@ const AdminPage = () => {
           toast.error("Erro ao carregar perfis: " + error.message);
         }
         if (data) setUserRoles(data);
+      }
+      if (tab === "ads") {
+        const { data, error } = await supabase.from("advertisements").select("*").order("slot").order("display_order");
+        if (error) {
+          console.error("Error loading ads:", error);
+          toast.error("Erro ao carregar publicidade: " + error.message);
+        }
+        if (data) setAdvertisements(data);
       }
     } catch (err) {
       console.error("Unexpected error in loadData:", err);
@@ -277,7 +301,7 @@ const AdminPage = () => {
         ? supabase.from("news_articles").update(payload).eq("id", editingArticle).select()
         : supabase.from("news_articles").insert(payload).select();
 
-      const result = await withTimeout(query);
+      const result = await withTimeout(query) as any;
 
       console.log("Save article result:", result);
 
@@ -327,7 +351,7 @@ const AdminPage = () => {
         ? supabase.from("video_news").update(payload).eq("id", editingVideo).select()
         : supabase.from("video_news").insert(payload).select();
 
-      const result = await withTimeout(query);
+      const result = await withTimeout(query) as any;
 
       console.log("Save video result:", result);
 
@@ -377,7 +401,7 @@ const AdminPage = () => {
         ? supabase.from("opinion_articles").update(payload).eq("id", editingOpinion).select()
         : supabase.from("opinion_articles").insert(payload).select();
 
-      const result = await withTimeout(query);
+      const result = await withTimeout(query) as any;
 
       console.log("Save opinion result:", result);
 
@@ -402,6 +426,26 @@ const AdminPage = () => {
     }
   };
 
+  const saveTickerSpeed = async () => {
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ value: { speed: tickerSpeed } })
+        .eq("key", "ticker");
+
+      if (error) {
+        toast.error("Erro ao salvar velocidade: " + error.message);
+      } else {
+        toast.success("Velocidade do ticker atualizada!");
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
   const saveBreaking = async () => {
     if (!breakingForm) {
       toast.error("O texto é obrigatório");
@@ -412,7 +456,7 @@ const AdminPage = () => {
     console.log("Saving breaking news...", breakingForm);
     try {
       const query = supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
-      const result = await withTimeout(query);
+      const result = await withTimeout(query) as any;
       console.log("Save breaking news result:", result);
       if (result.error) {
         console.error("Supabase error saving breaking news:", result.error);
@@ -594,7 +638,10 @@ const AdminPage = () => {
     { id: "opinions" as Tab, label: "Opinião", icon: MessageSquare },
     { id: "breaking" as Tab, label: "Última Hora", icon: Zap },
     { id: "ai-discovery" as Tab, label: "Descoberta IA", icon: Sparkles },
-    ...(isAdmin ? [{ id: "users" as Tab, label: "Utilizadores", icon: Users }] : []),
+    ...(isAdmin ? [
+      { id: "ads" as Tab, label: "Publicidade", icon: Megaphone },
+      { id: "users" as Tab, label: "Utilizadores", icon: Users }
+    ] : []),
   ];
 
   return (
@@ -1053,6 +1100,38 @@ const AdminPage = () => {
           {/* Breaking news */}
           {activeTab === "breaking" && (
             <div>
+              <div className="bg-card border border-border p-6 mb-8">
+                <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-primary" />
+                  Configurações do Ticker
+                </h3>
+                <div className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="flex-1 max-w-xs">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade (segundos por ciclo)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="10"
+                        max="120"
+                        step="5"
+                        value={tickerSpeed}
+                        onChange={e => setTickerSpeed(Number(e.target.value))}
+                        className="flex-1 accent-primary"
+                      />
+                      <span className="text-sm font-mono font-bold text-primary w-12 text-center">{tickerSpeed}s</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={saveTickerSpeed}
+                    disabled={savingSettings}
+                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-10"
+                  >
+                    {savingSettings ? "A guardar..." : "Salvar Velocidade"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3">Quanto menor o valor, mais rápido as notícias deslizam.</p>
+              </div>
+
               <div className="flex items-center justify-between mb-6">
                 <p className="text-sm text-muted-foreground">Notícias de última hora ativas no ticker</p>
                 <button onClick={() => setShowBreakingForm(true)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">
@@ -1535,6 +1614,135 @@ const AdminPage = () => {
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Ads management */}
+          {activeTab === "ads" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm text-muted-foreground">Gerir espaços publicitários do site</p>
+                <button onClick={() => { setShowAdForm(true); setEditingAd(null); setAdForm({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 }); }} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">
+                  <Plus className="w-4 h-4" /> Novo Anúncio
+                </button>
+              </div>
+
+              {showAdForm && (
+                <div className="bg-card border border-border p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-heading font-semibold text-foreground">{editingAd ? "Editar Anúncio" : "Novo Anúncio"}</h3>
+                    <button onClick={() => setShowAdForm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Posição</label>
+                      <select value={adForm.slot} onChange={e => setAdForm({ ...adForm, slot: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm">
+                        <option value="banner_top">Banner Topo</option>
+                        <option value="banner_bottom">Banner Final</option>
+                        <option value="sidebar_carousel">Carrossel Lateral</option>
+                        <option value="sidebar_video">Vídeo Vertical</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título</label>
+                      <input value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="Nome do anúncio" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL da Imagem</label>
+                      <input value={adForm.image_url} onChange={e => setAdForm({ ...adForm, image_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL do Vídeo (Shorts/TikTok)</label>
+                      <input value={adForm.video_url} onChange={e => setAdForm({ ...adForm, video_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://youtube.com/shorts/..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Link de Destino</label>
+                      <input value={adForm.link_url} onChange={e => setAdForm({ ...adForm, link_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://..." />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ordem</label>
+                      <input type="number" value={adForm.display_order} onChange={e => setAdForm({ ...adForm, display_order: Number(e.target.value) })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" />
+                    </div>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!adForm.title) { toast.error("Título obrigatório"); return; }
+                      setSavingAd(true);
+                      try {
+                        const payload = { ...adForm, active: true };
+                        const { error } = editingAd
+                          ? await supabase.from("advertisements").update(payload).eq("id", editingAd)
+                          : await supabase.from("advertisements").insert(payload);
+                        if (error) { toast.error("Erro: " + error.message); }
+                        else { toast.success(editingAd ? "Anúncio atualizado!" : "Anúncio criado!"); setShowAdForm(false); loadData("ads"); }
+                      } catch (err: any) { toast.error("Erro: " + err.message); }
+                      finally { setSavingAd(false); }
+                    }}
+                    disabled={savingAd}
+                    className="mt-4 bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                  >
+                    {savingAd ? "A guardar..." : (editingAd ? "Atualizar" : "Criar Anúncio")}
+                  </button>
+                </div>
+              )}
+
+              {/* Ads list grouped by slot */}
+              {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video"].map(slot => {
+                const slotAds = advertisements.filter(a => a.slot === slot);
+                const labels: Record<string, string> = { banner_top: "Banner Topo", banner_bottom: "Banner Final", sidebar_carousel: "Carrossel Lateral", sidebar_video: "Vídeo Vertical" };
+                return (
+                  <div key={slot} className="mb-8">
+                    <h3 className="text-sm font-heading font-bold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Megaphone className="w-3.5 h-3.5 text-primary" />
+                      {labels[slot]}
+                      <span className="text-xs font-normal text-muted-foreground">({slotAds.length})</span>
+                    </h3>
+                    {slotAds.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">Nenhum anúncio nesta posição.</p>
+                    ) : (
+                      <div className="bg-card border border-border overflow-hidden">
+                        <table className="w-full">
+                          <thead>
+                            <tr className="border-b border-border bg-secondary/50">
+                              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Título</th>
+                              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado</th>
+                              <th className="px-4 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ações</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {slotAds.map(ad => (
+                              <tr key={ad.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
+                                <td className="px-4 py-3">
+                                  <span className="text-sm font-medium text-foreground">{ad.title}</span>
+                                  {ad.image_url && <img src={ad.image_url} alt="" className="mt-1 h-8 rounded-sm opacity-60" />}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`text-xs px-2 py-0.5 ${ad.active ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                                    {ad.active ? "Ativo" : "Inativo"}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button onClick={async () => { await supabase.from("advertisements").update({ active: !ad.active }).eq("id", ad.id); toast.success("Estado alterado"); loadData("ads"); }} className="text-muted-foreground hover:text-foreground" title={ad.active ? "Desativar" : "Ativar"}>
+                                      {ad.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
+                                    <button onClick={() => { setEditingAd(ad.id); setAdForm({ slot: ad.slot, title: ad.title, image_url: ad.image_url || "", video_url: ad.video_url || "", link_url: ad.link_url || "", display_order: ad.display_order || 0 }); setShowAdForm(true); }} className="text-muted-foreground hover:text-foreground">
+                                      <Pencil className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={async () => { if (confirm("Eliminar anúncio?")) { await supabase.from("advertisements").delete().eq("id", ad.id); toast.success("Anúncio eliminado"); loadData("ads"); } }} className="text-muted-foreground hover:text-destructive">
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

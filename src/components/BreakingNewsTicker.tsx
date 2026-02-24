@@ -2,9 +2,10 @@ import { Zap } from "lucide-react";
 
 interface BreakingNewsTickerProps {
   headlines?: string[];
+  speed?: number; // Speed in seconds
 }
 
-const BreakingNewsTicker = ({ headlines = [] }: BreakingNewsTickerProps) => {
+const BreakingNewsTicker = ({ headlines = [], speed = 30 }: BreakingNewsTickerProps) => {
   const displayHeadlines = headlines.length > 0 ? headlines : [
     "A carregar notícias de última hora...",
   ];
@@ -17,7 +18,10 @@ const BreakingNewsTicker = ({ headlines = [] }: BreakingNewsTickerProps) => {
           <span>Última Hora</span>
         </div>
         <div className="overflow-hidden relative flex-1">
-          <div className="flex animate-[scroll_30s_linear_infinite] whitespace-nowrap gap-12 py-2">
+          <div
+            className="flex animate-scroll linear infinite whitespace-nowrap gap-12 py-2"
+            style={{ animationDuration: `${speed}s`, animationName: 'scroll', animationIterationCount: 'infinite', animationTimingFunction: 'linear' }}
+          >
             {[...displayHeadlines, ...displayHeadlines].map((h, i) => (
               <span key={i} className="text-sm font-medium cursor-pointer hover:underline">
                 {h}
