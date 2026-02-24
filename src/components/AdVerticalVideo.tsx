@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Megaphone, Play } from "lucide-react";
+import { Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Ad {
@@ -10,15 +10,15 @@ interface Ad {
     title: string;
 }
 
-/** Extrair embed URL para Shorts/TikTok */
+/** Extrair embed URL para Shorts/TikTok — autoplay muted loop */
 const getEmbedUrl = (url: string): string | null => {
     if (!url) return null;
     // YouTube Shorts
     const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
-    if (shortsMatch) return `https://www.youtube.com/embed/${shortsMatch[1]}?autoplay=1&loop=1&mute=1`;
+    if (shortsMatch) return `https://www.youtube.com/embed/${shortsMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${shortsMatch[1]}&controls=0&showinfo=0&rel=0&modestbranding=1`;
     // YouTube normal
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&loop=1&mute=1`;
+    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&mute=1&loop=1&playlist=${ytMatch[1]}&controls=0&showinfo=0&rel=0&modestbranding=1`;
     // TikTok
     const tiktokMatch = url.match(/tiktok\.com\/@[^\/]+\/video\/(\d+)/);
     if (tiktokMatch) return `https://www.tiktok.com/embed/v2/${tiktokMatch[1]}`;
@@ -27,7 +27,6 @@ const getEmbedUrl = (url: string): string | null => {
 
 const AdVerticalVideo = () => {
     const [ad, setAd] = useState<Ad | null>(null);
-    const [playing, setPlaying] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
@@ -45,6 +44,13 @@ const AdVerticalVideo = () => {
         fetchAd();
     }, []);
 
+    // Force autoplay when video element mounts
+    useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.play().catch(() => { });
+        }
+    }, [ad]);
+
     if (!ad) {
         return (
             <div className="w-full aspect-[9/16] max-h-[400px] bg-secondary/50 border border-dashed border-border rounded-sm flex flex-col items-center justify-center gap-2 text-muted-foreground/50">
@@ -61,9 +67,14 @@ const AdVerticalVideo = () => {
     const embedUrl = getEmbedUrl(videoUrl);
     const isDirectVideo = videoUrl.match(/\.(mp4|webm|ogg)(\?|$)/i);
 
+    const WrapperTag = ad.link_url ? "a" : "div";
+    const wrapperProps = ad.link_url
+        ? { href: ad.link_url, target: "_blank", rel: "noopener noreferrer" }
+        : {};
+
     return (
         <div className="relative w-full aspect-[9/16] max-h-[400px] overflow-hidden rounded-sm border border-border/50 bg-black">
-            {playing && embedUrl ? (
+            {embedUrl ? (
                 <iframe
                     src={embedUrl}
                     title={ad.title}
@@ -71,21 +82,20 @@ const AdVerticalVideo = () => {
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                 />
-            ) : playing && isDirectVideo ? (
-                <video
-                    ref={videoRef}
-                    src={videoUrl}
-                    controls
-                    autoPlay
-                    muted
-                    loop
-                    className="w-full h-full object-cover"
-                />
+            ) : isDirectVideo ? (
+                <WrapperTag {...wrapperProps} className="block w-full h-full">
+                    <video
+                        ref={videoRef}
+                        src={videoUrl}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover"
+                    />
+                </WrapperTag>
             ) : (
-                <div
-                    className="relative w-full h-full cursor-pointer group"
-                    onClick={() => setPlaying(true)}
-                >
+                <WrapperTag {...wrapperProps} className="block w-full h-full">
                     {ad.image_url ? (
                         <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover" />
                     ) : (
@@ -93,12 +103,7 @@ const AdVerticalVideo = () => {
                             <span className="text-white/40 text-xs font-semibold uppercase">{ad.title}</span>
                         </div>
                     )}
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center group-hover:bg-black/40 transition-colors">
-                        <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <Play className="w-5 h-5 text-primary-foreground fill-primary-foreground ml-0.5" />
-                        </div>
-                    </div>
-                </div>
+                </WrapperTag>
             )}
             <span className="absolute top-1 right-2 text-[9px] uppercase tracking-widest text-white/60 font-semibold drop-shadow z-10">
                 Publicidade
