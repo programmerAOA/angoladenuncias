@@ -14,7 +14,7 @@ export default defineConfig(({ mode }) => ({
     },
     proxy: {
       "/api/radio-stream": {
-        target: "http://102.222.150.46:8800/GirassolFM",
+        target: "https://paineldj5.com.br:20087/stream",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/radio-stream/, ""),
       },

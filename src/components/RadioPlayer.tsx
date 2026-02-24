@@ -3,10 +3,9 @@ import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Lista de URLs possíveis para a Rádio Girassol
+// Lista de URLs possíveis para a Rádio
 const STREAM_SOURCES = [
-    "/api/radio-stream",
-    "http://102.222.150.46:8800/GirassolFM",
-    "https://stream.redegirassol.com/fm",
+    "https://paineldj5.com.br:20087/stream",
 ];
 
 const RadioPlayer = () => {
@@ -36,7 +35,7 @@ const RadioPlayer = () => {
                 console.log("Tentando fonte alternativa...");
                 setCurrentSourceIndex(prev => prev + 1);
             } else {
-                toast.error("Não foi possível conectar à Rádio Girassol. Verifique a sua ligação ou tente mais tarde.");
+                toast.error("Não foi possível conectar à Rádio. Verifique a sua ligação ou tente mais tarde.");
             }
         };
 
@@ -106,7 +105,7 @@ const RadioPlayer = () => {
             <button
                 onClick={() => setIsExpanded(true)}
                 className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-full shadow-2xl hover:shadow-red-500/25 hover:scale-105 transition-all duration-300 group"
-                title="Ouvir Girassol FM"
+                title="Ouvir Rádio"
             >
                 <Radio className={`w-5 h-5 ${isPlaying ? "animate-pulse" : ""}`} />
                 <span className="text-sm font-semibold tracking-wide">
@@ -137,7 +136,7 @@ const RadioPlayer = () => {
                         )}
                     </div>
                     <div>
-                        <h3 className="text-white font-bold text-sm tracking-wide">Girassol FM</h3>
+                        <h3 className="text-white font-bold text-sm tracking-wide">Portal Sem Filtros</h3>
                         <p className="text-white/70 text-xs text-balance pr-4">
                             {isPlaying ? "🔴 Em directo" : isLoading ? "A conectar..." : "Offline (Clique para ouvir)"}
                         </p>
