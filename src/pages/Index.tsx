@@ -38,7 +38,7 @@ const Index = () => {
           setArticles(articlesRes.data.map((a: any) => ({
             id: a.id, title: a.title, summary: a.summary, category: a.category,
             image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
-            timestamp: formatRelativeDate(a.created_at), author: a.author || "Redação"
+            timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
           })));
         } else if (articlesRes.error) {
           console.error("Index: Erro artigos:", articlesRes.error);

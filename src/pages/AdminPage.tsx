@@ -106,7 +106,7 @@ const AdminPage = () => {
 
 
   // Article form
-  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
+  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false });
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [showArticleForm, setShowArticleForm] = useState(false);
@@ -323,7 +323,7 @@ const AdminPage = () => {
         setShowArticleForm(false);
         setEditingArticle(null);
         setArticleImageFile(null);
-        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redação", image_url: "", is_hero: false, is_breaking: false });
+        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false });
         loadData("articles");
       }
     } catch (err: any) {
@@ -607,7 +607,7 @@ const AdminPage = () => {
       summary: aiWorkspace.adaptedSummary || "Notícia adaptada via IA.",
       content: aiWorkspace.adaptedContent,
       category: aiWorkspace.category,
-      author: "Redação / IA",
+      author: "Redacção / IA",
       image_url: "",
       is_hero: false,
       is_breaking: false
@@ -948,7 +948,7 @@ const AdminPage = () => {
                                   summary: article.summary || "",
                                   content: article.content || "",
                                   category: article.category,
-                                  author: article.author || "Redação",
+                                  author: article.author || "Redacção",
                                   image_url: article.image_url || "",
                                   is_hero: !!article.is_hero,
                                   is_breaking: !!article.is_breaking
