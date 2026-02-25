@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Play, Clock, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { getYoutubeId } from "@/lib/utils";
 import Hls from "hls.js";
 
@@ -66,6 +67,7 @@ const HlsPlayer = ({ src, title }: { src: string; title: string }) => {
 const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const [featuredVideo, setFeaturedVideo] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
+  const navigate = useNavigate();
 
   // Sincronizar vídeo em destaque quando a lista de vídeos mudar
   useEffect(() => {
@@ -130,7 +132,10 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
           </div>
           <h2 className="text-xl font-heading font-bold text-foreground">Noticiário em Vídeo</h2>
           <div className="flex-1 h-px bg-border" />
-          <button className="text-xs font-semibold uppercase tracking-wider text-primary hover:opacity-80 transition-opacity">
+          <button
+            onClick={() => navigate("/videos")}
+            className="text-xs font-semibold uppercase tracking-wider text-primary hover:opacity-80 transition-opacity"
+          >
             Ver todos
           </button>
         </div>
