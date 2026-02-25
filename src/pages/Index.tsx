@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 import HeroSection from "@/components/HeroSection";
@@ -16,6 +17,7 @@ import { categories } from "@/constants/categories";
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("Destaque");
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [opinions, setOpinions] = useState<any[]>([]);
@@ -147,6 +149,7 @@ const Index = () => {
                 {filteredArticles.map((article, i) => (
                   <article
                     key={article.id}
+                    onClick={() => navigate(`/article/${article.id}`)}
                     className="group cursor-pointer animate-fade-in"
                     style={{ animationDelay: `${i * 80}ms` }}
                   >

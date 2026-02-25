@@ -19,11 +19,16 @@ const BreakingNewsTicker = ({ headlines = [], speed = 30 }: BreakingNewsTickerPr
         </div>
         <div className="overflow-hidden relative flex-1">
           <div
-            className="flex animate-scroll linear infinite whitespace-nowrap gap-12 py-2"
-            style={{ animationDuration: `${speed}s`, animationName: 'scroll', animationIterationCount: 'infinite', animationTimingFunction: 'linear' }}
+            className="flex w-max animate-scroll whitespace-nowrap gap-12 py-2"
+            style={{
+              animationDuration: `${speed}s`,
+              animationName: 'scroll',
+              animationIterationCount: 'infinite',
+              animationTimingFunction: 'linear'
+            }}
           >
             {[...displayHeadlines, ...displayHeadlines].map((h, i) => (
-              <span key={i} className="text-sm font-medium cursor-pointer hover:underline">
+              <span key={i} className="text-sm font-medium cursor-pointer hover:underline pr-4">
                 {h}
               </span>
             ))}
