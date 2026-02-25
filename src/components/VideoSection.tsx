@@ -110,7 +110,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
         />
       );
     }
-    // Fallback: tentar como vídeo direto
+    // Fallback: tentar como vídeo directo
     return (
       <video
         src={rawUrl}

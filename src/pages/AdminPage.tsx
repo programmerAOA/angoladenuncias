@@ -144,7 +144,10 @@ const AdminPage = () => {
     adaptedContent: "",
     adaptedTitle: "",
     adaptedSummary: "",
-    category: "Geral"
+    category: "Geral",
+    impacto: "",
+    resumo: "",
+    relevancia_para_angola: ""
   });
   const [isAdapting, setIsAdapting] = useState(false);
 
@@ -445,7 +448,7 @@ const AdminPage = () => {
       if (error) {
         toast.error("Erro ao salvar velocidade: " + error.message);
       } else {
-        toast.success("Velocidade do ticker atualizada!");
+        toast.success("Velocidade do ticker actualizada!");
       }
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
@@ -465,7 +468,7 @@ const AdminPage = () => {
       if (error) {
         toast.error("Erro ao salvar velocidade do carrossel: " + error.message);
       } else {
-        toast.success("Velocidade do carrossel de publicidade atualizada!");
+        toast.success("Velocidade do carrossel de publicidade actualizada!");
       }
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
@@ -579,9 +582,12 @@ const AdminPage = () => {
 
       setAiWorkspace({
         ...aiWorkspace,
-        adaptedTitle: data.title,
-        adaptedContent: data.content,
-        adaptedSummary: data.summary
+        adaptedTitle: data.titulo,
+        adaptedContent: data.full_content_html,
+        adaptedSummary: data.resumo,
+        impacto: data.impacto,
+        relevancia_para_angola: data.relevancia_para_angola,
+        category: data.categoria
       });
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
@@ -610,7 +616,10 @@ const AdminPage = () => {
       author: "Redacção / IA",
       image_url: "",
       is_hero: false,
-      is_breaking: false
+      is_breaking: false,
+      // Metadata fields for internal reference if needed
+      impacto: aiWorkspace.impacto,
+      relevancia: aiWorkspace.relevancia_para_angola
     });
     setActiveTab("articles");
     setShowArticleForm(true);
@@ -852,7 +861,7 @@ const AdminPage = () => {
                             className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
                             placeholder="Ou cole o URL da imagem da internet..."
                           />
-                          <p className="text-[10px] text-muted-foreground mt-1">Apenas para links diretos externos</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">Apenas para links directos externos</p>
                         </div>
                       </div>
                       {(articleImageFile || articleForm.image_url) && (
@@ -1504,7 +1513,7 @@ const AdminPage = () => {
                 <div className="flex items-center gap-4 mt-3">
                   <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
                   <div className="flex gap-2">
-                    {["Tudo", "Angola", "Mundo", "Política", "Finanças"].map(f => (
+                    {["Tudo", "Angola", "Política", "Economia", "Energia & Petróleo", "Negócios", "Sociedade", "Relações Internacionais", "Tecnologia", "Segurança"].map(f => (
                       <button
                         key={f}
                         onClick={() => {
@@ -1629,6 +1638,43 @@ const AdminPage = () => {
                             className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[200px]"
                             placeholder="Conteúdo reestruturado..."
                           />
+
+                          <div className="grid grid-cols-2 gap-2 mt-2">
+                            <div>
+                              <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Impacto</label>
+                              <input
+                                value={aiWorkspace.impacto}
+                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, impacto: e.target.value })}
+                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Categoria</label>
+                              <input
+                                value={aiWorkspace.category}
+                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, category: e.target.value })}
+                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="mt-2">
+                            <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Resumo Executivo</label>
+                            <textarea
+                              value={aiWorkspace.adaptedSummary}
+                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedSummary: e.target.value })}
+                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px]"
+                            />
+                          </div>
+
+                          <div className="mt-2">
+                            <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Relevância para Angola</label>
+                            <textarea
+                              value={aiWorkspace.relevancia_para_angola}
+                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, relevancia_para_angola: e.target.value })}
+                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px]"
+                            />
+                          </div>
                         </div>
                         <button
                           onClick={handleFinalizeAIArticle}
@@ -1734,14 +1780,14 @@ const AdminPage = () => {
                           ? await supabase.from("advertisements").update(payload).eq("id", editingAd)
                           : await supabase.from("advertisements").insert(payload);
                         if (error) { toast.error("Erro: " + error.message); }
-                        else { toast.success(editingAd ? "Anúncio atualizado!" : "Anúncio criado!"); setShowAdForm(false); loadData("ads"); }
+                        else { toast.success(editingAd ? "Anúncio actualizado!" : "Anúncio criado!"); setShowAdForm(false); loadData("ads"); }
                       } catch (err: any) { toast.error("Erro: " + err.message); }
                       finally { setSavingAd(false); }
                     }}
                     disabled={savingAd}
                     className="mt-4 bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
                   >
-                    {savingAd ? "A guardar..." : (editingAd ? "Atualizar" : "Criar Anúncio")}
+                    {savingAd ? "A guardar..." : (editingAd ? "Actualizar" : "Criar Anúncio")}
                   </button>
                 </div>
               )}

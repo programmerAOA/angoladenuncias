@@ -15,6 +15,7 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import VideosPage from "./pages/VideosPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import SecurityLayer from "@/components/SecurityLayer";
 
 const queryClient = new QueryClient();
 
@@ -26,18 +27,20 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/admin" element={<AdminPage />} />
-              <Route path="/article/:id" element={<ArticleDetail />} />
-              <Route path="/opinion/:id" element={<OpinionDetail />} />
-              <Route path="/publicidade" element={<AdvertisingPage />} />
-              <Route path="/videos" element={<VideosPage />} />
-              <Route path="/termos" element={<TermsPage />} />
-              <Route path="/privacidade" element={<PrivacyPage />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <SecurityLayer>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/admin" element={<AdminPage />} />
+                <Route path="/article/:id" element={<ArticleDetail />} />
+                <Route path="/opinion/:id" element={<OpinionDetail />} />
+                <Route path="/publicidade" element={<AdvertisingPage />} />
+                <Route path="/videos" element={<VideosPage />} />
+                <Route path="/termos" element={<TermsPage />} />
+                <Route path="/privacidade" element={<PrivacyPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </SecurityLayer>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
