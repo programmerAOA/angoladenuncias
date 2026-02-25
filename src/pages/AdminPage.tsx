@@ -147,7 +147,10 @@ const AdminPage = () => {
     category: "Geral",
     impacto: "",
     resumo: "",
-    relevancia_para_angola: ""
+    relevancia_para_angola: "",
+    factos: "",
+    contexto: "",
+    leitura_critica: ""
   });
   const [isAdapting, setIsAdapting] = useState(false);
 
@@ -591,7 +594,10 @@ const AdminPage = () => {
         adaptedSummary: data.resumo || data.summary,
         impacto: data.impacto || "",
         relevancia_para_angola: data.relevancia_para_angola || "",
-        category: data.categoria || data.category || aiWorkspace.category
+        category: data.categoria || data.category || aiWorkspace.category,
+        factos: data.factos || "",
+        contexto: data.contexto || "",
+        leitura_critica: data.leitura_critica || ""
       });
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
@@ -1685,6 +1691,36 @@ const AdminPage = () => {
                               placeholder="Indique a importância desta notícia para o portal..."
                               className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
                             />
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-2 mt-2">
+                            <div>
+                              <label className="block text-[9px] font-bold uppercase text-red-500/70 mb-1">Leitura Crítica (Sem Filtros)</label>
+                              <textarea
+                                value={aiWorkspace.leitura_critica}
+                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, leitura_critica: e.target.value })}
+                                placeholder="A análise real e directa dos factos..."
+                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] font-mono"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Factos Puros</label>
+                                <textarea
+                                  value={aiWorkspace.factos}
+                                  onChange={(e) => setAiWorkspace({ ...aiWorkspace, factos: e.target.value })}
+                                  className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[10px] focus:outline-none focus:border-primary min-h-[50px]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Contexto Histórico</label>
+                                <textarea
+                                  value={aiWorkspace.contexto}
+                                  onChange={(e) => setAiWorkspace({ ...aiWorkspace, contexto: e.target.value })}
+                                  className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[10px] focus:outline-none focus:border-primary min-h-[50px]"
+                                />
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <button
