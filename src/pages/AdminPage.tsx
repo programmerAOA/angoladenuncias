@@ -586,12 +586,12 @@ const AdminPage = () => {
 
       setAiWorkspace({
         ...aiWorkspace,
-        adaptedTitle: data.titulo,
-        adaptedContent: data.full_content_html,
-        adaptedSummary: data.resumo,
-        impacto: data.impacto,
-        relevancia_para_angola: data.relevancia_para_angola,
-        category: data.categoria
+        adaptedTitle: data.titulo || data.title,
+        adaptedContent: data.full_content_html || data.content,
+        adaptedSummary: data.resumo || data.summary,
+        impacto: data.impacto || "",
+        relevancia_para_angola: data.relevancia_para_angola || "",
+        category: data.categoria || data.category || aiWorkspace.category
       });
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
@@ -1649,38 +1649,41 @@ const AdminPage = () => {
 
                           <div className="grid grid-cols-2 gap-2 mt-2">
                             <div>
-                              <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Impacto</label>
+                              <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Impacto Previsto</label>
                               <input
                                 value={aiWorkspace.impacto}
                                 onChange={(e) => setAiWorkspace({ ...aiWorkspace, impacto: e.target.value })}
-                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary"
+                                placeholder="Impacto da notícia..."
+                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary transition-colors"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Categoria</label>
+                              <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Categoria Sugerida</label>
                               <input
                                 value={aiWorkspace.category}
                                 onChange={(e) => setAiWorkspace({ ...aiWorkspace, category: e.target.value })}
-                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary"
+                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary transition-colors"
                               />
                             </div>
                           </div>
 
                           <div className="mt-2">
-                            <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Resumo Executivo</label>
+                            <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Resumo Executivo (Standard)</label>
                             <textarea
                               value={aiWorkspace.adaptedSummary}
                               onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedSummary: e.target.value })}
-                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px]"
+                              placeholder="Resumo curto para redes sociais e destaques..."
+                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
                             />
                           </div>
 
                           <div className="mt-2">
-                            <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Relevância para Angola</label>
+                            <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Análise de Relevância (Angola)</label>
                             <textarea
                               value={aiWorkspace.relevancia_para_angola}
                               onChange={(e) => setAiWorkspace({ ...aiWorkspace, relevancia_para_angola: e.target.value })}
-                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px]"
+                              placeholder="Indique a importância desta notícia para o portal..."
+                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
                             />
                           </div>
                         </div>

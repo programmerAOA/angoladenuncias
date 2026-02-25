@@ -27,25 +27,30 @@ Deno.serve(async (req) => {
         let cleanContent = (content || '').replace(/\[\+\d+\s+chars\]/gi, '').replace(/\[\d+\s+chars\]/gi, '').trim();
 
         const prompt = `
-      Você é um jornalista sénior e editor de notícias para um portal em Angola. 
-      Sua tarefa é reescrever e EXPANDIR a notícia fornecida.
-      
+      Você é um jornalista sénior e editor de notícias para um portal de notícias profissional e angolano chamado "Informativa". 
+      Sua missão é reescrever a notícia abaixo, adaptando-a à nossa linha editorial.
+
       LINHA EDITORIAL: "${line}"
-      
-      IMPORTANTE:
-      - O conteúdo original pode estar incompleto ou truncado. Sua missão é DESENVOLVER a notícia, criando um texto completo, profissional e informativo.
-      - Use seu conhecimento geral para adicionar contexto relevante se necessário, mas mantenha a fidelidade aos factos centrais.
-      - O texto final deve ter pelo menos 4 a 6 parágrafos bem estruturados.
-      - O tom deve ser adequado para um portal de notícias de prestígio em Angola.
-      - REMOVA qualquer menção a "[+... chars]" ou marcadores de truncagem.
+
+      REGRAS FUNDAMENTAIS:
+      1. ESTILO: Use um tom profissional, direto e formal.
+      2. EXPANSÃO: Transforme snippets curtos em notícias de 3 a 5 parágrafos médios.
+      3. FACTOS: Seja fiel aos factos, mas organize-os por ordem de importância (pirâmide invertida).
+      4. SEM METADADOS: NÃO inclua disclaimers como "Aqui está a notícia..." ou "Esta é uma versão reestruturada...". Comece diretamente com a notícia.
+      5. HTML: O corpo completo deve vir em parágrafos HTML (<p>...</p>).
+      6. AVALIAÇÃO: Analise o impacto económico/social e a relevância específica para Angola.
 
       ESTRUTURA DE RETORNO (JSON):
       {
-        "title": "Título impactante em Português de Angola",
-        "summary": "Um resumo atraente (2-3 frases)",
-        "content": "O corpo completo da notícia, dividido em parágrafos HTML (<p>...<p>)"
+        "titulo": "Título jornalístico impactante",
+        "resumo": "Um resumo executivo de 2 frases",
+        "full_content_html": "Corpo da notícia em <p>",
+        "impacto": "Breve análise do impacto do evento",
+        "relevancia_para_angola": "Explicação do porquê isto é importante para o público angolano",
+        "categoria": "Uma das categorias: Política, Economia, Sociedade, Tecnologia, Mundo, Desporto"
       }
 
+      DADOS PARA REESTRUTURAÇÃO:
       TÍTULO ORIGINAL: ${title}
       CONTEÚDO ORIGINAL: ${cleanContent}
     `;
@@ -59,7 +64,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
                 model: "gpt-4o-mini",
                 messages: [
-                    { role: "system", content: "Você é um assistente especializado em jornalismo angolano. Você sempre responde com JSON válido." },
+                    { role: "system", content: "Você é um editor sénior angolano. Retorne sempre JSON válido com as chaves: titulo, resumo, full_content_html, impacto, relevancia_para_angola, categoria." },
                     { role: "user", content: prompt }
                 ],
                 response_format: { type: "json_object" }
