@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { toast } from "sonner";
+import ThemeToggle from "./ThemeToggle";
 
 interface HeaderProps {
   selectedCategory?: string;
@@ -165,6 +166,9 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
           >
             {searchOpen ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
           </button>
+
+          <div className="h-6 w-px bg-border mx-1" />
+          <ThemeToggle />
         </div>
       </div>
 
