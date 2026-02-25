@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Menu, X, User, LogOut, Shield, Loader2 } from "lucide-react";
+import { Search, Menu, X, User, LogOut, Shield, Loader2, Facebook, Twitter, Linkedin, Globe } from "lucide-react";
 import { categories } from "@/constants/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -73,7 +73,24 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
     <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       {/* Top bar */}
       <div className="container flex items-center justify-between py-2 border-b border-border">
-        <span className="news-timestamp hidden sm:block">{formattedDate}</span>
+        <div className="flex items-center gap-4">
+          <span className="news-timestamp hidden sm:block">{formattedDate}</span>
+          <div className="hidden md:flex items-center gap-3 border-l border-border pl-4 ml-1">
+            <a href="https://facebook.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Facebook className="w-3.5 h-3.5" />
+            </a>
+            <a href="https://twitter.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Twitter className="w-3.5 h-3.5" />
+            </a>
+            <a href="https://linkedin.com/company/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <Linkedin className="w-3.5 h-3.5" />
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1">
+              <Globe className="w-3.5 h-3.5" />
+              <span className="text-[10px] font-bold uppercase tracking-tighter">Ubuntu</span>
+            </a>
+          </div>
+        </div>
         <div className="flex items-center gap-4">
           <button className="nav-link text-xs">Newsletter</button>
           {(isAdmin || isEditor) && (

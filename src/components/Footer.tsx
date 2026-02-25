@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { Facebook, Twitter, Linkedin, Globe } from "lucide-react";
 
 const footerSections = [
   { title: "Secções", links: ["Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia"] },
@@ -98,6 +99,21 @@ const Footer = () => {
           <span className="text-xs text-muted-foreground">
             © 2026 Sem Filtros. Todos os direitos reservados.
           </span>
+          <div className="flex items-center gap-4">
+            <a href="https://facebook.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Facebook">
+              <Facebook className="w-5 h-5" />
+            </a>
+            <a href="https://twitter.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Twitter">
+              <Twitter className="w-5 h-5" />
+            </a>
+            <a href="https://linkedin.com/company/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="LinkedIn">
+              <Linkedin className="w-5 h-5" />
+            </a>
+            <a href="#" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1" title="Ubuntu">
+              <Globe className="w-5 h-5" />
+              <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Ubuntu</span>
+            </a>
+          </div>
         </div>
       </div>
     </footer>
