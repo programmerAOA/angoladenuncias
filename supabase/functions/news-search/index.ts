@@ -1,169 +1,222 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-Deno.serve(async (req: Request) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    };
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
+Deno.serve(async (req: Request) => {
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders });
     }
 
     try {
         const { query, filter, max } = await req.json();
-        const apiKey = Deno.env.get('GNEWS_API_KEY');
+        const gnewsApiKey = Deno.env.get('GNEWS_API_KEY');
+        const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
 
-        if (!apiKey) {
+        if (!gnewsApiKey) {
             return new Response(
                 JSON.stringify({ error: 'GNEWS_API_KEY não configurada.' }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
-        let searchQuery = (query || '').trim();
-        const cleanQuery = searchQuery.toLowerCase();
-
-        const isAngolaFilter = filter === 'Angola' || !filter;
         const maxResults = max || 10;
         const now = new Date();
-        const eightHoursInMs = 8 * 60 * 60 * 1000;
-        const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
 
-        // --- 1. Fetch from GNews ---
-        const baseUrl = 'https://gnews.io/api/v4';
-        const lang = 'pt';
-        let gnewsUrl = '';
+        let searchQuery = (query || '').trim();
+        const activeFilter = filter || 'Tudo';
 
-        if (isAngolaFilter) {
+        // 1. Keyword mapping for filters across languages
+        const filterKeywords: Record<string, Record<string, string>> = {
+            'Política': { pt: 'política', en: 'politics', es: 'política', fr: 'politique' },
+            'Economia': { pt: 'economia', en: 'economy', es: 'economía', fr: 'économie' },
+            'Energia & Petróleo': { pt: 'petróleo energia', en: 'oil energy', es: 'petróleo energía', fr: 'pétrole énergie' },
+            'Negócios': { pt: 'negócios empresas', en: 'business company', es: 'negocios empresas', fr: 'affaires entreprises' },
+            'Sociedade': { pt: 'sociedade notícias', en: 'society news', es: 'sociedad noticias', fr: 'société noticias' },
+            'Tecnologia': { pt: 'tecnologia', en: 'technology', es: 'tecnología', fr: 'technologie' },
+            'Segurança': { pt: 'segurança polícia', en: 'security police', es: 'seguridad policía', fr: 'sécurité police' },
+            'Relações Internacionais': { pt: 'geopolítica', en: 'geopolitics', es: 'geopolítica', fr: 'géopolitique' },
+            'Angola': { pt: 'Angola', en: 'Angola', es: 'Angola', fr: 'Angola' },
+            'Tudo': { pt: 'notícias', en: 'news', es: 'noticias', fr: 'actualités' }
+        };
+
+        // 2. Fetch from GNews (Multi-language)
+        const languages = ['pt', 'en', 'es', 'fr'];
+        const fetchPromises = languages.map(lang => {
             let effectiveQuery = searchQuery;
-            if (!cleanQuery.includes('angola')) {
-                effectiveQuery = searchQuery ? `Angola ${searchQuery}` : 'Angola';
-            }
-            gnewsUrl = `${baseUrl}/search?q=${encodeURIComponent(effectiveQuery)}&country=ao&lang=${lang}&max=20&sortby=publishedAt&apikey=${apiKey}`;
-        } else {
-            let filterPrefix = '';
-            if (filter === 'Política') filterPrefix = ' política';
-            if (filter === 'Finanças') filterPrefix = ' economia finanças';
-            const q = encodeURIComponent(searchQuery + filterPrefix);
-            gnewsUrl = `${baseUrl}/search?q=${q}&lang=${lang}&max=${maxResults}&sortby=publishedAt&apikey=${apiKey}`;
-        }
 
-        const gnewsResponse = await fetch(gnewsUrl);
-        const gnewsData = await gnewsResponse.json();
-        let gnewsArticles = gnewsData.articles || [];
+            // If query is empty, use the translated keyword for the active filter
+            if (!effectiveQuery) {
+                const keywords = filterKeywords[activeFilter] || filterKeywords['Tudo'];
+                effectiveQuery = keywords[lang] || keywords['pt'];
 
-        // Blacklist/Whitelist logic for GNews
-        const blacklist = [
-            'uol.com.br', 'globo.com', 'terra.com.br', 'r7.com',
-            'folha.uol.com.br', 'estadao.com.br', 'ig.com.br', 'metropoles.com',
-            'gazetadopovo.com.br', 'cnnbrasil.com.br', 'lance.com.br', 'espn.com.br',
-            'jn.pt', 'publico.pt', 'dn.pt', 'sicnoticias.pt', 'rtp.pt', 'iol.pt',
-            'maisfutebol.iol.pt', 'record.pt', 'abola.pt', 'ojogo.pt'
-        ];
-        const angolaWhitelist = ['angop.ao', 'jornaldeangola.ao', 'novojornal.co.ao', 'club-k.net', 'angola24horas.com'];
-
-        if (isAngolaFilter) {
-            gnewsArticles = gnewsArticles.filter((article: any) => {
-                const url = (article.url || '').toLowerCase();
-                const title = (article.title || '').toLowerCase();
-                const isBlacklisted = blacklist.some(d => url.includes(d));
-                if (isBlacklisted) return false;
-                const isWhitelisted = angolaWhitelist.some(d => url.includes(d));
-                if (isWhitelisted) return true;
-                return title.includes('angola') || (article.description || '').toLowerCase().includes('angola');
-            });
-        }
-
-        // --- 2. Fetch from Opera News RSS (if Angola filter) ---
-        let operaArticles: any[] = [];
-        if (isAngolaFilter) {
-            try {
-                const operaRssUrl = "https://blogs.opera.com/mobile/category/opera-news/feed/";
-                const rss2JsonUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(operaRssUrl)}`;
-                const operaResponse = await fetch(rss2JsonUrl);
-                const operaData = await operaResponse.json();
-
-                if (operaData.status === 'ok') {
-                    operaArticles = (operaData.items || []).map((item: any) => ({
-                        title: item.title,
-                        description: item.description || item.content,
-                        content: item.content || item.description,
-                        url: item.link,
-                        image: item.enclosure?.link || item.thumbnail || '',
-                        publishedAt: item.pubDate,
-                        source: { name: 'Opera News' }
-                    }));
-                    console.log(`Fetched ${operaArticles.length} articles from Opera News RSS`);
+                // For Angola filter, always ensure "Angola" is in the query even if language is different
+                if (activeFilter === 'Angola' && !effectiveQuery.toLowerCase().includes('angola')) {
+                    effectiveQuery = `Angola ${effectiveQuery}`;
                 }
-            } catch (e) {
-                console.error('Error fetching Opera News RSS:', e);
             }
-        }
 
-        // --- 3. Merge and Filter by Time ---
-        let combinedArticles = [...operaArticles, ...gnewsArticles];
+            const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(effectiveQuery)}&lang=${lang}&max=10&sortby=publishedAt&apikey=${gnewsApiKey}`;
+            return fetch(url).then(r => r.json()).catch(err => {
+                console.error(`GNews fetch error (${lang}):`, err);
+                return { articles: [] };
+            });
+        });
 
+        const results = await Promise.all(fetchPromises);
+        let allArticles: any[] = [];
+        results.forEach((data, index) => {
+            const articles = (data.articles || []).map((a: any) => ({
+                ...a,
+                detectedLang: languages[index]
+            }));
+            allArticles = [...allArticles, ...articles];
+        });
+
+        // 3. Filtering & Fallback
         // Deduplicate by URL
         const seenUrls = new Set();
-        combinedArticles = combinedArticles.filter(a => {
+        allArticles = allArticles.filter(a => {
             if (seenUrls.has(a.url)) return false;
             seenUrls.add(a.url);
             return true;
         });
 
-        // Time window filtering
-        let filtered = combinedArticles.filter((a: any) => {
-            if (!a.publishedAt) return false;
-            const pubDate = new Date(a.publishedAt);
-            return (now.getTime() - pubDate.getTime()) <= eightHoursInMs;
-        });
+        // Fallback strategy for time
+        const intervals = [
+            24 * 60 * 60 * 1000,      // 24h
+            3 * 24 * 60 * 60 * 1000,  // 3 days
+            7 * 24 * 60 * 60 * 1000   // 7 days
+        ];
 
-        let info = null;
-        if (filtered.length === 0 && combinedArticles.length > 0) {
-            filtered = combinedArticles.filter((a: any) => {
+        let filteredArticles: any[] = [];
+        let appliedInterval = 0;
+
+        for (const ms of intervals) {
+            filteredArticles = allArticles.filter(a => {
                 const pubDate = new Date(a.publishedAt);
-                return (now.getTime() - pubDate.getTime()) <= twentyFourHoursInMs;
+                return (now.getTime() - pubDate.getTime()) <= ms;
             });
-            if (filtered.length > 0) {
-                info = "Exibindo notícias das últimas 24h (nenhum resultado em 8h).";
+            if (filteredArticles.length >= 3) {
+                appliedInterval = ms;
+                break;
             }
         }
 
-        // Sort by date (newest first)
-        filtered.sort((a: any, b: any) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+        // If even 7 days is sparse, just take all available
+        if (filteredArticles.length === 0) {
+            filteredArticles = allArticles;
+        }
 
-        // --- 4. Format Results ---
-        const results = filtered.slice(0, maxResults).map((article: any) => {
-            let category = 'Geral';
-            const text = `${article.title} ${article.description}`.toLowerCase();
-            if (text.includes('polític') || text.includes('governo')) category = 'Política';
-            else if (text.includes('econom') || text.includes('finanç')) category = 'Finanças';
-            else if (text.includes('futebol') || text.includes('desporto')) category = 'Desporto';
+        // Sort by date newest first
+        filteredArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
-            const pubDate = new Date(article.publishedAt);
+        // Limit to max results
+        const finalSelection = filteredArticles.slice(0, maxResults);
+
+        // 4. Batch Translation (Non-PT articles)
+        const articlesToTranslate = finalSelection.filter(a => a.detectedLang !== 'pt');
+
+        if (articlesToTranslate.length > 0 && openaiApiKey) {
+            try {
+                const prompt = `
+                    Traduza as seguintes notícias para PORTUGUÊS DE ANGOLA. 
+                    Mantenha o tom jornalístico e profissional. 
+                    Mantenha nomes próprios e termos técnicos se fizer sentido.
+                    Retorne apenas um array JSON de objetos com {translatedTitle, translatedDescription}.
+                    
+                    NOTÍCIAS:
+                    ${articlesToTranslate.map((a, i) => `[${i}] Título: ${a.title}\nDescrição: ${a.description}`).join('\n\n')}
+                `;
+
+                const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${openaiApiKey}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o-mini",
+                        messages: [
+                            { role: "system", content: "Você é um tradutor especializado em jornalismo. Retorne apenas JSON." },
+                            { role: "user", content: prompt }
+                        ],
+                        response_format: { type: "json_object" }
+                    }),
+                });
+
+                if (aiResponse.ok) {
+                    const aiData = await aiResponse.json();
+                    const translationsMap = JSON.parse(aiData.choices[0].message.content);
+                    const translations = translationsMap.translations || translationsMap.results || Object.values(translationsMap)[0] || [];
+
+                    // If JSON structure is slightly different, we try to map by index
+                    articlesToTranslate.forEach((article, idx) => {
+                        const t = Array.isArray(translations) ? translations[idx] : null;
+                        if (t) {
+                            article.title = t.translatedTitle || article.title;
+                            article.description = t.translatedDescription || article.description;
+                            article.isTranslated = true;
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error("Translation error:", err);
+            }
+        }
+
+        // 5. Format Output
+        const processedResults = finalSelection.map((a: any) => {
+            let category = activeFilter === 'Tudo' ? 'Geral' : activeFilter;
+            const text = `${a.title} ${a.description}`.toLowerCase();
+
+            // Auto-categorize if "Tudo"
+            if (activeFilter === 'Tudo') {
+                if (text.includes('polític') || text.includes('governo')) category = 'Política';
+                else if (text.includes('econom') || text.includes('finanç') || text.includes('pib')) category = 'Economia';
+                else if (text.includes('petróleo') || text.includes('energia') || text.includes('combustí')) category = 'Energia & Petróleo';
+                else if (text.includes('tecnologia') || text.includes('digital') || text.includes('ia ')) category = 'Tecnologia';
+                else if (text.includes('seguranç') || text.includes('polícia') || text.includes('militar')) category = 'Segurança';
+                else if (text.includes('negócio') || text.includes('empresa') || text.includes('mercado')) category = 'Negócios';
+                else if (text.includes('sociedade') || text.includes('social') || text.includes('povo')) category = 'Sociedade';
+                else if (text.includes('angola')) category = 'Angola';
+            }
+
+            const pubDate = new Date(a.publishedAt);
+            const diffDays = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24));
             const diffHrs = Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60));
-            const dateStr = diffHrs < 1 ? 'Agora' : `Há ${diffHrs}h`;
+
+            let dateStr = 'Agora';
+            if (diffDays > 0) dateStr = `Há ${diffDays}d`;
+            else if (diffHrs > 0) dateStr = `Há ${diffHrs}h`;
 
             return {
-                title: article.title,
-                source: article.source?.name || 'Fonte',
+                title: a.title,
+                source: a.source?.name || 'Fonte Global',
                 date: dateStr,
                 category: category,
-                snippet: article.description || '',
-                content: article.content || article.description || '',
-                url: article.url,
-                image: article.image || ''
+                snippet: a.description || '',
+                content: a.description || '', // GNews mostly provides snippets
+                url: a.url,
+                image: a.image || '',
+                isTranslated: a.isTranslated || false,
+                originalLang: a.detectedLang
             };
         });
 
+        let info = appliedInterval > 24 * 3600 * 1000
+            ? `Exibindo resultados dos últimos ${Math.round(appliedInterval / 86400000)} dias para garantir volume.`
+            : null;
+
         return new Response(
-            JSON.stringify({ results, total: results.length, info }),
+            JSON.stringify({ results: processedResults, total: processedResults.length, info }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         );
 
-    } catch (error) {
-        console.error('Error:', error);
+    } catch (error: any) {
+        console.error('news-search error:', error);
         return new Response(
             JSON.stringify({ error: error.message }),
             { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

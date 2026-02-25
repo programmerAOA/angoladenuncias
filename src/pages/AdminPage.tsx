@@ -519,16 +519,20 @@ const AdminPage = () => {
   };
 
   const handleDiscoverNews = async (filterOverride?: string) => {
-    if (!discoveryQuery.trim()) return;
     setIsDiscovering(true);
     const activeFilter = filterOverride || discoveryFilter;
-    console.log("Discovery: Searching for:", discoveryQuery, "filter:", activeFilter);
+
+    // Fallback: If no query, use the filter as the search term
+    const effectiveQuery = discoveryQuery.trim() || (activeFilter !== 'Tudo' ? activeFilter : 'Angola');
+
+    console.log("Discovery: Searching for:", effectiveQuery, "filter:", activeFilter);
+
     try {
       const { data, error } = await supabase.functions.invoke('news-search', {
         body: {
-          query: discoveryQuery,
+          query: effectiveQuery,
           filter: activeFilter,
-          max: 10
+          max: 15
         }
       });
 
@@ -616,10 +620,7 @@ const AdminPage = () => {
       author: "Redacção / IA",
       image_url: "",
       is_hero: false,
-      is_breaking: false,
-      // Metadata fields for internal reference if needed
-      impacto: aiWorkspace.impacto,
-      relevancia: aiWorkspace.relevancia_para_angola
+      is_breaking: false
     });
     setActiveTab("articles");
     setShowArticleForm(true);
@@ -1518,7 +1519,7 @@ const AdminPage = () => {
                         key={f}
                         onClick={() => {
                           setDiscoveryFilter(f);
-                          if (discoveryQuery.trim()) handleDiscoverNews(f);
+                          handleDiscoverNews(f);
                         }}
                         className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
                           ? "bg-primary text-primary-foreground border-primary"
@@ -1547,7 +1548,14 @@ const AdminPage = () => {
                     {discoveryResults.map((item, idx) => (
                       <div key={idx} className="bg-secondary/20 border border-border p-4 rounded hover:border-primary/30 transition-all group">
                         <div className="flex justify-between items-start mb-2">
-                          <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
+                            {item.isTranslated && (
+                              <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 border border-blue-500/20 rounded-sm font-bold flex items-center gap-1">
+                                <Sparkles className="w-2 h-2" /> TRADUZIDO
+                              </span>
+                            )}
+                          </div>
                           <span className="text-[10px] text-muted-foreground italic">{item.date}</span>
                         </div>
                         <h5 className="text-sm font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.title}</h5>
