@@ -94,6 +94,7 @@ const AdminPage = () => {
   const [savingOpinion, setSavingOpinion] = useState(false);
   const [savingBreaking, setSavingBreaking] = useState(false);
   const [tickerSpeed, setTickerSpeed] = useState(30);
+  const [adCarouselSpeed, setAdCarouselSpeed] = useState(6);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Ads
@@ -226,6 +227,13 @@ const AdminPage = () => {
           toast.error("Erro ao carregar publicidade: " + error.message);
         }
         if (data) setAdvertisements(data);
+
+        // Load ad carousel speed
+        const { data: adSettings } = await supabase.from("system_settings").select("value").eq("key", "ad_carousel").single();
+        if (adSettings?.value && typeof adSettings.value === 'object') {
+          const val = adSettings.value as any;
+          if (val.speed) setAdCarouselSpeed(Number(val.speed) / 1000);
+        }
       }
     } catch (err) {
       console.error("Unexpected error in loadData:", err);
@@ -438,6 +446,26 @@ const AdminPage = () => {
         toast.error("Erro ao salvar velocidade: " + error.message);
       } else {
         toast.success("Velocidade do ticker atualizada!");
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const saveAdCarouselSpeed = async () => {
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ value: { speed: adCarouselSpeed * 1000 } })
+        .eq("key", "ad_carousel");
+
+      if (error) {
+        toast.error("Erro ao salvar velocidade do carrossel: " + error.message);
+      } else {
+        toast.success("Velocidade do carrossel de publicidade atualizada!");
       }
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
@@ -1620,6 +1648,38 @@ const AdminPage = () => {
           {/* Ads management */}
           {activeTab === "ads" && (
             <div>
+              <div className="bg-card border border-border p-6 mb-8">
+                <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-primary" />
+                  Configuração de Exibição
+                </h3>
+                <div className="flex flex-col sm:flex-row items-end gap-4">
+                  <div className="flex-1 max-w-xs">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade do Carrossel (segundos)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="3"
+                        max="20"
+                        step="1"
+                        value={adCarouselSpeed}
+                        onChange={e => setAdCarouselSpeed(Number(e.target.value))}
+                        className="flex-1 accent-primary"
+                      />
+                      <span className="text-sm font-mono font-bold text-primary w-12 text-center">{adCarouselSpeed}s</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={saveAdCarouselSpeed}
+                    disabled={savingSettings}
+                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-10"
+                  >
+                    {savingSettings ? "A guardar..." : "Salvar Configuração"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3">Define quanto tempo cada anúncio permanece visível no carrossel lateral.</p>
+              </div>
+
               <div className="flex items-center justify-between mb-6">
                 <p className="text-sm text-muted-foreground">Gerir espaços publicitários do site</p>
                 <button onClick={() => { setShowAdForm(true); setEditingAd(null); setAdForm({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 }); }} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">

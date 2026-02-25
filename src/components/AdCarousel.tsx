@@ -12,6 +12,7 @@ interface Ad {
 const AdCarousel = () => {
     const [ads, setAds] = useState<Ad[]>([]);
     const [current, setCurrent] = useState(0);
+    const [speed, setSpeed] = useState(6000);
 
     useEffect(() => {
         const fetchAds = async () => {
@@ -23,17 +24,29 @@ const AdCarousel = () => {
                 .order("display_order", { ascending: true });
             if (data && data.length > 0) setAds(data);
         };
+        const fetchSettings = async () => {
+            const { data: settings } = await supabase
+                .from("system_settings")
+                .select("value")
+                .eq("key", "ad_carousel")
+                .single();
+            if (settings?.value && typeof settings.value === 'object') {
+                const val = settings.value as any;
+                if (val.speed) setSpeed(Number(val.speed));
+            }
+        };
         fetchAds();
+        fetchSettings();
     }, []);
 
-    // Auto-rotate every 4s
+    // Auto-rotate with dynamic speed
     useEffect(() => {
         if (ads.length <= 1) return;
         const interval = setInterval(() => {
             setCurrent((prev) => (prev + 1) % ads.length);
-        }, 4000);
+        }, speed);
         return () => clearInterval(interval);
-    }, [ads.length]);
+    }, [ads.length, speed]);
 
     const goTo = useCallback((dir: number) => {
         setCurrent((prev) => (prev + dir + ads.length) % ads.length);
