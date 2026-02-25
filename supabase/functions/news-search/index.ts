@@ -28,16 +28,18 @@ Deno.serve(async (req: Request) => {
         let searchQuery = (query || '').trim();
         const activeFilter = filter || 'Tudo';
 
-        // 1. Keyword mapping for filters across languages
+        // 1. Keyword mapping for filters across languages (Expanded for better GNews coverage)
         const filterKeywords: Record<string, Record<string, string>> = {
-            'Política': { pt: 'política', en: 'politics', es: 'política', fr: 'politique' },
-            'Economia': { pt: 'economia', en: 'economy', es: 'economía', fr: 'économie' },
+            'Política': { pt: 'política angolana', en: 'politics africa', es: 'política áfrica', fr: 'politique afrique' },
+            'Economia': { pt: 'economia pib', en: 'economy gdp', es: 'economía pib', fr: 'économie pib' },
             'Energia & Petróleo': { pt: 'petróleo energia', en: 'oil energy', es: 'petróleo energía', fr: 'pétrole énergie' },
             'Negócios': { pt: 'negócios empresas', en: 'business company', es: 'negocios empresas', fr: 'affaires entreprises' },
-            'Sociedade': { pt: 'sociedade notícias', en: 'society news', es: 'sociedad noticias', fr: 'société noticias' },
-            'Tecnologia': { pt: 'tecnologia', en: 'technology', es: 'tecnología', fr: 'technologie' },
+            'Sociedade': { pt: 'sociedade notícias', en: 'society news', es: 'sociedad noticias', fr: 'société' },
+            'Tecnologia': { pt: 'tecnologia digital', en: 'technology digital', es: 'tecnología digital', fr: 'technologie digital' },
             'Segurança': { pt: 'segurança polícia', en: 'security police', es: 'seguridad policía', fr: 'sécurité police' },
-            'Relações Internacionais': { pt: 'geopolítica', en: 'geopolitics', es: 'geopolítica', fr: 'géopolitique' },
+            'Saúde': { pt: 'saúde notícias', en: 'health news', es: 'salud noticias', fr: 'santé' },
+            'Mundo': { pt: 'mundo notícias', en: 'world news', es: 'mundo noticias', fr: 'monde' },
+            'Desporto': { pt: 'desporto notícias', en: 'sports news', es: 'deportes noticias', fr: 'actualités sportives' },
             'Angola': { pt: 'Angola', en: 'Angola', es: 'Angola', fr: 'Angola' },
             'Tudo': { pt: 'notícias', en: 'news', es: 'noticias', fr: 'actualités' }
         };
@@ -76,7 +78,6 @@ Deno.serve(async (req: Request) => {
         });
 
         // 3. Filtering & Fallback
-        // Deduplicate by URL
         const seenUrls = new Set();
         allArticles = allArticles.filter(a => {
             if (seenUrls.has(a.url)) return false;
@@ -84,7 +85,6 @@ Deno.serve(async (req: Request) => {
             return true;
         });
 
-        // Fallback strategy for time
         const intervals = [
             24 * 60 * 60 * 1000,      // 24h
             3 * 24 * 60 * 60 * 1000,  // 3 days
@@ -105,15 +105,11 @@ Deno.serve(async (req: Request) => {
             }
         }
 
-        // If even 7 days is sparse, just take all available
         if (filteredArticles.length === 0) {
             filteredArticles = allArticles;
         }
 
-        // Sort by date newest first
         filteredArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-
-        // Limit to max results
         const finalSelection = filteredArticles.slice(0, maxResults);
 
         // 4. Batch Translation (Non-PT articles)
@@ -121,15 +117,13 @@ Deno.serve(async (req: Request) => {
 
         if (articlesToTranslate.length > 0 && openaiApiKey) {
             try {
-                const prompt = `
-                    Traduza as seguintes notícias para PORTUGUÊS DE ANGOLA. 
-                    Mantenha o tom jornalístico e profissional. 
-                    Mantenha nomes próprios e termos técnicos se fizer sentido.
-                    Retorne apenas um array JSON de objetos com {translatedTitle, translatedDescription}.
-                    
-                    NOTÍCIAS:
-                    ${articlesToTranslate.map((a, i) => `[${i}] Título: ${a.title}\nDescrição: ${a.description}`).join('\n\n')}
-                `;
+                // Safer string concatenation for deployment
+                const newsContext = articlesToTranslate.map((a, i) => "[" + i + "] Título: " + a.title + "\nDescrição: " + a.description).join('\n\n');
+                const prompt = "Traduza as seguintes notícias para PORTUGUÊS DE ANGOLA. " +
+                    "Mantenha o tom jornalístico e profissional. " +
+                    "Mantenha nomes próprios e termos técnicos se fizer sentido. " +
+                    "Retorne apenas um array JSON de objetos com {translatedTitle, translatedDescription}.\n\n" +
+                    "NOTÍCIAS:\n" + newsContext;
 
                 const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
