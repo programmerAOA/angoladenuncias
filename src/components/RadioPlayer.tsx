@@ -8,6 +8,7 @@ const RADIOS = [
     { name: "Rádio Nacional", url: "https://paineldj5.com.br:20087/stream" },
     { name: "Girassol FM", url: "/api/radio-stream" },
     { name: "MFM", url: "https://centova87.instainternet.com/proxy/mfm?mp=/stream" },
+    { name: "Rádio 5", url: "https://paineldj5.com.br:20088/stream" },
     { name: "Rádio Moçambique", url: "https://node.stream-africa.com:8443/AntenaNacional" }
 ];
 
@@ -175,7 +176,7 @@ const RadioPlayer = () => {
             </div>
 
             {/* Station Selector */}
-            <div className="bg-zinc-800/50 p-2 grid grid-cols-4 gap-1 border-b border-white/5">
+            <div className="bg-zinc-800/50 p-2 grid grid-cols-5 gap-1 border-b border-white/5">
                 {RADIOS.map((radio, idx) => (
                     <button
                         key={radio.name}
