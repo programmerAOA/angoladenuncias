@@ -42,43 +42,12 @@ const CookieConsent = () => {
                                 </button>
                             </div>
 
-                            <div className="space-y-4">
+                            <div className="space-y-6">
                                 <p className="text-sm text-muted-foreground leading-relaxed">
-                                    Este site utiliza cookies para garantir a melhor experiência possível. Ao continuar a navegar, está a consentir com a utilização das seguintes categorias de cookies:
+                                    Utilizamos cookies essenciais e tecnologias semelhantes de acordo com a nossa política de privacidade. Ao continuar navegando, você concorda com estas condições. <a href="/privacy" className="text-primary hover:underline font-bold">Saiba mais</a>
                                 </p>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pb-2">
-                                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
-                                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                                        <div>
-                                            <p className="text-[11px] font-bold uppercase tracking-wider text-foreground">Essenciais</p>
-                                            <p className="text-[10px] text-muted-foreground leading-tight">Necessários para o funcionamento do site.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
-                                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                                        <div>
-                                            <p className="text-[11px] font-bold uppercase tracking-wider text-foreground">Desempenho</p>
-                                            <p className="text-[10px] text-muted-foreground leading-tight">Colecta de dados estatísticos.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
-                                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                                        <div>
-                                            <p className="text-[11px] font-bold uppercase tracking-wider text-foreground">Funcionais</p>
-                                            <p className="text-[10px] text-muted-foreground leading-tight">Salvaguarda de preferências.</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/30 border border-border/50">
-                                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0" />
-                                        <div>
-                                            <p className="text-[11px] font-bold uppercase tracking-wider text-foreground">Marketing</p>
-                                            <p className="text-[10px] text-muted-foreground leading-tight">Anúncios personalizados.</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 pt-2">
+                                <div className="flex items-center gap-3">
                                     <Button onClick={handleAcceptAll} className="w-full md:w-auto bg-primary text-primary-foreground font-bold uppercase tracking-widest text-xs px-10 py-6 h-auto hover:opacity-90 shadow-lg shadow-primary/20">
                                         Aceitar e Continuar
                                     </Button>
