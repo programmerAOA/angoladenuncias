@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats";
 
 interface Article {
   id: string;
@@ -64,6 +64,17 @@ interface UserRole {
   role: string;
 }
 
+interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  country: string | null;
+  access_count: number | null;
+  last_access: string | null;
+  created_at: string;
+}
+
 const AdminPage = () => {
   const { user, isAdmin, isEditor, loading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -87,7 +98,8 @@ const AdminPage = () => {
   const [opinions, setOpinions] = useState<Opinion[]>([]);
   const [breakingNews, setBreakingNews] = useState<BreakingItem[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
-  const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0 });
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0 });
   const [dataLoading, setDataLoading] = useState(false);
   const [savingArticle, setSavingArticle] = useState(false);
   const [savingVideo, setSavingVideo] = useState(false);
@@ -200,7 +212,7 @@ const AdminPage = () => {
           if (tab === "dashboard") setStats(s => ({ ...s, opinions: data.length }));
         }
       }
-      if (tab === "breaking") {
+      if (tab === "dashboard" || tab === "breaking") {
         const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }), 20000) as any;
         if (error) {
           console.error("Error loading breaking news:", error);
@@ -209,6 +221,7 @@ const AdminPage = () => {
         if (data) {
           console.log("Breaking news loaded:", data);
           setBreakingNews(data);
+          if (tab === "dashboard") setStats(s => ({ ...s, breaking: data.length }));
         }
 
         // Load ticker speed
@@ -218,11 +231,23 @@ const AdminPage = () => {
           if (val.speed) setTickerSpeed(Number(val.speed));
         }
       }
+      if (tab === "dashboard" || tab === "users" || tab === "stats") {
+        const { data, error } = await withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }), 20000) as any;
+        if (error) {
+          console.error("Error loading profiles:", error);
+          toast.error("Erro ao carregar perfis: " + error.message);
+        }
+        if (data) {
+          setProfiles(data);
+          const totalVisits = data.reduce((acc: number, p: any) => acc + (p.access_count || 0), 0);
+          if (tab === "dashboard" || tab === "stats") setStats(s => ({ ...s, users: data.length, totalVisits }));
+        }
+      }
       if (tab === "users") {
         const { data, error } = await withTimeout(supabase.from("user_roles").select("*"), 20000) as any;
         if (error) {
           console.error("Error loading user roles:", error);
-          toast.error("Erro ao carregar perfis: " + error.message);
+          toast.error("Erro ao carregar permissões: " + error.message);
         }
         if (data) setUserRoles(data);
       }
@@ -684,6 +709,7 @@ const AdminPage = () => {
     { id: "breaking" as Tab, label: "Última Hora", icon: Zap },
     { id: "ai-discovery" as Tab, label: "Descoberta IA", icon: Sparkles },
     ...(isAdmin ? [
+      { id: "stats" as Tab, label: "Estatísticas", icon: RefreshCw },
       { id: "ads" as Tab, label: "Publicidade", icon: Megaphone },
       { id: "users" as Tab, label: "Utilizadores", icon: Users }
     ] : []),
@@ -755,19 +781,20 @@ const AdminPage = () => {
           {/* Dashboard */}
           {activeTab === "dashboard" && (
             <div>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 {[
                   { label: "Artigos", value: articles.length, icon: Newspaper, color: "text-blue-400" },
                   { label: "Vídeos", value: videos.length, icon: Video, color: "text-purple-400" },
-                  { label: "Última Hora", value: breakingNews.length, icon: Zap, color: "text-primary" },
-                  { label: "Utilizadores", value: userRoles.length, icon: Users, color: "text-green-400" },
+                  { label: "Última Hora", value: stats.breaking, icon: Zap, color: "text-primary" },
+                  { label: "Utilizadores", value: stats.users, icon: Users, color: "text-green-400" },
+                  { label: "Visitas Reais", value: stats.totalVisits.toLocaleString(), icon: Eye, color: "text-orange-400" },
                 ].map(({ label, value, icon: Icon, color }) => (
                   <div key={label} className="bg-card border border-border p-5">
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
                       <Icon className={`w-4 h-4 ${color}`} />
                     </div>
-                    <div className="text-3xl font-heading font-bold text-foreground">{value}</div>
+                    <div className="text-2xl font-heading font-bold text-foreground">{value}</div>
                   </div>
                 ))}
               </div>
@@ -1226,25 +1253,141 @@ const AdminPage = () => {
             </div>
           )}
 
+          {/* Stats */}
+          {activeTab === "stats" && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center">
+                      <Eye className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Visitas Totais Reais</p>
+                      <p className="text-3xl font-heading font-bold text-foreground">{stats.totalVisits.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Soma de todos os acessos registados no sistema.</p>
+                </div>
+
+                <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                      <Users className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Utilizadores Registados</p>
+                      <p className="text-3xl font-heading font-bold text-foreground">{stats.users}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Utilizadores com perfil criado na plataforma.</p>
+                </div>
+
+                <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center">
+                      <Globe className="w-6 h-6 text-orange-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Países/Zonas</p>
+                      <p className="text-3xl font-heading font-bold text-foreground">{new Set(profiles.map(p => p.country).filter(Boolean)).size}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Diversidade geográfica da audiência.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="p-6 border-b border-border bg-secondary/20">
+                    <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-primary" /> Distribuição Geográfica
+                    </h3>
+                  </div>
+                  <div className="p-0">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/30">
+                          <th className="text-left px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Zona / País</th>
+                          <th className="text-right px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Visitas</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.entries(
+                          profiles.reduce((acc: Record<string, number>, p) => {
+                            const c = p.country || "Desconhecido";
+                            acc[c] = (acc[c] || 0) + (p.access_count || 0);
+                            return acc;
+                          }, {})
+                        )
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([country, count]) => (
+                            <tr key={country} className="border-b border-border/50 hover:bg-secondary/20">
+                              <td className="px-6 py-4 text-sm font-medium text-foreground">{country}</td>
+                              <td className="px-6 py-4 text-right text-sm text-muted-foreground font-mono">{count}</td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-xl overflow-hidden">
+                  <div className="p-6 border-b border-border bg-secondary/20">
+                    <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                      <RefreshCw className="w-4 h-4 text-primary" /> Atividade Recente
+                    </h3>
+                  </div>
+                  <div className="p-0">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="bg-muted/30">
+                          <th className="text-left px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Utilizador</th>
+                          <th className="text-right px-6 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Último Acesso</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {profiles
+                          .filter(p => p.last_access)
+                          .slice(0, 10)
+                          .map((p) => (
+                            <tr key={p.id} className="border-b border-border/50 hover:bg-secondary/20">
+                              <td className="px-6 py-4">
+                                <p className="text-sm font-medium text-foreground">{p.full_name || p.email || "Utilizador"}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono truncate">{p.user_id}</p>
+                              </td>
+                              <td className="px-6 py-4 text-right text-xs text-muted-foreground">
+                                {p.last_access ? formatRelativeDate(p.last_access) : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Users */}
           {activeTab === "users" && (
-            <div>
-              <div className="bg-card border border-border p-6 mb-6">
-                <h3 className="font-heading font-semibold text-foreground mb-1">Atribuir função a utilizador</h3>
-                <p className="text-xs text-muted-foreground mb-4">Introduza o UUID do utilizador (visível no Cloud → Utilizadores)</p>
+            <div className="space-y-6">
+              <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                <h3 className="font-heading font-bold text-foreground mb-1">Atribuir função a utilizador</h3>
+                <p className="text-xs text-muted-foreground mb-4">Introduza o UUID do utilizador para conceder acesso administrativo ou de edição.</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <div className="md:col-span-2">
                     <input
                       value={newUserEmail}
                       onChange={e => setNewUserEmail(e.target.value)}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                      placeholder="UUID do utilizador"
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
+                      placeholder="UUID do utilizador (ex: 550e8400-e29b-...)"
                     />
                   </div>
                   <select
                     value={newUserRole}
                     onChange={e => setNewUserRole(e.target.value as "admin" | "editor")}
-                    className="bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    className="bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
                   >
                     <option value="editor">Editor</option>
                     <option value="admin">Admin</option>
@@ -1269,39 +1412,66 @@ const AdminPage = () => {
                       setDataLoading(false);
                     }
                   }}
-                  className="mt-3 flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90"
+                  className="mt-4 flex items-center gap-2 bg-primary text-primary-foreground px-6 py-2 text-sm font-bold hover:opacity-90 transition-opacity rounded-md"
                 >
                   <Plus className="w-4 h-4" />
-                  Atribuir função
+                  Atribuir Função
                 </button>
               </div>
 
-              <div className="bg-card border border-border overflow-hidden">
-                <table className="w-full">
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-left">
                   <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">User ID</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Função</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ações</th>
+                    <tr className="bg-muted/30 border-b border-border">
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Utilizador</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">País/Zona</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Acessos</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Último Acesso</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estado</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {userRoles.map(ur => (
-                      <tr key={ur.id} className="border-b border-border hover:bg-secondary/50">
-                        <td className="px-4 py-3 text-xs text-muted-foreground font-mono">{ur.user_id}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 uppercase font-semibold tracking-wider ${ur.role === "admin" ? "bg-primary/20 text-primary" : "bg-secondary text-muted-foreground"}`}>
-                            {ur.role}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button onClick={() => deleteRecord("user_roles", ur.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {userRoles.length === 0 && <tr><td colSpan={3} className="px-4 py-8 text-center text-sm text-muted-foreground">Sem utilizadores com funções atribuídas.</td></tr>}
+                    {profiles.map(p => {
+                      const role = userRoles.find(r => r.user_id === p.user_id)?.role;
+                      return (
+                        <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-bold text-foreground">{p.full_name || p.email || "Utilizador"}</p>
+                            <p className="text-[10px] text-muted-foreground font-mono">{p.user_id}</p>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-muted-foreground hidden lg:table-cell">{p.country || "Desconhecido"}</td>
+                          <td className="px-6 py-4 text-xs text-muted-foreground hidden sm:table-cell font-mono">{p.access_count || 0}</td>
+                          <td className="px-6 py-4 text-xs text-muted-foreground hidden md:table-cell">
+                            {p.last_access ? formatRelativeDate(p.last_access) : "Nunca"}
+                          </td>
+                          <td className="px-6 py-4">
+                            {role ? (
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${role === "admin" ? "bg-primary/10 text-primary border border-primary/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
+                                {role}
+                              </span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium uppercase tracking-tighter">Leitor</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {role && (
+                              <button
+                                onClick={() => {
+                                  const ur = userRoles.find(r => r.user_id === p.user_id);
+                                  if (ur) deleteRecord("user_roles", ur.id);
+                                }}
+                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                                title="Remover permissões"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {profiles.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">Não foram encontrados perfis de utilizadores.</td></tr>}
                   </tbody>
                 </table>
               </div>

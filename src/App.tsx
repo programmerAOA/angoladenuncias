@@ -16,6 +16,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import VideosPage from "./pages/VideosPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
+import CookieConsent from "@/components/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +41,7 @@ const App = () => (
                 <Route path="/privacidade" element={<PrivacyPage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <CookieConsent />
             </SecurityLayer>
           </AuthProvider>
         </BrowserRouter>
