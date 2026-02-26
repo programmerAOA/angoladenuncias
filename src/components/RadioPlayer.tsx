@@ -6,7 +6,8 @@ import { toast } from "sonner";
 // Lista de URLs possíveis para a Rádio
 const RADIOS = [
     { name: "Rádio Nacional", url: "https://paineldj5.com.br:20087/stream" },
-    { name: "Girassol FM", url: "https://102.222.150.46:8800/GirassolFM" }
+    { name: "Girassol FM", url: "http://102.222.150.46:8800/GirassolFM" },
+    { name: "Rádio Moçambique", url: "https://node.stream-africa.com:8443/AntenaNacional" }
 ];
 
 const RadioPlayer = () => {
@@ -179,17 +180,19 @@ const RadioPlayer = () => {
             </div>
 
             {/* Station Selector */}
-            <div className="bg-zinc-800/50 p-2 flex gap-1 border-b border-white/5">
+            <div className="bg-zinc-800/50 p-2 grid grid-cols-3 gap-1 border-b border-white/5">
                 {RADIOS.map((radio, idx) => (
                     <button
                         key={radio.name}
                         onClick={() => switchRadio(idx)}
-                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeRadioIndex === idx
+                        className={`py-1.5 px-1 rounded-lg text-[9px] font-bold uppercase tracking-tight transition-all leading-tight text-center flex flex-col items-center justify-center min-h-[40px] ${activeRadioIndex === idx
                                 ? "bg-red-600 text-white shadow-lg shadow-red-600/20"
                                 : "bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
                             }`}
                     >
-                        {radio.name}
+                        {radio.name.split(' ').map((word, i) => (
+                            <span key={i} className="block">{word}</span>
+                        ))}
                     </button>
                 ))}
             </div>
