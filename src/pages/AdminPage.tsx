@@ -75,6 +75,12 @@ interface Profile {
   created_at: string;
 }
 
+interface SiteVisit {
+  id: string;
+  country: string | null;
+  created_at: string | null;
+}
+
 const AdminPage = () => {
   const { user, isAdmin, isEditor, loading, signOut } = useAuth();
   const navigate = useNavigate();
@@ -99,6 +105,7 @@ const AdminPage = () => {
   const [breakingNews, setBreakingNews] = useState<BreakingItem[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0 });
   const [dataLoading, setDataLoading] = useState(false);
   const [savingArticle, setSavingArticle] = useState(false);
@@ -239,8 +246,17 @@ const AdminPage = () => {
         }
         if (data) {
           setProfiles(data);
-          const totalVisits = data.reduce((acc: number, p: any) => acc + (p.access_count || 0), 0);
-          if (tab === "dashboard" || tab === "stats") setStats(s => ({ ...s, users: data.length, totalVisits }));
+          if (tab === "dashboard" || tab === "stats") setStats(s => ({ ...s, users: data.length }));
+        }
+      }
+      if (tab === "dashboard" || tab === "stats") {
+        const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }), 20000) as any;
+        if (visitError) {
+          console.error("Error loading visits:", visitError);
+        }
+        if (visitData) {
+          setSiteVisits(visitData);
+          setStats(s => ({ ...s, totalVisits: visitData.length }));
         }
       }
       if (tab === "users") {
@@ -1289,11 +1305,11 @@ const AdminPage = () => {
                       <Globe className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Países/Zonas</p>
-                      <p className="text-3xl font-heading font-bold text-foreground">{new Set(profiles.map(p => p.country).filter(Boolean)).size}</p>
+                      <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Países/Zonas (Visitantes)</p>
+                      <p className="text-3xl font-heading font-bold text-foreground">{new Set(siteVisits.map(v => v.country).filter(Boolean)).size}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">Diversidade geográfica da audiência.</p>
+                  <p className="text-xs text-muted-foreground">Diversidade geográfica baseada em todos os acessos.</p>
                 </div>
               </div>
 
@@ -1314,9 +1330,9 @@ const AdminPage = () => {
                       </thead>
                       <tbody>
                         {Object.entries(
-                          profiles.reduce((acc: Record<string, number>, p) => {
-                            const c = p.country || "Desconhecido";
-                            acc[c] = (acc[c] || 0) + (p.access_count || 0);
+                          siteVisits.reduce((acc: Record<string, number>, v) => {
+                            const c = v.country || "Desconhecido";
+                            acc[c] = (acc[c] || 0) + 1;
                             return acc;
                           }, {})
                         )
@@ -1347,17 +1363,16 @@ const AdminPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {profiles
-                          .filter(p => p.last_access)
-                          .slice(0, 10)
-                          .map((p) => (
-                            <tr key={p.id} className="border-b border-border/50 hover:bg-secondary/20">
+                        {siteVisits
+                          .slice(0, 15)
+                          .map((v) => (
+                            <tr key={v.id} className="border-b border-border/50 hover:bg-secondary/20">
                               <td className="px-6 py-4">
-                                <p className="text-sm font-medium text-foreground">{p.full_name || p.email || "Utilizador"}</p>
-                                <p className="text-[10px] text-muted-foreground font-mono truncate">{p.user_id}</p>
+                                <p className="text-sm font-medium text-foreground">{v.country || "Visitante Anónimo"}</p>
+                                <p className="text-[10px] text-muted-foreground font-mono truncate">{v.id}</p>
                               </td>
                               <td className="px-6 py-4 text-right text-xs text-muted-foreground">
-                                {p.last_access ? formatRelativeDate(p.last_access) : "—"}
+                                {v.created_at ? formatRelativeDate(v.created_at) : "—"}
                               </td>
                             </tr>
                           ))}

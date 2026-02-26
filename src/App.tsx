@@ -17,6 +17,7 @@ import VideosPage from "./pages/VideosPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
 import CookieConsent from "@/components/CookieConsent";
+import { AnalyticsTracker } from "@/components/AnalyticsTracker";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <CookieConsent />
+              <AnalyticsTracker />
             </SecurityLayer>
           </AuthProvider>
         </BrowserRouter>

@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      advertisements: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          link_url: string | null
+          slot: string
+          title: string
+          updated_at: string | null
+          video_url: string | null
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          slot: string
+          title: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          link_url?: string | null
+          slot?: string
+          title?: string
+          updated_at?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       article_comments: {
         Row: {
           article_id: string
@@ -47,53 +86,7 @@ export type Database = {
             referencedRelation: "news_articles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "article_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
         ]
-      }
-      advertisements: {
-        Row: {
-          id: string
-          slot: string
-          title: string
-          image_url: string | null
-          video_url: string | null
-          link_url: string | null
-          display_order: number
-          active: boolean | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          slot: string
-          title: string
-          image_url?: string | null
-          video_url?: string | null
-          link_url?: string | null
-          display_order?: number
-          active?: boolean | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          slot?: string
-          title?: string
-          image_url?: string | null
-          video_url?: string | null
-          link_url?: string | null
-          display_order?: number
-          active?: boolean | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       breaking_news: {
         Row: {
@@ -164,6 +157,36 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          link: string | null
+          message: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          link?: string | null
+          message?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       opinion_articles: {
         Row: {
           author: string
@@ -202,28 +225,94 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_count: number | null
           avatar_url: string | null
+          blocked_reason: string | null
+          country: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
+          is_blocked: boolean | null
+          last_access: string | null
+          phone: string | null
           updated_at: string
           user_id: string
+          user_type: string | null
+          wallet_balance: number | null
         }
         Insert: {
+          access_count?: number | null
           avatar_url?: string | null
+          blocked_reason?: string | null
+          country?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          is_blocked?: boolean | null
+          last_access?: string | null
+          phone?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string | null
+          wallet_balance?: number | null
         }
         Update: {
+          access_count?: number | null
           avatar_url?: string | null
+          blocked_reason?: string | null
+          country?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          is_blocked?: boolean | null
+          last_access?: string | null
+          phone?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string | null
+          wallet_balance?: number | null
+        }
+        Relationships: []
+      }
+      site_visits: {
+        Row: {
+          country: string | null
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      system_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
@@ -287,27 +376,6 @@ export type Database = {
         }
         Relationships: []
       }
-      system_settings: {
-        Row: {
-          id: string
-          key: string
-          value: Json
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          key: string
-          value?: Json
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          key?: string
-          value?: Json
-          updated_at?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -320,9 +388,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_views_periodically: { Args: never; Returns: undefined }
+      track_user_access: { Args: never; Returns: undefined }
+      validate_referrer: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "editor" | "user"
+      deposit_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -451,6 +523,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "user"],
+      deposit_status: ["pending", "approved", "rejected"],
     },
   },
 } as const
