@@ -279,19 +279,37 @@ export type Database = {
       }
       site_visits: {
         Row: {
+          browser: string | null
           country: string | null
           created_at: string | null
+          device_model: string | null
+          device_type: string | null
           id: string
+          os: string | null
+          user_email: string | null
+          visitor_id: string | null
         }
         Insert: {
+          browser?: string | null
           country?: string | null
           created_at?: string | null
+          device_model?: string | null
+          device_type?: string | null
           id?: string
+          os?: string | null
+          user_email?: string | null
+          visitor_id?: string | null
         }
         Update: {
+          browser?: string | null
           country?: string | null
           created_at?: string | null
+          device_model?: string | null
+          device_type?: string | null
           id?: string
+          os?: string | null
+          user_email?: string | null
+          visitor_id?: string | null
         }
         Relationships: []
       }

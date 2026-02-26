@@ -84,6 +84,7 @@ interface SiteVisit {
   browser: string | null;
   os: string | null;
   user_email: string | null;
+  visitor_id: string | null;
 }
 
 const AdminPage = () => {
@@ -1404,15 +1405,28 @@ const AdminPage = () => {
                               <td className="px-6 py-4">
                                 <div className="flex flex-col">
                                   <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-foreground">{v.country || "Anónimo"}</span>
-                                    {v.user_email && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{v.user_email}</span>}
-                                  </div>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                      <Monitor className="w-3 h-3" /> {v.device_type} • {v.device_model}
+                                    {v.user_email ? (
+                                      <span className="text-sm font-bold text-blue-400 flex items-center gap-1">
+                                        <Users className="w-3 h-3" /> {v.user_email}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm font-medium text-foreground">Visitante Anónimo</span>
+                                    )}
+                                    <span className="text-[10px] text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded border border-border/50">
+                                      {v.country || "Desconhecido"}
                                     </span>
-                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 border-l border-border pl-2">
-                                      <Globe className="w-3 h-3" /> {v.browser} • {v.os}
+                                    {v.visitor_id && siteVisits.filter(sv => sv.visitor_id === v.visitor_id).length > 1 && (
+                                      <span className="text-[10px] bg-green-500/10 text-green-400 px-1.5 py-0.5 rounded-full border border-green-500/20 flex items-center gap-1">
+                                        <Zap className="w-2.5 h-2.5" /> Recorrente
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1.5">
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/30 px-1.5 py-0.5 rounded">
+                                      <Monitor className="w-3 h-3" /> {v.device_type || "—"} • {v.device_model || "—"}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 bg-muted/30 px-1.5 py-0.5 rounded">
+                                      <Globe className="w-3 h-3" /> {v.browser || "—"} • {v.os || "—"}
                                     </span>
                                   </div>
                                 </div>

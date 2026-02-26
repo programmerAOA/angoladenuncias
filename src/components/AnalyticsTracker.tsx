@@ -3,6 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const AnalyticsTracker = () => {
     useEffect(() => {
+        // Generate or retrieve a persistent visitor ID (like a permanent cookie)
+        let visitorId = localStorage.getItem("persistent_visitor_id");
+        if (!visitorId) {
+            visitorId = crypto.randomUUID();
+            localStorage.setItem("persistent_visitor_id", visitorId);
+        }
+
         const trackVisit = async () => {
             // Basic check to see if we've already tracked this session to avoid double counting
             const hasTracked = sessionStorage.getItem("site_visit_tracked");
@@ -55,23 +62,25 @@ export const AnalyticsTracker = () => {
                     console.warn("Failed to detect country via IP:", ipError);
                 }
 
-                // 3. Get User Email if logged in
+                // 3. Get User Email if already logged in
                 const { data: { user } } = await supabase.auth.getUser();
                 const userEmail = user?.email || null;
 
                 // 4. Log the visit to Supabase
-                const { error } = await supabase.from("site_visits").insert({
+                const { data, error } = await supabase.from("site_visits").insert({
                     country,
                     device_type: deviceType,
                     device_model: deviceModel,
                     browser,
                     os,
-                    user_email: userEmail
-                });
+                    user_email: userEmail,
+                    visitor_id: visitorId
+                }).select('id').single();
 
-                if (!error) {
+                if (!error && data) {
                     sessionStorage.setItem("site_visit_tracked", "true");
-                    console.log("Visit tracked successfully:", { country, deviceType, deviceModel, browser, os, userEmail });
+                    sessionStorage.setItem("current_visit_record_id", data.id);
+                    console.log("Visit tracked successfully:", { country, deviceType, deviceModel, browser, os, userEmail, visitorId });
                 } else {
                     console.error("Error logging visit:", error);
                 }
@@ -81,6 +90,24 @@ export const AnalyticsTracker = () => {
         };
 
         trackVisit();
+
+        // Listen for Auth Changes to update the current visit with an email if they log in
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_IN' && session?.user?.email) {
+                const currentRecordId = sessionStorage.getItem("current_visit_record_id");
+                if (currentRecordId) {
+                    console.log("User signed in, updating current visit record with email...");
+                    await supabase
+                        .from("site_visits")
+                        .update({ user_email: session.user.email })
+                        .eq("id", currentRecordId);
+                }
+            }
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
     }, []);
 
     return null;
