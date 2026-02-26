@@ -4,13 +4,14 @@ import { toast } from "sonner";
 
 // Lista de URLs possíveis para a Rádio Girassol
 // Lista de URLs possíveis para a Rádio
-const STREAM_SOURCES = [
-    "https://paineldj5.com.br:20087/stream",
+const RADIOS = [
+    { name: "Rádio Nacional", url: "https://paineldj5.com.br:20087/stream" },
+    { name: "Girassol FM", url: "https://102.222.150.46:8800/GirassolFM" }
 ];
 
 const RadioPlayer = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
-    const [currentSourceIndex, setCurrentSourceIndex] = useState(0);
+    const [activeRadioIndex, setActiveRadioIndex] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
     const [isMuted, setIsMuted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,17 +27,10 @@ const RadioPlayer = () => {
         const handlePlaying = () => { setIsLoading(false); setIsPlaying(true); };
         const handlePause = () => setIsPlaying(false);
         const handleError = () => {
-            console.error("Radio Error: Falha ao carregar stream", STREAM_SOURCES[currentSourceIndex]);
+            console.error("Radio Error: Falha ao carregar stream", RADIOS[activeRadioIndex].url);
             setIsLoading(false);
             setIsPlaying(false);
-
-            // Tentar próxima fonte se falhar
-            if (currentSourceIndex < STREAM_SOURCES.length - 1) {
-                console.log("Tentando fonte alternativa...");
-                setCurrentSourceIndex(prev => prev + 1);
-            } else {
-                toast.error("Não foi possível conectar à Rádio. Verifique a sua ligação ou tente mais tarde.");
-            }
+            toast.error(`Não foi possível conectar à ${RADIOS[activeRadioIndex].name}.`);
         };
 
         audio.addEventListener("waiting", handleWaiting);
@@ -52,7 +46,7 @@ const RadioPlayer = () => {
             audio.removeEventListener("pause", handlePause);
             audio.removeEventListener("error", handleError);
         };
-    }, [currentSourceIndex]);
+    }, [activeRadioIndex]);
 
     const togglePlay = () => {
         const audio = audioRef.current;
@@ -65,12 +59,12 @@ const RadioPlayer = () => {
             setIsLoading(true);
 
             // Verificar Mixed Content Policy (HTTP em HTTPS)
-            if (window.location.protocol === "https:" && STREAM_SOURCES[currentSourceIndex].startsWith("http:")) {
+            if (window.location.protocol === "https:" && RADIOS[activeRadioIndex].url.startsWith("http:")) {
                 console.warn("Mixed Content: Tentando carregar stream HTTP em site HTTPS.");
                 toast.warning("A stream da rádio usa uma ligação não segura (HTTP) e pode ser bloqueada pelo seu navegador.");
             }
 
-            audio.src = STREAM_SOURCES[currentSourceIndex];
+            audio.src = RADIOS[activeRadioIndex].url;
             audio.volume = volume;
             audio.muted = isMuted;
             audio.play().catch((err) => {
@@ -79,6 +73,36 @@ const RadioPlayer = () => {
                 setIsPlaying(false);
                 toast.error("Erro ao iniciar a rádio.");
             });
+        }
+    };
+
+    const switchRadio = (index: number) => {
+        if (index === activeRadioIndex) return;
+
+        const wasPlaying = isPlaying;
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.src = "";
+        }
+
+        setActiveRadioIndex(index);
+        setIsPlaying(false);
+        setIsLoading(false);
+
+        // Auto-play next radio if it was playing
+        if (wasPlaying) {
+            setTimeout(() => {
+                const audio = audioRef.current;
+                if (!audio) return;
+                setIsLoading(true);
+                audio.src = RADIOS[index].url;
+                audio.volume = volume;
+                audio.muted = isMuted;
+                audio.play().catch(() => {
+                    setIsLoading(false);
+                    setIsPlaying(false);
+                });
+            }, 100);
         }
     };
 
@@ -135,10 +159,10 @@ const RadioPlayer = () => {
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-red-600 animate-pulse" />
                         )}
                     </div>
-                    <div>
-                        <h3 className="text-white font-bold text-sm tracking-wide">Portal Sem Filtros</h3>
-                        <p className="text-white/70 text-xs text-balance pr-4">
-                            {isPlaying ? "🔴 Em directo" : isLoading ? "A conectar..." : "Offline (Clique para ouvir)"}
+                    <div className="flex-1">
+                        <h3 className="text-white font-bold text-sm tracking-wide leading-tight">{RADIOS[activeRadioIndex].name}</h3>
+                        <p className="text-white/70 text-[10px] uppercase font-bold tracking-tighter mt-0.5">
+                            {isPlaying ? "🔴 AO VIVO" : isLoading ? "A conectar..." : "Sintonizar"}
                         </p>
                     </div>
                 </div>
@@ -152,6 +176,22 @@ const RadioPlayer = () => {
                         <div className="w-1 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "100ms", height: "80%" }} />
                     </div>
                 )}
+            </div>
+
+            {/* Station Selector */}
+            <div className="bg-zinc-800/50 p-2 flex gap-1 border-b border-white/5">
+                {RADIOS.map((radio, idx) => (
+                    <button
+                        key={radio.name}
+                        onClick={() => switchRadio(idx)}
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${activeRadioIndex === idx
+                                ? "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                                : "bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                            }`}
+                    >
+                        {radio.name}
+                    </button>
+                ))}
             </div>
 
             {/* Controls */}
