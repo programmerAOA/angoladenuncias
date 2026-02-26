@@ -32,7 +32,6 @@ const RadioPlayer = () => {
             console.error("Radio Error: Falha ao carregar stream", RADIOS[activeRadioIndex].url);
             setIsLoading(false);
             setIsPlaying(false);
-            toast.error(`Não foi possível conectar à ${RADIOS[activeRadioIndex].name}.`);
         };
 
         audio.addEventListener("waiting", handleWaiting);
@@ -67,7 +66,6 @@ const RadioPlayer = () => {
                 console.error("Playback error:", err);
                 setIsLoading(false);
                 setIsPlaying(false);
-                toast.error("Erro ao iniciar a rádio.");
             });
         }
     };
