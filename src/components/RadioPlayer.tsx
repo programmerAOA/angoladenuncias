@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2, ExternalLink, AlertCircle } from "lucide-react";
+import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 // Lista de URLs possíveis para a Rádio Girassol
@@ -58,14 +58,6 @@ const RadioPlayer = () => {
             audio.src = ""; // Reset source on pause to avoid background data usage
         } else {
             setIsLoading(true);
-
-            // Verificar Mixed Content Policy (HTTP em HTTPS)
-            if (window.location.protocol === "https:" && RADIOS[activeRadioIndex].url.startsWith("http:")) {
-                console.warn("Mixed Content: Tentando carregar stream HTTP em site HTTPS.");
-                toast.info("Esta rádio utiliza uma ligação antiga. Se não ouvir som, utilize o botão 'ABRIR PLAYER EXTERNO'.", {
-                    duration: 5000,
-                });
-            }
 
             audio.src = RADIOS[activeRadioIndex].url;
             audio.volume = volume;
@@ -164,17 +156,9 @@ const RadioPlayer = () => {
                     </div>
                     <div className="flex-1">
                         <h3 className="text-white font-bold text-sm tracking-wide leading-tight">{RADIOS[activeRadioIndex].name}</h3>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                            <p className="text-white/70 text-[10px] uppercase font-bold tracking-tighter">
-                                {isPlaying ? "🔴 AO VIVO" : isLoading ? "A conectar..." : "Sintonizar"}
-                            </p>
-                            {!RADIOS[activeRadioIndex].url.startsWith('https') && (
-                                <span className="flex items-center gap-1 text-[9px] text-orange-400 font-bold bg-orange-400/10 px-1.5 py-0.5 rounded border border-orange-400/20">
-                                    <AlertCircle className="w-2.5 h-2.5" />
-                                    HTTP
-                                </span>
-                            )}
-                        </div>
+                        <p className="text-white/70 text-[10px] uppercase font-bold tracking-tighter mt-0.5">
+                            {isPlaying ? "🔴 AO VIVO" : isLoading ? "A conectar..." : "Sintonizar"}
+                        </p>
                     </div>
                 </div>
 
@@ -206,24 +190,6 @@ const RadioPlayer = () => {
                     </button>
                 ))}
             </div>
-
-            {/* HTTP Warning & Alternatives */}
-            {!RADIOS[activeRadioIndex].url.startsWith('https') && (
-                <div className="bg-orange-500/10 p-3 border-b border-orange-500/20">
-                    <p className="text-[10px] text-orange-200/80 leading-snug mb-2">
-                        Esta rádio usa uma ligação antiga. Se o áudio não carregar, use a alternativa abaixo:
-                    </p>
-                    <a
-                        href={RADIOS[activeRadioIndex].url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-center gap-2 w-full py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 text-[10px] font-bold rounded-lg transition-colors border border-orange-500/30"
-                    >
-                        <ExternalLink className="w-3 h-3" />
-                        ABRIR PLAYER EXTERNO
-                    </a>
-                </div>
-            )}
 
             {/* Controls */}
             <div className="bg-zinc-900 p-4">
