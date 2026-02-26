@@ -523,6 +523,7 @@ const AdminPage = () => {
 
   const handleDiscoverNews = async (filterOverride?: string) => {
     setIsDiscovering(true);
+    setDiscoveryResults([]); // Clear previous results
     const activeFilter = filterOverride || discoveryFilter;
 
     // Fallback: If no query, use the filter as the search term
