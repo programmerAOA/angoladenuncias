@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
-  Globe, Bot, Search as SearchIcon, Sparkles, Wand2
+  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
@@ -79,6 +79,11 @@ interface SiteVisit {
   id: string;
   country: string | null;
   created_at: string | null;
+  device_type: string | null;
+  device_model: string | null;
+  browser: string | null;
+  os: string | null;
+  user_email: string | null;
 }
 
 const AdminPage = () => {
@@ -181,6 +186,35 @@ const AdminPage = () => {
   useEffect(() => {
     if (isAdmin || isEditor) loadData(activeTab);
   }, [activeTab, isAdmin, isEditor]);
+
+  // Setup real-time subscriptions
+  useEffect(() => {
+    if (!isAdmin && !isEditor) return;
+
+    console.log("Setting up real-time channels...");
+    const channel = supabase
+      .channel("admin-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "site_visits" }, () => {
+        console.log("Site visit changed, refreshing stats...");
+        loadData("stats");
+        loadData("dashboard");
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "news_articles" }, () => {
+        console.log("Articles changed, refreshing...");
+        if (activeTab === "articles" || activeTab === "dashboard") loadData(activeTab);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "video_news" }, () => {
+        if (activeTab === "videos" || activeTab === "dashboard") loadData(activeTab);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
+        if (activeTab === "users" || activeTab === "stats" || activeTab === "dashboard") loadData(activeTab);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, isEditor, activeTab]);
 
   const loadData = async (tab: Tab) => {
     console.log("Loading data for tab:", tab);
@@ -1364,12 +1398,24 @@ const AdminPage = () => {
                       </thead>
                       <tbody>
                         {siteVisits
-                          .slice(0, 15)
+                          .slice(0, 20)
                           .map((v) => (
                             <tr key={v.id} className="border-b border-border/50 hover:bg-secondary/20">
                               <td className="px-6 py-4">
-                                <p className="text-sm font-medium text-foreground">{v.country || "Visitante Anónimo"}</p>
-                                <p className="text-[10px] text-muted-foreground font-mono truncate">{v.id}</p>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-foreground">{v.country || "Anónimo"}</span>
+                                    {v.user_email && <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{v.user_email}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                      <Monitor className="w-3 h-3" /> {v.device_type} • {v.device_model}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground flex items-center gap-1 border-l border-border pl-2">
+                                      <Globe className="w-3 h-3" /> {v.browser} • {v.os}
+                                    </span>
+                                  </div>
+                                </div>
                               </td>
                               <td className="px-6 py-4 text-right text-xs text-muted-foreground">
                                 {v.created_at ? formatRelativeDate(v.created_at) : "—"}

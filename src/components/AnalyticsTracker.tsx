@@ -9,7 +9,41 @@ export const AnalyticsTracker = () => {
             if (hasTracked) return;
 
             try {
-                // Detect country via IP API (free and no key required for basic tier)
+                // 1. Detect device/browser/OS via User Agent
+                const ua = navigator.userAgent;
+                let deviceType = "Desktop";
+                let deviceModel = "Windows PC";
+                let browser = "Outro";
+                let os = "Windows";
+
+                if (/tablet|ipad|playbook|silk/i.test(ua)) {
+                    deviceType = "Tablet";
+                } else if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) {
+                    deviceType = "Mobile";
+                }
+
+                // Detect OS
+                if (/Windows/i.test(ua)) os = "Windows";
+                else if (/Macintosh/i.test(ua)) os = "macOS";
+                else if (/Android/i.test(ua)) os = "Android";
+                else if (/iPhone|iPad|iPod/i.test(ua)) os = "iOS";
+                else if (/Linux/i.test(ua)) os = "Linux";
+
+                // Detect Browser
+                if (/Chrome/i.test(ua)) browser = "Chrome";
+                else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
+                else if (/Firefox/i.test(ua)) browser = "Firefox";
+                else if (/Edge/i.test(ua)) browser = "Edge";
+
+                // Simple Mobile Model detection
+                if (/iPhone/i.test(ua)) deviceModel = "iPhone";
+                else if (/iPad/i.test(ua)) deviceModel = "iPad";
+                else if (/Android/i.test(ua)) {
+                    const match = ua.match(/Android\s+([^\s;]+)/);
+                    deviceModel = match ? `Android ${match[1]}` : "Android Device";
+                }
+
+                // 2. Detect country via IP API
                 let country = "Desconhecido";
                 try {
                     const response = await fetch("https://ipapi.co/json/");
@@ -21,12 +55,23 @@ export const AnalyticsTracker = () => {
                     console.warn("Failed to detect country via IP:", ipError);
                 }
 
-                // Log the visit to Supabase
-                const { error } = await supabase.from("site_visits").insert({ country });
+                // 3. Get User Email if logged in
+                const { data: { user } } = await supabase.auth.getUser();
+                const userEmail = user?.email || null;
+
+                // 4. Log the visit to Supabase
+                const { error } = await supabase.from("site_visits").insert({
+                    country,
+                    device_type: deviceType,
+                    device_model: deviceModel,
+                    browser,
+                    os,
+                    user_email: userEmail
+                });
 
                 if (!error) {
                     sessionStorage.setItem("site_visit_tracked", "true");
-                    console.log("Visit tracked successfully from", country);
+                    console.log("Visit tracked successfully:", { country, deviceType, deviceModel, browser, os, userEmail });
                 } else {
                     console.error("Error logging visit:", error);
                 }
@@ -38,5 +83,5 @@ export const AnalyticsTracker = () => {
         trackVisit();
     }, []);
 
-    return null; // This component doesn't render anything
+    return null;
 };
