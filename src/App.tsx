@@ -10,6 +10,7 @@ import AuthPage from "./pages/AuthPage";
 import AdminPage from "./pages/AdminPage";
 import ArticleDetail from "./pages/ArticleDetail";
 import OpinionDetail from "./pages/OpinionDetail";
+import DigitalEditions from "./pages/DigitalEditions";
 import AdvertisingPage from "./pages/AdvertisingPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
@@ -36,6 +37,7 @@ const App = () => (
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/article/:id" element={<ArticleDetail />} />
                 <Route path="/opinion/:id" element={<OpinionDetail />} />
+                <Route path="/edicao-digital" element={<DigitalEditions />} />
                 <Route path="/publicidade" element={<AdvertisingPage />} />
                 <Route path="/videos" element={<VideosPage />} />
                 <Route path="/termos" element={<TermsPage />} />

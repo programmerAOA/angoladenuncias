@@ -5,12 +5,13 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
-  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor
+  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText
 } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions";
 
 interface Article {
   id: string;
@@ -75,6 +76,20 @@ interface Profile {
   created_at: string;
 }
 
+interface DigitalEdition {
+  id: string;
+  title: string;
+  edition_date: string;
+  description?: string;
+  price_aoa: number;
+  price_usd: number;
+  cover_url?: string;
+  pdf_url: string;
+  is_free: boolean;
+  published: boolean;
+  created_at: string;
+}
+
 interface SiteVisit {
   id: string;
   country: string | null;
@@ -128,6 +143,24 @@ const AdminPage = () => {
   const [editingAd, setEditingAd] = useState<string | null>(null);
   const [savingAd, setSavingAd] = useState(false);
   const [adForm, setAdForm] = useState({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 });
+
+  // Digital Editions
+  const [digitalEditions, setDigitalEditions] = useState<DigitalEdition[]>([]);
+  const [showDigitalForm, setShowDigitalForm] = useState(false);
+  const [editingDigital, setEditingDigital] = useState<string | null>(null);
+  const [savingDigital, setSavingDigital] = useState(false);
+  const [digitalForm, setDigitalForm] = useState({
+    title: "",
+    description: "",
+    edition_date: format(new Date(), "yyyy-MM-dd"),
+    price_aoa: 0,
+    price_usd: 0,
+    is_free: false,
+    cover_url: "",
+    pdf_url: ""
+  });
+  const [digitalCoverFile, setDigitalCoverFile] = useState<File | null>(null);
+  const [digitalPdfFile, setDigitalPdfFile] = useState<File | null>(null);
 
 
   // Article form
@@ -317,6 +350,14 @@ const AdminPage = () => {
           if (val.speed) setAdCarouselSpeed(Number(val.speed) / 1000);
         }
       }
+      if (tab === "dashboard" || tab === "digital-editions") {
+        const { data, error } = await supabase.from("digital_editions" as any).select("*").order("edition_date", { ascending: false }) as any;
+        if (error) {
+          console.error("Error loading digital editions:", error);
+          toast.error("Erro ao carregar edições digitais: " + error.message);
+        }
+        if (data) setDigitalEditions(data);
+      }
     } catch (err) {
       console.error("Unexpected error in loadData:", err);
       toast.error("Erro inesperado ao carregar dados.");
@@ -346,18 +387,20 @@ const AdminPage = () => {
     }
   };
 
-  const uploadFile = async (file: File, bucket: string = "news") => {
+  const uploadFile = async (file: File, bucket: string = "news", returnPath = false) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
     const filePath = `${fileName}`;
 
-    const { error: uploadError, data } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(filePath, file);
 
     if (uploadError) {
       throw uploadError;
     }
+
+    if (returnPath) return filePath;
 
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
@@ -587,6 +630,61 @@ const AdminPage = () => {
     }
   };
 
+  const saveDigitalEdition = async () => {
+    if (!digitalForm.title) {
+      toast.error("O título é obrigatório");
+      return;
+    }
+
+    setSavingDigital(true);
+    try {
+      let currentCoverUrl = digitalForm.cover_url;
+      let currentPdfUrl = digitalForm.pdf_url;
+
+      if (digitalCoverFile) {
+        toast.info("A carregar capa...");
+        currentCoverUrl = await withTimeout(uploadFile(digitalCoverFile));
+      }
+
+      if (digitalPdfFile) {
+        toast.info("A carregar PDF...");
+        currentPdfUrl = await withTimeout((uploadFile as any)(digitalPdfFile, "digital-editions", true));
+      }
+
+      const payload = { ...digitalForm, cover_url: currentCoverUrl, pdf_url: currentPdfUrl, published: true };
+
+      const query = editingDigital
+        ? supabase.from("digital_editions" as any).update(payload).eq("id", editingDigital).select()
+        : supabase.from("digital_editions" as any).insert(payload).select();
+
+      const { data, error } = await withTimeout(query) as any;
+
+      if (error) throw error;
+
+      toast.success("Edição digital guardada com sucesso!");
+      setShowDigitalForm(false);
+      setEditingDigital(null);
+      setDigitalCoverFile(null);
+      setDigitalPdfFile(null);
+      setDigitalForm({
+        title: "",
+        description: "",
+        edition_date: format(new Date(), "yyyy-MM-dd"),
+        price_aoa: 0,
+        price_usd: 0,
+        is_free: false,
+        cover_url: "",
+        pdf_url: ""
+      });
+      loadData("digital-editions");
+    } catch (err: any) {
+      console.error("Error saving digital edition:", err);
+      toast.error("Erro ao guardar edição digital: " + err.message);
+    } finally {
+      setSavingDigital(false);
+    }
+  };
+
   const toggleBreaking = async (id: string, current: boolean | null) => {
     const { error } = await supabase.from("breaking_news").update({ active: !current }).eq("id", id);
     if (error) {
@@ -758,6 +856,7 @@ const AdminPage = () => {
     { id: "videos" as Tab, label: "Vídeos", icon: Video },
     { id: "opinions" as Tab, label: "Opinião", icon: MessageSquare },
     { id: "breaking" as Tab, label: "Última Hora", icon: Zap },
+    { id: "digital-editions" as Tab, label: "Jornal Digital", icon: Newspaper },
     { id: "ai-discovery" as Tab, label: "Descoberta IA", icon: Sparkles },
     ...(isAdmin ? [
       { id: "stats" as Tab, label: "Estatísticas", icon: RefreshCw },
@@ -836,7 +935,7 @@ const AdminPage = () => {
                 {[
                   { label: "Artigos", value: articles.length, icon: Newspaper, color: "text-blue-400" },
                   { label: "Vídeos", value: videos.length, icon: Video, color: "text-purple-400" },
-                  { label: "Última Hora", value: stats.breaking, icon: Zap, color: "text-primary" },
+                  { label: "Jornais", value: digitalEditions.length, icon: Newspaper, color: "text-pink-400" },
                   { label: "Utilizadores", value: stats.users, icon: Users, color: "text-green-400" },
                   { label: "Visitas Reais", value: stats.totalVisits.toLocaleString(), icon: Eye, color: "text-orange-400" },
                 ].map(({ label, value, icon: Icon, color }) => (
@@ -1729,6 +1828,251 @@ const AdminPage = () => {
                       <tr>
                         <td colSpan={4} className="px-4 py-8 text-center text-sm text-muted-foreground">
                           Sem artigos de opinião.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+          {/* Digital Editions */}
+          {activeTab === "digital-editions" && (
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm text-muted-foreground">{digitalEditions.length} edições digitais no total</p>
+                <button
+                  onClick={() => {
+                    setEditingDigital(null);
+                    setDigitalForm({
+                      title: "",
+                      description: "",
+                      edition_date: format(new Date(), "yyyy-MM-dd"),
+                      price_aoa: 0,
+                      price_usd: 0,
+                      is_free: false,
+                      cover_url: "",
+                      pdf_url: ""
+                    });
+                    setShowDigitalForm(true);
+                  }}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
+                >
+                  <Plus className="w-4 h-4" />
+                  Nova edição digital
+                </button>
+              </div>
+
+              {showDigitalForm && (
+                <div className="bg-card border border-border p-6 mb-6">
+                  <h3 className="font-heading font-semibold text-foreground mb-4">
+                    {editingDigital ? "Editar edição digital" : "Nova edição digital"}
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título *</label>
+                      <input
+                        value={digitalForm.title}
+                        onChange={e => setDigitalForm(f => ({ ...f, title: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        placeholder="Edição nº X - JJ/MM/AAAA"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Descrição</label>
+                      <textarea
+                        value={digitalForm.description}
+                        onChange={e => setDigitalForm(f => ({ ...f, description: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+                        rows={2}
+                        placeholder="Breve descrição da edição"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Data da Edição *</label>
+                      <input
+                        type="date"
+                        value={digitalForm.edition_date}
+                        onChange={e => setDigitalForm(f => ({ ...f, edition_date: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-5">
+                        <input
+                          type="checkbox"
+                          checked={digitalForm.is_free}
+                          onChange={e => setDigitalForm(f => ({ ...f, is_free: e.target.checked }))}
+                          className="accent-primary"
+                        />
+                        Edição Gratuita
+                      </label>
+                    </div>
+                    {!digitalForm.is_free && (
+                      <>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Preço (AOA)</label>
+                          <input
+                            type="number"
+                            value={digitalForm.price_aoa}
+                            onChange={e => setDigitalForm(f => ({ ...f, price_aoa: Number(e.target.value) }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Preço (USD)</label>
+                          <input
+                            type="number"
+                            value={digitalForm.price_usd}
+                            onChange={e => setDigitalForm(f => ({ ...f, price_usd: Number(e.target.value) }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                          />
+                        </div>
+                      </>
+                    )}
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Capa da Edição (JPG/PNG) *</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setDigitalCoverFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={digitalForm.cover_url}
+                            onChange={e => setDigitalForm(f => ({ ...f, cover_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-3 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou URL da capa..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ficheiro PDF *</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={e => setDigitalPdfFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={digitalForm.pdf_url}
+                            onChange={e => setDigitalForm(f => ({ ...f, pdf_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou nome do ficheiro no storage..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 mt-6">
+                    <button
+                      onClick={saveDigitalEdition}
+                      disabled={savingDigital}
+                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                    >
+                      <Check className="w-4 h-4" />
+                      {savingDigital ? "A guardar..." : "Guardar Edição"}
+                    </button>
+                    <button onClick={() => setShowDigitalForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
+                      <X className="w-4 h-4" />
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-card border border-border overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border bg-secondary/30">
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edição</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Data</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estado</th>
+                      <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {digitalEditions.map(edition => (
+                      <tr key={edition.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-10 border border-border bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
+                              {edition.cover_url ? (
+                                <img src={edition.cover_url} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                <FileText className="w-4 h-4 text-muted-foreground opacity-30" />
+                              )}
+                            </div>
+                            <span className="text-sm font-medium text-foreground">{edition.title}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {format(new Date(edition.edition_date), "dd/MM/yyyy")}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-mono">
+                          {edition.is_free ? (
+                            <span className="text-primary font-bold">GRÁTIS</span>
+                          ) : (
+                            <span>{edition.price_aoa} Kz / ${edition.price_usd}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${edition.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                            {edition.published ? "Publicado" : "Rascunho"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => togglePublished("digital_editions", edition.id, edition.published)}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                              title={edition.published ? "Despublicar" : "Publicar"}
+                            >
+                              {edition.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingDigital(edition.id);
+                                setDigitalForm({
+                                  title: edition.title,
+                                  description: edition.description || "",
+                                  edition_date: edition.edition_date,
+                                  price_aoa: edition.price_aoa || 0,
+                                  price_usd: edition.price_usd || 0,
+                                  is_free: !!edition.is_free,
+                                  cover_url: edition.cover_url || "",
+                                  pdf_url: edition.pdf_url || ""
+                                });
+                                setShowDigitalForm(true);
+                              }}
+                              className="text-muted-foreground hover:text-foreground transition-colors"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteRecord("digital_editions", edition.id)}
+                              className="text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {digitalEditions.length === 0 && (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                          Sem edições digitais.
                         </td>
                       </tr>
                     )}

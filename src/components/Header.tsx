@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Search, Menu, X, User, LogOut, Shield, Loader2, Facebook, Twitter, Linkedin, Globe } from "lucide-react";
+import { Search, Menu, X, User, LogOut, Shield, Loader2, Facebook, Twitter, Linkedin, Globe, Newspaper } from "lucide-react";
 import { categories } from "@/constants/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -203,6 +203,15 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
                 </button>
               </li>
             ))}
+            <li>
+              <button
+                onClick={() => navigate("/edicao-digital")}
+                className={`nav-link flex items-center gap-2 text-primary font-bold bg-primary/5 px-4 py-1.5 rounded-full border border-primary/10 hover:bg-primary/20 transition-all`}
+              >
+                <Newspaper className="w-4 h-4" />
+                Jornal Digital
+              </button>
+            </li>
           </ul>
         </div>
       </nav>
