@@ -1,3 +1,4 @@
+// Trigger redeployment - Newspaper update verification
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
