@@ -103,7 +103,7 @@ interface SiteVisit {
 }
 
 const AdminPage = () => {
-  const { user, isAdmin, isEditor, loading, signOut } = useAuth();
+  const { user, isAdmin, isEditor, allowedCategories, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
   // Capture global errors and show as toasts
@@ -129,6 +129,7 @@ const AdminPage = () => {
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0 });
   const [dataLoading, setDataLoading] = useState(false);
+  const [editorCategories, setEditorCategories] = useState<Record<string, string[]>>({});
   const [savingArticle, setSavingArticle] = useState(false);
   const [savingVideo, setSavingVideo] = useState(false);
   const [savingOpinion, setSavingOpinion] = useState(false);
@@ -334,6 +335,19 @@ const AdminPage = () => {
           toast.error("Erro ao carregar permissões: " + error.message);
         }
         if (data) setUserRoles(data);
+
+        // Load editor categories for all users
+        const { data: catData, error: catError } = await supabase.from("editor_categories" as any).select("*");
+        if (catError) {
+          console.error("Error loading categories:", catError);
+        } else if (catData) {
+          const mapping: Record<string, string[]> = {};
+          catData.forEach((item: any) => {
+            if (!mapping[item.user_id]) mapping[item.user_id] = [];
+            mapping[item.user_id].push(item.category);
+          });
+          setEditorCategories(mapping);
+        }
       }
       if (tab === "ads") {
         const { data, error } = await supabase.from("advertisements").select("*").order("slot").order("display_order");
@@ -808,7 +822,17 @@ const AdminPage = () => {
     toast.success("Dados transferidos para o formulário de publicação.");
   };
 
-  const categories = ["Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
+  const allCategories = ["Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
+  const categories = isAdmin || (isEditor && allowedCategories.length === 0)
+    ? allCategories
+    : allCategories.filter(c => allowedCategories.includes(c));
+
+  // If editor has restrictions, ensure the form starts with an allowed category
+  useEffect(() => {
+    if (isEditor && !isAdmin && allowedCategories.length > 0 && !allowedCategories.includes(articleForm.category)) {
+      setArticleForm(f => ({ ...f, category: allowedCategories[0] }));
+    }
+  }, [allowedCategories, isAdmin, isEditor]);
 
   if (loading) {
     return (
@@ -1601,7 +1625,7 @@ const AdminPage = () => {
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden lg:table-cell">País/Zona</th>
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden sm:table-cell">Acessos</th>
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground hidden md:table-cell">Último Acesso</th>
-                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estado</th>
+                      <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estado / Categorias</th>
                       <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</th>
                     </tr>
                   </thead>
@@ -1620,13 +1644,40 @@ const AdminPage = () => {
                             {p.last_access ? formatRelativeDate(p.last_access) : "Nunca"}
                           </td>
                           <td className="px-6 py-4">
-                            {role ? (
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter ${role === "admin" ? "bg-primary/10 text-primary border border-primary/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
-                                {role}
-                              </span>
-                            ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium uppercase tracking-tighter">Leitor</span>
-                            )}
+                            <div className="flex flex-col gap-2">
+                              {role ? (
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter w-fit ${role === "admin" ? "bg-primary/10 text-primary border border-primary/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
+                                  {role}
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium uppercase tracking-tighter w-fit">Leitor</span>
+                              )}
+
+                              {role === "editor" && (
+                                <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
+                                  {allCategories.map(cat => {
+                                    const isSelected = editorCategories[p.user_id]?.includes(cat);
+                                    return (
+                                      <button
+                                        key={cat}
+                                        onClick={async () => {
+                                          if (isSelected) {
+                                            await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
+                                          } else {
+                                            await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
+                                          }
+                                          loadData("users");
+                                        }}
+                                        className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
+                                        title={isSelected ? "Remover categoria" : "Adicionar categoria"}
+                                      >
+                                        {cat}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 text-right">
                             {role && (

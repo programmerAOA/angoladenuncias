@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   isEditor: boolean;
+  allowedCategories: string[];
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -17,6 +18,7 @@ export const AuthContext = createContext<AuthContextType>({
   session: null,
   isAdmin: false,
   isEditor: false,
+  allowedCategories: [],
   loading: true,
   signOut: async () => { },
 });
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
+  const [allowedCategories, setAllowedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const checkRoles = async (userId: string) => {
@@ -45,13 +48,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data && data.length > 0) {
-        const admin = data.some((r) => r.role === "admin");
-        const editor = data.some((r) => r.role === "editor" || r.role === "admin");
+        const admin = data.some((r: any) => r.role === "admin");
+        const editor = data.some((r: any) => r.role === "editor" || r.role === "admin");
         setIsAdmin(admin);
         setIsEditor(editor);
+
+        // If editor but not admin, fetch restricted categories
+        if (editor && !admin) {
+          const { data: catData } = await supabase
+            .from("editor_categories")
+            .select("category")
+            .eq("user_id", userId);
+
+          if (catData) {
+            setAllowedCategories(catData.map((c: any) => c.category));
+          } else {
+            setAllowedCategories([]);
+          }
+        } else {
+          setAllowedCategories([]);
+        }
       } else {
         setIsAdmin(false);
         setIsEditor(false);
+        setAllowedCategories([]);
       }
     } catch (err) {
       console.error("[Auth] Unexpected role check failure:", err);
@@ -135,7 +155,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isEditor, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isEditor, allowedCategories, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
