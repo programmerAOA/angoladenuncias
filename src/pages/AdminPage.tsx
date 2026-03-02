@@ -103,7 +103,7 @@ interface SiteVisit {
 }
 
 const AdminPage = () => {
-  const { user, isAdmin, isEditor, allowedCategories, loading, signOut } = useAuth();
+  const { user, isAdmin, isEditor, allowedCategories, allowedMenus, loading, signOut } = useAuth();
   const navigate = useNavigate();
 
   // Capture global errors and show as toasts
@@ -130,6 +130,7 @@ const AdminPage = () => {
   const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0 });
   const [dataLoading, setDataLoading] = useState(false);
   const [editorCategories, setEditorCategories] = useState<Record<string, string[]>>({});
+  const [editorMenuPermissions, setEditorMenuPermissions] = useState<Record<string, string[]>>({});
   const [savingArticle, setSavingArticle] = useState(false);
   const [savingVideo, setSavingVideo] = useState(false);
   const [savingOpinion, setSavingOpinion] = useState(false);
@@ -295,7 +296,6 @@ const AdminPage = () => {
           toast.error("Erro ao carregar notícias: " + error.message);
         }
         if (data) {
-          console.log("Breaking news loaded:", data);
           setBreakingNews(data);
           if (tab === "dashboard") setStats(s => ({ ...s, breaking: data.length }));
         }
@@ -336,17 +336,28 @@ const AdminPage = () => {
         }
         if (data) setUserRoles(data);
 
-        // Load editor categories for all users
-        const { data: catData, error: catError } = await supabase.from("editor_categories" as any).select("*");
-        if (catError) {
-          console.error("Error loading categories:", catError);
-        } else if (catData) {
-          const mapping: Record<string, string[]> = {};
+        // Load editor categories and menu permissions for all users
+        const [{ data: catData }, { data: menuData }] = await Promise.all([
+          supabase.from("editor_categories" as any).select("*"),
+          supabase.from("editor_menu_permissions" as any).select("*")
+        ]);
+
+        if (catData) {
+          const catMapping: Record<string, string[]> = {};
           catData.forEach((item: any) => {
-            if (!mapping[item.user_id]) mapping[item.user_id] = [];
-            mapping[item.user_id].push(item.category);
+            if (!catMapping[item.user_id]) catMapping[item.user_id] = [];
+            catMapping[item.user_id].push(item.category);
           });
-          setEditorCategories(mapping);
+          setEditorCategories(catMapping);
+        }
+
+        if (menuData) {
+          const menuMapping: Record<string, string[]> = {};
+          menuData.forEach((item: any) => {
+            if (!menuMapping[item.user_id]) menuMapping[item.user_id] = [];
+            menuMapping[item.user_id].push(item.menu_id);
+          });
+          setEditorMenuPermissions(menuMapping);
         }
       }
       if (tab === "ads") {
@@ -908,7 +919,19 @@ const AdminPage = () => {
       { id: "ads" as Tab, label: "Publicidade", icon: Megaphone },
       { id: "users" as Tab, label: "Utilizadores", icon: Users }
     ] : []),
-  ];
+  ].filter(tab => {
+    if (isAdmin) return true;
+    if (tab.id === "dashboard") return true;
+    if (isEditor) {
+      // If editor has specific menu permissions, check them
+      if (allowedMenus.length > 0) {
+        return allowedMenus.includes(tab.id);
+      }
+      // Default: if no specific permissions but is editor, show articles/videos/opinions/breaking/digital/ai
+      return true;
+    }
+    return false;
+  });
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -1688,28 +1711,62 @@ const AdminPage = () => {
                               )}
 
                               {role === "editor" && (
-                                <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
-                                  {allCategories.map(cat => {
-                                    const isSelected = editorCategories[p.user_id]?.includes(cat);
-                                    return (
-                                      <button
-                                        key={cat}
-                                        onClick={async () => {
-                                          if (isSelected) {
-                                            await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
-                                          } else {
-                                            await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
-                                          }
-                                          loadData("users");
-                                        }}
-                                        className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
-                                        title={isSelected ? "Remover categoria" : "Adicionar categoria"}
-                                      >
-                                        {cat}
-                                      </button>
-                                    );
-                                  })}
-                                </div>
+                                <>
+                                  <label className="text-[8px] font-bold uppercase text-muted-foreground mt-2">Categorias Permitidas</label>
+                                  <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
+                                    {allCategories.map(cat => {
+                                      const isSelected = editorCategories[p.user_id]?.includes(cat);
+                                      return (
+                                        <button
+                                          key={cat}
+                                          onClick={async () => {
+                                            if (isSelected) {
+                                              await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
+                                            } else {
+                                              await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
+                                            }
+                                            loadData("users");
+                                          }}
+                                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
+                                          title={isSelected ? "Remover categoria" : "Adicionar categoria"}
+                                        >
+                                          {cat}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  <label className="text-[8px] font-bold uppercase text-muted-foreground mt-3">Módulos do Menu</label>
+                                  <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
+                                    {[
+                                      { id: "articles", label: "Artigos" },
+                                      { id: "videos", label: "Vídeos" },
+                                      { id: "opinions", label: "Opinião" },
+                                      { id: "breaking", label: "Última Hora" },
+                                      { id: "digital-editions", label: "Jornal Digital" },
+                                      { id: "ai-discovery", label: "Descoberta IA" }
+                                    ].map(menu => {
+                                      const isSelected = editorMenuPermissions[p.user_id]?.includes(menu.id);
+                                      return (
+                                        <button
+                                          key={menu.id}
+                                          onClick={async () => {
+                                            if (isSelected) {
+                                              await supabase.from("editor_menu_permissions" as any).delete().eq("user_id", p.user_id).eq("menu_id", menu.id);
+                                            } else {
+                                              await supabase.from("editor_menu_permissions" as any).insert({ user_id: p.user_id, menu_id: menu.id });
+                                            }
+                                            loadData("users");
+                                          }}
+                                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-blue-600 text-white border-blue-600" : "bg-secondary text-muted-foreground border-border hover:border-blue-400"}`}
+                                          title={isSelected ? "Remover acesso ao menu" : "Permitir acesso ao menu"}
+                                        >
+                                          {menu.label}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </>
                               )}
                             </div>
                           </td>

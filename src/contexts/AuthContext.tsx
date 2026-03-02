@@ -9,6 +9,7 @@ interface AuthContextType {
   isAdmin: boolean;
   isEditor: boolean;
   allowedCategories: string[];
+  allowedMenus: string[];
   loading: boolean;
   signOut: () => Promise<void>;
 }
@@ -19,6 +20,7 @@ export const AuthContext = createContext<AuthContextType>({
   isAdmin: false,
   isEditor: false,
   allowedCategories: [],
+  allowedMenus: [],
   loading: true,
   signOut: async () => { },
 });
@@ -29,6 +31,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
   const [allowedCategories, setAllowedCategories] = useState<string[]>([]);
+  const [allowedMenus, setAllowedMenus] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const checkRoles = async (userId: string) => {
@@ -53,25 +56,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsAdmin(admin);
         setIsEditor(editor);
 
-        // If editor but not admin, fetch restricted categories
+        // If editor but not admin, fetch restricted categories and menus
         if (editor && !admin) {
-          const { data: catData } = await supabase
-            .from("editor_categories")
-            .select("category")
-            .eq("user_id", userId);
+          const [{ data: catData }, { data: menuData }] = await Promise.all([
+            supabase.from("editor_categories" as any).select("category").eq("user_id", userId),
+            supabase.from("editor_menu_permissions" as any).select("menu_id").eq("user_id", userId)
+          ]);
 
-          if (catData) {
-            setAllowedCategories(catData.map((c: any) => c.category));
-          } else {
-            setAllowedCategories([]);
-          }
+          setAllowedCategories(catData ? catData.map((c: any) => c.category) : []);
+          setAllowedMenus(menuData ? menuData.map((m: any) => m.menu_id) : []);
         } else {
           setAllowedCategories([]);
+          setAllowedMenus([]);
         }
       } else {
         setIsAdmin(false);
         setIsEditor(false);
         setAllowedCategories([]);
+        setAllowedMenus([]);
       }
     } catch (err) {
       console.error("[Auth] Unexpected role check failure:", err);
@@ -155,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isEditor, allowedCategories, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isEditor, allowedCategories, allowedMenus, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
