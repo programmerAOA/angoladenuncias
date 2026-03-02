@@ -1593,19 +1593,31 @@ const AdminPage = () => {
                 </div>
                 <button
                   onClick={async () => {
-                    if (!newUserEmail) return;
+                    const cleanUuid = newUserEmail.trim();
+                    if (!cleanUuid) {
+                      toast.error("Por favor, introduza um UUID válido.");
+                      return;
+                    }
+
+                    console.log("Assigning role:", newUserRole, "to user:", cleanUuid);
                     setDataLoading(true);
                     try {
-                      const { error } = await supabase.from("user_roles").insert({ user_id: newUserEmail, role: newUserRole });
-                      if (error) toast.error("Erro: " + error.message);
-                      else {
+                      const { error } = await supabase
+                        .from("user_roles" as any)
+                        .insert({ user_id: cleanUuid, role: newUserRole });
+
+                      if (error) {
+                        console.error("Supabase error:", error);
+                        toast.error("Erro ao atribuir função: " + error.message);
+                      } else {
+                        console.log("Role assigned successfully");
                         toast.success("Função atribuída com sucesso");
                         setNewUserEmail("");
-                        loadData("users");
+                        await loadData("users");
                       }
-                    } catch (err) {
-                      console.error("Error assigning role:", err);
-                      toast.error("Erro inesperado ao atribuir função.");
+                    } catch (err: any) {
+                      console.error("Unexpected error assigning role:", err);
+                      toast.error("Erro inesperado: " + (err.message || "Erro desconhecido"));
                     } finally {
                       setDataLoading(false);
                     }
@@ -1631,7 +1643,8 @@ const AdminPage = () => {
                   </thead>
                   <tbody>
                     {profiles.map(p => {
-                      const role = userRoles.find(r => r.user_id === p.user_id)?.role;
+                      const roles = userRoles.filter(r => r.user_id === p.user_id).map(r => r.role);
+                      const role = roles.includes("admin") ? "admin" : (roles.includes("editor") ? "editor" : (roles.includes("user") ? "user" : null));
                       return (
                         <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
                           <td className="px-6 py-4">
