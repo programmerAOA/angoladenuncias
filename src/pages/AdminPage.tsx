@@ -401,6 +401,27 @@ const AdminPage = () => {
     }
   };
 
+  const handleSetRole = async (userId: string, role: string) => {
+    setDataLoading(true);
+    try {
+      // Clean up previous roles for this user to avoid confusion
+      await supabase.from("user_roles" as any).delete().eq("user_id", userId);
+
+      if (role !== "leitor") {
+        const { error } = await supabase.from("user_roles" as any).insert({ user_id: userId, role });
+        if (error) throw error;
+      }
+
+      toast.success("Estado do utilizador atualizado");
+      await loadData("users");
+    } catch (err: any) {
+      console.error("Error setting role:", err);
+      toast.error("Erro ao atualizar função: " + err.message);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
   const uploadFile = async (file: File, bucket: string = "news", returnPath = false) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
@@ -1693,18 +1714,29 @@ const AdminPage = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            {role && (
-                              <button
-                                onClick={() => {
-                                  const ur = userRoles.find(r => r.user_id === p.user_id);
-                                  if (ur) deleteRecord("user_roles", ur.id);
-                                }}
-                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
-                                title="Remover permissões"
+                            <div className="flex items-center justify-end gap-2">
+                              <select
+                                className="bg-secondary border border-border text-[10px] px-2 py-1 rounded focus:outline-none"
+                                value={role || "leitor"}
+                                onChange={(e) => handleSetRole(p.user_id, e.target.value)}
                               >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            )}
+                                <option value="leitor">Leitor</option>
+                                <option value="editor">Editor</option>
+                                <option value="admin">Admin</option>
+                              </select>
+                              {role && (
+                                <button
+                                  onClick={() => {
+                                    const ur = userRoles.find(r => r.user_id === p.user_id);
+                                    if (ur) deleteRecord("user_roles", ur.id);
+                                  }}
+                                  className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                                  title="Remover permissões"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
