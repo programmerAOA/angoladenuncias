@@ -290,7 +290,7 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
         document.head.appendChild(securityStyle);
 
         // =============================================
-        // 10. Re-enforcement periódico (cada 500ms)
+        // 10. Re-enforcement periódico (cada 2000ms - mais leve)
         // =============================================
         const enforcementInterval = setInterval(() => {
             enforceUserSelectNone();
@@ -300,15 +300,14 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
             if (!existingStyle) {
                 // Foi removido — re-injectar
                 document.head.appendChild(securityStyle);
-                console.warn("Segurança: Style tag de protecção re-injectado.");
             } else if (existingStyle.parentNode && existingStyle.nextSibling) {
-                // Mover para o final do head para ter prioridade
+                // Mover para o final do head para ter prioridade apenas se houver muitos outros styles
                 document.head.appendChild(existingStyle);
             }
-        }, 500);
+        }, 2000);
 
-        // Detecção de DevTools a cada 2 segundos (mais leve)
-        const devtoolsInterval = setInterval(detectDevTools, 2000);
+        // Detecção de DevTools a cada 5 segundos (bem mais leve)
+        const devtoolsInterval = setInterval(detectDevTools, 5000);
 
         // =============================================
         // 11. Sobrescrever getSelection para limitar resultados

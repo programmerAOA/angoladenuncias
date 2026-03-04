@@ -224,7 +224,10 @@ const AdminPage = () => {
     if (isAdmin || isEditor) loadData(activeTab);
   }, [activeTab, isAdmin, isEditor]);
 
-  const displayedCategories = isAdmin ? categories : (allowedCategories.length > 0 ? categories.filter(c => allowedCategories.includes(c)) : categories);
+  const displayedCategories = useMemo(() =>
+    isAdmin ? categories : (allowedCategories.length > 0 ? categories.filter(c => allowedCategories.includes(c)) : categories),
+    [isAdmin, allowedCategories]
+  );
 
   useEffect(() => {
     if (showArticleForm && !editingArticle && !isAdmin && displayedCategories.length > 0) {

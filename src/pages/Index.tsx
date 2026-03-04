@@ -30,22 +30,30 @@ const Index = () => {
       console.log("Index: Iniciar carregamento de dados...");
       setLoading(true);
       try {
-        // Sequencial mas protegido por timeouts maiores para não quebrar a UI
-        console.log("Index: Carregar artigos...");
-        const articlesRes = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }), 60000) as any;
+        // Carregamento em paralelo para máxima performance
+        const results = await Promise.all([
+          withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(40), 30000),
+          withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(6), 30000),
+          withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(5), 30000)
+        ]) as any[];
+
+        const articlesRes = results[0];
+        const videosRes = results[1];
+        const opinionsRes = results[2];
+
         if (articlesRes.data) {
-          console.log(`Index: ${articlesRes.data.length} artigos recebidos`);
-          setArticles(articlesRes.data.map((a: any) => ({
+          const mappedArticles = articlesRes.data.map((a: any) => ({
             id: a.id, title: a.title, summary: a.summary, category: a.category,
             image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
             timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
+          }));
+          setArticles(mappedArticles);
+          setBreakingHeadlines(articlesRes.data.slice(0, 10).map((a: any) => ({
+            id: a.id,
+            title: a.title
           })));
-        } else if (articlesRes.error) {
-          console.error("Index: Erro artigos:", articlesRes.error);
         }
 
-        console.log("Index: Carregar vídeos...");
-        const videosRes = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(6), 60000) as any;
         if (videosRes.data) {
           setVideos(videosRes.data.map((v: any) => ({
             id: v.id, title: v.title, description: v.description || "",
@@ -55,37 +63,25 @@ const Index = () => {
           })));
         }
 
-        console.log("Index: Carregar opiniões...");
-        const opinionsRes = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(5), 60000) as any;
         if (opinionsRes.data) {
           setOpinions(opinionsRes.data.map((o: any) => ({
             id: o.id, title: o.title, author: o.author, timestamp: formatRelativeDate(o.created_at)
           })));
         }
 
-        if (articlesRes.data) {
-          setBreakingHeadlines(articlesRes.data.slice(0, 10).map((a: any) => ({
-            id: a.id,
-            title: a.title
-          })));
-        }
-
-        console.log("Index: Carregar configurações do ticker...");
-        const { data: tickerSettings } = await supabase
+        // Ticker settings (não crítico, pode ser depois)
+        supabase
           .from("system_settings")
           .select("value")
           .eq("key", "ticker")
-          .single();
+          .single()
+          .then(({ data: tickerSettings }) => {
+            if (tickerSettings?.value && typeof tickerSettings.value === 'object') {
+              const value = tickerSettings.value as any;
+              if (value.speed) setTickerSpeed(Number(value.speed));
+            }
+          });
 
-        if (tickerSettings?.value && typeof tickerSettings.value === 'object') {
-          const value = tickerSettings.value as any;
-          if (value.speed) {
-            console.log("Index: Velocidade do ticker configurada para:", value.speed);
-            setTickerSpeed(Number(value.speed));
-          }
-        }
-
-        console.log("Index: Carregamento completo.");
       } catch (error) {
         console.error("Index: Erro de carregamento fatal:", error);
       } finally {
