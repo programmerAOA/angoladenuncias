@@ -13,6 +13,12 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
+        // Se estiver na rota de admin, não aplicar (para evitar lentidão no painel de gestão)
+        if (window.location.pathname.startsWith("/admin")) {
+            console.log("[Security] Rota admin detectada, ignorando monitorização pesada.");
+            return;
+        }
+
         // =============================================
         // 1. Bloquear Clique Direito (Menu de Contexto)
         // =============================================

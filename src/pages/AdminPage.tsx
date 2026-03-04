@@ -244,11 +244,6 @@ const AdminPage = () => {
     console.log("Setting up real-time channels...");
     const channel = supabase
       .channel("admin-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "site_visits" }, () => {
-        console.log("Site visit changed, refreshing stats...");
-        loadData("stats");
-        loadData("dashboard");
-      })
       .on("postgres_changes", { event: "*", schema: "public", table: "news_articles" }, () => {
         console.log("Articles changed, refreshing...");
         if (activeTab === "articles" || activeTab === "dashboard") loadData(activeTab);
@@ -271,7 +266,7 @@ const AdminPage = () => {
     setDataLoading(true);
     try {
       if (tab === "dashboard" || tab === "articles") {
-        const { data, error } = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }), 20000) as any;
+        const { data, error } = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
         if (error) {
           console.error("Error loading articles:", error);
           toast.error("Erro ao carregar artigos: " + error.message);
@@ -282,7 +277,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "videos") {
-        const { data, error } = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }), 20000) as any;
+        const { data, error } = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(50), 20000) as any;
         if (error) {
           console.error("Error loading videos:", error);
           toast.error("Erro ao carregar vídeos: " + error.message);
@@ -293,7 +288,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "opinions") {
-        const { data, error } = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }), 20000) as any;
+        const { data, error } = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(50), 20000) as any;
         if (error) {
           console.error("Error loading opinions:", error);
           toast.error("Erro ao carregar opiniões: " + error.message);
@@ -304,7 +299,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "breaking") {
-        const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }), 20000) as any;
+        const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }).limit(50), 20000) as any;
         if (error) {
           console.error("Error loading breaking news:", error);
           toast.error("Erro ao carregar notícias: " + error.message);
@@ -322,7 +317,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "users" || tab === "stats") {
-        const { data, error } = await withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }), 20000) as any;
+        const { data, error } = await withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(100), 20000) as any;
         if (error) {
           console.error("Error loading profiles:", error);
           toast.error("Erro ao carregar perfis: " + error.message);
@@ -333,7 +328,7 @@ const AdminPage = () => {
         }
       }
       if (tab === "dashboard" || tab === "stats") {
-        const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }), 20000) as any;
+        const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
         if (visitError) {
           console.error("Error loading visits:", visitError);
         }
