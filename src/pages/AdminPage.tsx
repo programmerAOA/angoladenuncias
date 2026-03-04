@@ -467,21 +467,21 @@ const AdminPage = () => {
   };
 
   const saveArticle = async () => {
-    if (!articleForm.title) {
-      toast.error("O título é obrigatório");
+    if (!articleForm.title || (!articleForm.content && !articleForm.summary)) {
+      toast.error("Título e Conteúdo/Resumo são obrigatórios");
       return;
     }
 
     setSavingArticle(true);
-    console.log("Save Article: Starting...", articleForm, editingArticle);
+    console.log("[SaveArticle] Starting...", { articleForm, editingArticle });
     try {
       let currentImageUrl = articleForm.image_url;
 
       if (articleImageFile) {
-        console.log("Save Article: Uploading file...", articleImageFile.name);
-        toast.info("A carregar imagem (isso pode demorar em ligações lentas)...");
+        console.log("[SaveArticle] Uploading image...", articleImageFile.name);
+        toast.info("A carregar imagem...");
         currentImageUrl = await withTimeout(uploadFile(articleImageFile), 180000);
-        console.log("Save Article: Upload success, URL:", currentImageUrl);
+        console.log("[SaveArticle] Image upload success:", currentImageUrl);
       }
 
       // Safety check: verify if the category is allowed for this editor
@@ -491,19 +491,32 @@ const AdminPage = () => {
         return;
       }
 
-      const payload = { ...articleForm, image_url: currentImageUrl, published: true };
-      console.log("Save Article: Sending payload to DB...", payload);
+      // Filter payload to only include valid columns
+      const payload = {
+        title: articleForm.title,
+        summary: articleForm.summary,
+        content: articleForm.content,
+        category: articleForm.category,
+        author: articleForm.author,
+        image_url: currentImageUrl,
+        is_hero: articleForm.is_hero,
+        is_breaking: articleForm.is_breaking,
+        published: true
+      };
 
-      const query = editingArticle
+      console.log("[SaveArticle] Sending payload to DB...", payload);
+      toast.info("A gravar artigo...");
+
+      const queryBuilder = editingArticle
         ? supabase.from("news_articles").update(payload).eq("id", editingArticle).select()
         : supabase.from("news_articles").insert(payload).select();
 
-      const result = await withTimeout(query) as any;
+      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
 
-      console.log("Save article result:", result);
+      console.log("[SaveArticle] Result from DB:", result);
 
       if (result.error) {
-        console.error("Supabase error saving article:", result.error);
+        console.error("[SaveArticle] Supabase error:", result.error);
         toast.error("Erro ao guardar artigo: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("O artigo não foi guardado. Verifique as suas permissões.");
@@ -516,9 +529,10 @@ const AdminPage = () => {
         loadData("articles");
       }
     } catch (err: any) {
-      console.error("Unexpected error in saveArticle:", err);
-      toast.error("Erro inesperado: " + (err?.message || String(err)));
+      console.error("[SaveArticle] Unexpected error:", err);
+      toast.error("Erro inesperado ao gravar artigo: " + (err?.message || String(err)));
     } finally {
+      console.log("[SaveArticle] Finished execution.");
       setSavingArticle(false);
     }
   };
@@ -530,32 +544,45 @@ const AdminPage = () => {
     }
 
     setSavingVideo(true);
-    console.log("Save Video: Starting...", videoForm, editingVideo);
+    console.log("[SaveVideo] Starting...", { videoForm, editingVideo });
     try {
       let currentThumbnailUrl = videoForm.thumbnail_url;
 
       if (videoThumbnailFile) {
-        console.log("Save Video: Uploading thumbnail...", videoThumbnailFile.name);
+        console.log("[SaveVideo] Uploading thumbnail...", videoThumbnailFile.name);
         toast.info("A carregar miniatura...");
         currentThumbnailUrl = await withTimeout(uploadFile(videoThumbnailFile), 180000);
-        console.log("Save Video: Thumbnail upload success:", currentThumbnailUrl);
+        console.log("[SaveVideo] Thumbnail upload success:", currentThumbnailUrl);
       }
 
-      const payload = { ...videoForm, thumbnail_url: currentThumbnailUrl, published: true };
-      console.log("Save Video: Sending payload to DB...", payload);
+      // Filter payload to only include valid columns
+      const payload = {
+        title: videoForm.title,
+        description: videoForm.description,
+        video_url: videoForm.video_url,
+        thumbnail_url: currentThumbnailUrl,
+        duration: videoForm.duration,
+        category: videoForm.category,
+        published: true
+      };
 
-      const query = editingVideo
+      console.log("[SaveVideo] Sending payload to DB...", payload);
+      toast.info("A gravar dados no servidor...");
+
+      const queryBuilder = editingVideo
         ? supabase.from("video_news").update(payload).eq("id", editingVideo).select()
         : supabase.from("video_news").insert(payload).select();
 
-      const result = await withTimeout(query) as any;
+      // Ensure it's a real promise for withTimeout
+      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
 
-      console.log("Save video result:", result);
+      console.log("[SaveVideo] Result from DB:", result);
 
       if (result.error) {
-        console.error("Supabase error saving video:", result.error);
+        console.error("[SaveVideo] Supabase error:", result.error);
         toast.error("Erro ao guardar vídeo: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
+        console.warn("[SaveVideo] Empty data returned");
         toast.error("O vídeo não foi guardado. Verifique as suas permissões.");
       } else {
         toast.success("Vídeo guardado com sucesso!");
@@ -566,9 +593,10 @@ const AdminPage = () => {
         loadData("videos");
       }
     } catch (err: any) {
-      console.error("Unexpected error in saveVideo:", err);
-      toast.error("Erro inesperado: " + (err?.message || String(err)));
+      console.error("[SaveVideo] Unexpected error:", err);
+      toast.error("Erro inesperado ao gravar vídeo: " + (err?.message || String(err)));
     } finally {
+      console.log("[SaveVideo] Finished execution.");
       setSavingVideo(false);
     }
   };
@@ -580,45 +608,55 @@ const AdminPage = () => {
     }
 
     setSavingOpinion(true);
-    console.log("Save Opinion: Starting...", opinionForm, editingOpinion);
+    console.log("[SaveOpinion] Starting...", { opinionForm, editingOpinion });
     try {
       let currentAvatarUrl = opinionForm.avatar_url;
 
       if (opinionAvatarFile) {
-        console.log("Save Opinion: Uploading avatar...", opinionAvatarFile.name);
+        console.log("[SaveOpinion] Uploading avatar...", opinionAvatarFile.name);
         toast.info("A carregar avatar...");
         currentAvatarUrl = await withTimeout(uploadFile(opinionAvatarFile), 180000);
-        console.log("Save Opinion: Avatar upload success:", currentAvatarUrl);
+        console.log("[SaveOpinion] Avatar upload success:", currentAvatarUrl);
       }
 
-      const payload = { ...opinionForm, avatar_url: currentAvatarUrl, published: true };
-      console.log("Save Opinion: Sending payload to DB...", payload);
+      const payload = {
+        title: opinionForm.title,
+        author: opinionForm.author,
+        avatar_url: currentAvatarUrl,
+        excerpt: opinionForm.excerpt,
+        content: opinionForm.content,
+        published: true
+      };
 
-      const query = editingOpinion
+      console.log("[SaveOpinion] Sending to DB...", payload);
+      toast.info("A gravar opinião...");
+
+      const queryBuilder = editingOpinion
         ? supabase.from("opinion_articles").update(payload).eq("id", editingOpinion).select()
         : supabase.from("opinion_articles").insert(payload).select();
 
-      const result = await withTimeout(query) as any;
+      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
 
-      console.log("Save opinion result:", result);
+      console.log("[SaveOpinion] Result:", result);
 
       if (result.error) {
-        console.error("Supabase error saving opinion:", result.error);
+        console.error("[SaveOpinion] Supabase error:", result.error);
         toast.error("Erro ao guardar opinião: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("A opinião não foi guardada. Verifique as suas permissões.");
       } else {
-        toast.success("Artigo de opinião guardado com sucesso!");
+        toast.success("Opinião guardada com sucesso!");
         setShowOpinionForm(false);
         setEditingOpinion(null);
         setOpinionAvatarFile(null);
-        setOpinionForm({ title: "", author: "", content: "", excerpt: "", avatar_url: "" });
+        setOpinionForm({ title: "", author: "", avatar_url: "", excerpt: "", content: "" });
         loadData("opinions");
       }
     } catch (err: any) {
-      console.error("Unexpected error in saveOpinion:", err);
-      toast.error("Erro inesperado: " + (err?.message || String(err)));
+      console.error("[SaveOpinion] Unexpected error:", err);
+      toast.error("Erro inesperado ao gravar opinião: " + (err?.message || String(err)));
     } finally {
+      console.log("[SaveOpinion] Finished execution.");
       setSavingOpinion(false);
     }
   };
@@ -670,13 +708,15 @@ const AdminPage = () => {
     }
 
     setSavingBreaking(true);
-    console.log("Saving breaking news...", breakingForm);
+    console.log("[SaveBreaking] Starting...", breakingForm);
     try {
-      const query = supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
-      const result = await withTimeout(query) as any;
-      console.log("Save breaking news result:", result);
+      const queryBuilder = supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
+
+      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
+      console.log("[SaveBreaking] Result:", result);
+
       if (result.error) {
-        console.error("Supabase error saving breaking news:", result.error);
+        console.error("[SaveBreaking] Error:", result.error);
         toast.error("Erro ao adicionar notícia: " + result.error.message);
       } else if (!result.data || result.data.length === 0) {
         toast.error("A notícia não foi guardada. Verifique as suas permissões.");
@@ -687,8 +727,8 @@ const AdminPage = () => {
         loadData("breaking");
       }
     } catch (err: any) {
-      console.error("Unexpected error in saveBreaking:", err);
-      toast.error("Erro inesperado: " + (err?.message || String(err)));
+      console.error("[SaveBreaking] Unexpected error:", err);
+      toast.error("Erro inesperado ao gravar notícia: " + (err?.message || String(err)));
     } finally {
       setSavingBreaking(false);
     }
@@ -701,50 +741,74 @@ const AdminPage = () => {
     }
 
     setSavingDigital(true);
+    console.log("[SaveDigital] Starting...", { digitalForm, editingDigital });
     try {
       let currentCoverUrl = digitalForm.cover_url;
       let currentPdfUrl = digitalForm.pdf_url;
 
       if (digitalCoverFile) {
+        console.log("[SaveDigital] Uploading cover...", digitalCoverFile.name);
         toast.info("A carregar capa...");
         currentCoverUrl = await withTimeout(uploadFile(digitalCoverFile), 180000);
+        console.log("[SaveDigital] Cover upload success:", currentCoverUrl);
       }
 
       if (digitalPdfFile) {
+        console.log("[SaveDigital] Uploading PDF...", digitalPdfFile.name);
         toast.info("A carregar PDF...");
         currentPdfUrl = await withTimeout((uploadFile as any)(digitalPdfFile, "digital-editions", true), 300000);
+        console.log("[SaveDigital] PDF upload success:", currentPdfUrl);
       }
 
-      const payload = { ...digitalForm, cover_url: currentCoverUrl, pdf_url: currentPdfUrl, published: true };
+      const payload = {
+        title: digitalForm.title,
+        description: digitalForm.description,
+        edition_date: digitalForm.edition_date,
+        price_aoa: Number(digitalForm.price_aoa),
+        price_usd: Number(digitalForm.price_usd),
+        is_free: digitalForm.is_free,
+        cover_url: currentCoverUrl,
+        pdf_url: currentPdfUrl,
+        published: true
+      };
 
-      const query = editingDigital
+      console.log("[SaveDigital] Sending to DB...", payload);
+      toast.info("A gravar edição digital...");
+
+      const queryBuilder = editingDigital
         ? supabase.from("digital_editions" as any).update(payload).eq("id", editingDigital).select()
         : supabase.from("digital_editions" as any).insert(payload).select();
 
-      const { data, error } = await withTimeout(query) as any;
+      const result = await withTimeout(Promise.resolve(queryBuilder), 60000) as any;
 
-      if (error) throw error;
+      console.log("[SaveDigital] Result:", result);
 
-      toast.success("Edição digital guardada com sucesso!");
-      setShowDigitalForm(false);
-      setEditingDigital(null);
-      setDigitalCoverFile(null);
-      setDigitalPdfFile(null);
-      setDigitalForm({
-        title: "",
-        description: "",
-        edition_date: format(new Date(), "yyyy-MM-dd"),
-        price_aoa: 0,
-        price_usd: 0,
-        is_free: false,
-        cover_url: "",
-        pdf_url: ""
-      });
-      loadData("digital-editions");
+      if (result.error) {
+        console.error("[SaveDigital] Supabase error:", result.error);
+        toast.error("Erro ao guardar edição: " + result.error.message);
+      } else {
+        toast.success("Edição digital guardada com sucesso!");
+        setShowDigitalForm(false);
+        setEditingDigital(null);
+        setDigitalCoverFile(null);
+        setDigitalPdfFile(null);
+        setDigitalForm({
+          title: "",
+          description: "",
+          edition_date: format(new Date(), "yyyy-MM-dd"),
+          price_aoa: 0,
+          price_usd: 0,
+          is_free: false,
+          cover_url: "",
+          pdf_url: ""
+        });
+        loadData("digital-editions");
+      }
     } catch (err: any) {
-      console.error("Error saving digital edition:", err);
-      toast.error("Erro ao guardar edição digital: " + err.message);
+      console.error("[SaveDigital] Unexpected error:", err);
+      toast.error("Erro inesperado ao gravar edição: " + (err?.message || String(err)));
     } finally {
+      console.log("[SaveDigital] Finished execution.");
       setSavingDigital(false);
     }
   };
