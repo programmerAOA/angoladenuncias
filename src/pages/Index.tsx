@@ -89,7 +89,7 @@ const Index = () => {
       }
     };
 
-    fetchData();
+    fetchData().catch(err => console.error("Index: Erro não capturado em fetchData:", err));
   }, []);
 
   // Filtrar artigos com base na categoria e/ou pesquisa

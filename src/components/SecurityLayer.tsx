@@ -165,19 +165,8 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
                 devtoolsOpen = true;
             }
 
-            // Técnica 2: Detecção via console.log com getter
-            const element = new Image();
-            let devtoolsDetectedByConsole = false;
-            Object.defineProperty(element, "id", {
-                get: function () {
-                    devtoolsDetectedByConsole = true;
-                    return "";
-                },
-            });
-            console.log("%c", element);
-            if (devtoolsDetectedByConsole) {
-                devtoolsOpen = true;
-            }
+            // Técnica 2: Detecção via console.log com getter (REMOVIDO por ser pesado e instável)
+            // Mantendo apenas a detecção por redimensionamento
 
             if (devtoolsOpen && !devtoolsWarningShown.current) {
                 devtoolsWarningShown.current = true;
@@ -225,8 +214,11 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             const el = node as HTMLElement;
                             // Verificar se é um style tag ou link tag injectado
+                            // IMPORTANTE: Ignorar o nosso próprio style tag para evitar loops
+                            if (el.id === "sf-security-layer") return;
+
                             if (el.tagName === "STYLE" || (el.tagName === "LINK" && el.getAttribute("rel") === "stylesheet")) {
-                                // Verificar se o style contém user-select overrides
+                                // Verificar se o style contém user-select overrides que permitem cópia
                                 if (el.tagName === "STYLE" && el.textContent) {
                                     const content = el.textContent.toLowerCase();
                                     if (
@@ -234,7 +226,7 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
                                         (content.includes("text") || content.includes("auto") || content.includes("all"))
                                     ) {
                                         el.remove();
-                                        console.warn("Segurança: Style tag injectado com user-select override removido.");
+                                        console.warn("Segurança: Style tag externo com permissões de selecção removido.");
                                     }
                                 }
                             }
