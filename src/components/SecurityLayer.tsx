@@ -1,10 +1,18 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
     const devtoolsWarningShown = useRef(false);
+    const { isAdmin } = useAuth();
 
     useEffect(() => {
+        // Se for admin, não aplicar as restrições
+        if (isAdmin) {
+            console.log("[Security] Admin detectado, ignorando protecções de conteúdo.");
+            return;
+        }
+
         // =============================================
         // 1. Bloquear Clique Direito (Menu de Contexto)
         // =============================================
@@ -353,6 +361,11 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
             clearInterval(devtoolsInterval);
             securityStyle.remove();
 
+            // Limpar estilos injetados no body
+            document.body.style.removeProperty("user-select");
+            document.body.style.removeProperty("-webkit-user-select");
+            document.body.style.removeProperty("-webkit-touch-callout");
+
             // Restaurar getSelection original
             Object.defineProperty(window, "getSelection", {
                 value: originalGetSelection,
@@ -360,7 +373,7 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
                 configurable: true,
             });
         };
-    }, []);
+    }, [isAdmin]);
 
     return <>{children}</>;
 };
