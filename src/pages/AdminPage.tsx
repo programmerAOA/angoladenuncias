@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
+import { categories } from "@/constants/categories";
 
 type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions";
 
@@ -222,6 +223,16 @@ const AdminPage = () => {
   useEffect(() => {
     if (isAdmin || isEditor) loadData(activeTab);
   }, [activeTab, isAdmin, isEditor]);
+
+  const displayedCategories = isAdmin ? categories : (allowedCategories.length > 0 ? categories.filter(c => allowedCategories.includes(c)) : categories);
+
+  useEffect(() => {
+    if (showArticleForm && !editingArticle && !isAdmin && displayedCategories.length > 0) {
+      if (!displayedCategories.includes(articleForm.category)) {
+        setArticleForm(prev => ({ ...prev, category: displayedCategories[0] }));
+      }
+    }
+  }, [showArticleForm, editingArticle, isAdmin, displayedCategories]);
 
   // Setup real-time subscriptions
   useEffect(() => {
@@ -471,6 +482,13 @@ const AdminPage = () => {
         toast.info("A carregar imagem (isso pode demorar em ligações lentas)...");
         currentImageUrl = await withTimeout(uploadFile(articleImageFile), 180000);
         console.log("Save Article: Upload success, URL:", currentImageUrl);
+      }
+
+      // Safety check: verify if the category is allowed for this editor
+      if (!isAdmin && allowedCategories.length > 0 && !allowedCategories.includes(articleForm.category)) {
+        toast.error(`Não tem permissão para publicar na categoria: ${articleForm.category}`);
+        setSavingArticle(false);
+        return;
       }
 
       const payload = { ...articleForm, image_url: currentImageUrl, published: true };
@@ -1084,7 +1102,7 @@ const AdminPage = () => {
                         onChange={e => setArticleForm(f => ({ ...f, category: e.target.value }))}
                         className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
                       >
-                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                        {displayedCategories.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
