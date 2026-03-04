@@ -246,12 +246,16 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
             });
         });
 
-        // Observar todo o documento, não apenas o body
-        observer.observe(document.documentElement, {
+        // Observar o head apenas para novos styles/links
+        observer.observe(document.head, {
+            childList: true
+        });
+
+        // Observar o body apenas para mudanças de atributos style
+        observer.observe(document.body, {
             attributes: true,
             attributeFilter: ["style"],
-            childList: true,
-            subtree: true,
+            subtree: true
         });
 
         // =============================================
