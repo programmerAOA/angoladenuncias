@@ -469,7 +469,7 @@ const AdminPage = () => {
       if (articleImageFile) {
         console.log("Save Article: Uploading file...", articleImageFile.name);
         toast.info("A carregar imagem (isso pode demorar em ligações lentas)...");
-        currentImageUrl = await withTimeout(uploadFile(articleImageFile));
+        currentImageUrl = await withTimeout(uploadFile(articleImageFile), 180000);
         console.log("Save Article: Upload success, URL:", currentImageUrl);
       }
 
@@ -519,7 +519,7 @@ const AdminPage = () => {
       if (videoThumbnailFile) {
         console.log("Save Video: Uploading thumbnail...", videoThumbnailFile.name);
         toast.info("A carregar miniatura...");
-        currentThumbnailUrl = await withTimeout(uploadFile(videoThumbnailFile));
+        currentThumbnailUrl = await withTimeout(uploadFile(videoThumbnailFile), 180000);
         console.log("Save Video: Thumbnail upload success:", currentThumbnailUrl);
       }
 
@@ -569,7 +569,7 @@ const AdminPage = () => {
       if (opinionAvatarFile) {
         console.log("Save Opinion: Uploading avatar...", opinionAvatarFile.name);
         toast.info("A carregar avatar...");
-        currentAvatarUrl = await withTimeout(uploadFile(opinionAvatarFile));
+        currentAvatarUrl = await withTimeout(uploadFile(opinionAvatarFile), 180000);
         console.log("Save Opinion: Avatar upload success:", currentAvatarUrl);
       }
 
@@ -689,12 +689,12 @@ const AdminPage = () => {
 
       if (digitalCoverFile) {
         toast.info("A carregar capa...");
-        currentCoverUrl = await withTimeout(uploadFile(digitalCoverFile));
+        currentCoverUrl = await withTimeout(uploadFile(digitalCoverFile), 180000);
       }
 
       if (digitalPdfFile) {
         toast.info("A carregar PDF...");
-        currentPdfUrl = await withTimeout((uploadFile as any)(digitalPdfFile, "digital-editions", true));
+        currentPdfUrl = await withTimeout((uploadFile as any)(digitalPdfFile, "digital-editions", true), 300000);
       }
 
       const payload = { ...digitalForm, cover_url: currentCoverUrl, pdf_url: currentPdfUrl, published: true };

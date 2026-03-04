@@ -18,7 +18,7 @@ export function formatRelativeDate(dateString: string) {
   }
 }
 
-export const withTimeout = async <T extends unknown>(promise: Promise<T> | PromiseLike<T> | any, timeoutMs: number = 20000): Promise<T> => {
+export const withTimeout = async <T extends unknown>(promise: Promise<T> | PromiseLike<T> | any, timeoutMs: number = 60000): Promise<T> => {
   let timeoutId: any;
   const timeoutPromise = new Promise<never>((_, reject) => {
     timeoutId = setTimeout(() => {

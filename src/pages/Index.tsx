@@ -32,7 +32,7 @@ const Index = () => {
       try {
         // Sequencial mas protegido por timeouts maiores para não quebrar a UI
         console.log("Index: Carregar artigos...");
-        const articlesRes = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }), 30000) as any;
+        const articlesRes = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }), 60000) as any;
         if (articlesRes.data) {
           console.log(`Index: ${articlesRes.data.length} artigos recebidos`);
           setArticles(articlesRes.data.map((a: any) => ({
@@ -45,7 +45,7 @@ const Index = () => {
         }
 
         console.log("Index: Carregar vídeos...");
-        const videosRes = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(6), 20000) as any;
+        const videosRes = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(6), 60000) as any;
         if (videosRes.data) {
           setVideos(videosRes.data.map((v: any) => ({
             id: v.id, title: v.title, description: v.description || "",
@@ -56,7 +56,7 @@ const Index = () => {
         }
 
         console.log("Index: Carregar opiniões...");
-        const opinionsRes = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(5), 20000) as any;
+        const opinionsRes = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(5), 60000) as any;
         if (opinionsRes.data) {
           setOpinions(opinionsRes.data.map((o: any) => ({
             id: o.id, title: o.title, author: o.author, timestamp: formatRelativeDate(o.created_at)

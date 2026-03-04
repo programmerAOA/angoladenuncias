@@ -6,14 +6,38 @@ const CookieConsent = () => {
     const [showBanner, setShowBanner] = useState(false);
 
     useEffect(() => {
+        // Check localStorage first
         const savedConsent = localStorage.getItem("cookie-consent");
-        if (!savedConsent) {
+        // Fallback: Check functional cookie
+        const hasCookie = document.cookie.split(';').some((item) => item.trim().startsWith('cookie-consent='));
+
+        if (!savedConsent && !hasCookie) {
             setShowBanner(true);
         }
     }, []);
 
+    const setConsentAttributes = (status: string) => {
+        // Save to localStorage
+        localStorage.setItem("cookie-consent", status);
+
+        // Save to long-lived cookie (1 year)
+        const date = new Date();
+        date.setTime(date.getTime() + (365 * 24 * 60 * 60 * 1000));
+        document.cookie = `cookie-consent=${status}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+
+        setShowBanner(false);
+    };
+
     const handleAcceptAll = () => {
-        localStorage.setItem("cookie-consent", "accepted");
+        setConsentAttributes("accepted");
+    };
+
+    const handleDismiss = () => {
+        // If they click X, we still should remember it for at least 30 days so they aren't bothered every visit
+        const date = new Date();
+        date.setTime(date.getTime() + (30 * 24 * 60 * 60 * 1000));
+        document.cookie = `cookie-consent=dismissed; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+        localStorage.setItem("cookie-consent", "dismissed");
         setShowBanner(false);
     };
 
@@ -35,8 +59,8 @@ const CookieConsent = () => {
                                     <h3 className="text-lg font-heading font-bold text-foreground uppercase tracking-tight">Privacidade e Cookies</h3>
                                 </div>
                                 <button
-                                    onClick={() => setShowBanner(false)}
-                                    className="text-muted-foreground hover:text-foreground transition-colors"
+                                    onClick={handleDismiss}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-2"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
