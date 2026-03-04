@@ -1,13 +1,23 @@
 import { Zap } from "lucide-react";
 
-interface BreakingNewsTickerProps {
-  headlines?: string[];
-  speed?: number; // Speed in seconds
+interface BreakingNewsItem {
+  id: string;
+  title: string;
 }
 
-const BreakingNewsTicker = ({ headlines = [], speed = 30 }: BreakingNewsTickerProps) => {
+interface BreakingNewsTickerProps {
+  headlines?: BreakingNewsItem[];
+  speed?: number; // Speed in seconds
+  onHeadlineClick?: (id: string) => void;
+}
+
+const BreakingNewsTicker = ({
+  headlines = [],
+  speed = 30,
+  onHeadlineClick
+}: BreakingNewsTickerProps) => {
   const displayHeadlines = headlines.length > 0 ? headlines : [
-    "A carregar notícias de última hora...",
+    { id: "", title: "A carregar notícias de última hora..." },
   ];
 
   return (
@@ -28,8 +38,12 @@ const BreakingNewsTicker = ({ headlines = [], speed = 30 }: BreakingNewsTickerPr
             }}
           >
             {[...displayHeadlines, ...displayHeadlines].map((h, i) => (
-              <span key={i} className="text-sm font-medium cursor-pointer hover:underline pr-4">
-                {h}
+              <span
+                key={i}
+                className="text-sm font-medium cursor-pointer hover:underline pr-4"
+                onClick={() => h.id && onHeadlineClick?.(h.id)}
+              >
+                {h.title}
               </span>
             ))}
           </div>

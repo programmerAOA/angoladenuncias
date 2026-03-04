@@ -21,7 +21,7 @@ const Index = () => {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [opinions, setOpinions] = useState<any[]>([]);
-  const [breakingHeadlines, setBreakingHeadlines] = useState<string[]>([]);
+  const [breakingHeadlines, setBreakingHeadlines] = useState<{ id: string; title: string }[]>([]);
   const [tickerSpeed, setTickerSpeed] = useState(30);
   const [loading, setLoading] = useState(true);
 
@@ -63,10 +63,11 @@ const Index = () => {
           })));
         }
 
-        console.log("Index: Carregar última hora...");
-        const breakingRes = await withTimeout(supabase.from("breaking_news").select("text").eq("active", true).order("created_at", { ascending: false }), 20000) as any;
-        if (breakingRes.data) {
-          setBreakingHeadlines(breakingRes.data.map((b: any) => b.text));
+        if (articlesRes.data) {
+          setBreakingHeadlines(articlesRes.data.slice(0, 10).map((a: any) => ({
+            id: a.id,
+            title: a.title
+          })));
         }
 
         console.log("Index: Carregar configurações do ticker...");
@@ -123,7 +124,11 @@ const Index = () => {
         onCategoryChange={setSelectedCategory}
         onSearch={setSearchQuery}
       />
-      <BreakingNewsTicker headlines={breakingHeadlines} speed={tickerSpeed} />
+      <BreakingNewsTicker
+        headlines={breakingHeadlines}
+        speed={tickerSpeed}
+        onHeadlineClick={(id) => navigate(`/article/${id}`)}
+      />
       <AdBanner slot="banner_top" />
       <main>
         {loading ? (
