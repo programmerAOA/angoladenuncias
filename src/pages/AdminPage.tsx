@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -220,14 +220,16 @@ const AdminPage = () => {
     if (!loading && user && !isAdmin && !isEditor) navigate("/");
   }, [user, isAdmin, loading, navigate]);
 
+  const allCategories = ["Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
+  const displayedCategories = useMemo(() => {
+    return isAdmin || (isEditor && allowedCategories.length === 0)
+      ? allCategories
+      : allCategories.filter(c => allowedCategories.includes(c));
+  }, [isAdmin, isEditor, allowedCategories]);
+
   useEffect(() => {
     if (isAdmin || isEditor) loadData(activeTab);
   }, [activeTab, isAdmin, isEditor]);
-
-  const displayedCategories = useMemo(() =>
-    isAdmin ? categories : (allowedCategories.length > 0 ? categories.filter(c => allowedCategories.includes(c)) : categories),
-    [isAdmin, allowedCategories]
-  );
 
   useEffect(() => {
     if (showArticleForm && !editingArticle && !isAdmin && displayedCategories.length > 0) {
@@ -870,10 +872,7 @@ const AdminPage = () => {
     toast.success("Dados transferidos para o formulário de publicação.");
   };
 
-  const allCategories = ["Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
-  const categories = isAdmin || (isEditor && allowedCategories.length === 0)
-    ? allCategories
-    : allCategories.filter(c => allowedCategories.includes(c));
+  // Categories logic moved to top
 
   // If editor has restrictions, ensure the form starts with an allowed category
   useEffect(() => {
@@ -1100,7 +1099,7 @@ const AdminPage = () => {
                         onChange={e => setArticleForm(f => ({ ...f, category: e.target.value }))}
                         className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
                       >
-                        {displayedCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                        {displayedCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                       </select>
                     </div>
                     <div>
@@ -1730,7 +1729,7 @@ const AdminPage = () => {
                                 <>
                                   <label className="text-[8px] font-bold uppercase text-muted-foreground mt-2">Categorias Permitidas</label>
                                   <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
-                                    {allCategories.map(cat => {
+                                    {displayedCategories.map(cat => {
                                       const isSelected = editorCategories[p.user_id]?.includes(cat);
                                       return (
                                         <button
