@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import NewsCard from "./NewsCard";
 import AdCarousel from "./AdCarousel";
@@ -33,6 +34,11 @@ const NewsGrid = ({
   opinionArticles = []
 }: NewsGridProps) => {
   const navigate = useNavigate();
+  const [visibleCount, setVisibleCount] = useState(6);
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + 6);
+  };
 
   return (
     <div className="container py-8">
@@ -56,14 +62,28 @@ const NewsGrid = ({
       {/* Two column: Latest + Sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Latest news */}
-        <section className="lg:col-span-2">
+        <section className="lg:col-span-2 flex flex-col h-full">
           <div className="flex items-center gap-3 mb-6">
             <h2 className="text-xl font-heading font-bold text-foreground">Últimas Notícias</h2>
             <div className="flex-1 h-px bg-border" />
           </div>
-          {latestArticles.map((article) => (
-            <NewsCard key={article.id} article={article} variant="horizontal" />
-          ))}
+
+          <div className="flex-1">
+            {latestArticles.slice(0, visibleCount).map((article) => (
+              <NewsCard key={article.id} article={article} variant="horizontal" />
+            ))}
+          </div>
+
+          {visibleCount < latestArticles.length && (
+            <div className="mt-6 pt-4 border-t border-border flex justify-center">
+              <button
+                onClick={handleLoadMore}
+                className="px-8 py-2.5 bg-secondary hover:bg-secondary/80 text-secondary-foreground text-sm font-semibold tracking-wide uppercase rounded-sm transition-all shadow-sm border border-border"
+              >
+                Ler Mais Notícias
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Sidebar: Carousel + Opinion + Vertical Video */}
