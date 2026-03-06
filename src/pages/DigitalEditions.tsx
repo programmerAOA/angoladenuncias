@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { FileText, Download, Lock, CheckCircle, CreditCard, ShoppingBag, Eye, X } from "lucide-react";
 import { format } from "date-fns";
 import { pt } from "date-fns/locale";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface DigitalEdition {
     id: string;
@@ -142,9 +143,7 @@ const DigitalEditions = () => {
                 </div>
 
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    </div>
+                    <LoadingSpinner />
                 ) : editions.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                         {editions.map((edition) => (

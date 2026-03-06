@@ -4,6 +4,7 @@ import { AuthContext } from "@/contexts/AuthContext";
 import { formatRelativeDate } from "@/lib/utils";
 import { MessageSquare, Send, Trash2, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface Comment {
     id: string;
@@ -163,8 +164,8 @@ const CommentsSection = ({ articleId }: CommentsSectionProps) => {
             {/* Comments List */}
             <div className="space-y-6">
                 {loading ? (
-                    <div className="flex justify-center py-10">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    <div className="flex justify-center py-8">
+                        <LoadingSpinner />
                     </div>
                 ) : comments.length > 0 ? (
                     comments.map((comment) => (

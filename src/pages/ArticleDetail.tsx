@@ -7,6 +7,7 @@ import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { ArrowLeft, User, Calendar, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 const ArticleDetail = () => {
     const { id } = useParams();
@@ -64,8 +65,11 @@ const ArticleDetail = () => {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+                <Header />
+                <div className="flex-1 flex flex-col items-center justify-center w-full">
+                    <LoadingSpinner fullScreen />
+                </div>
             </div>
         );
     }

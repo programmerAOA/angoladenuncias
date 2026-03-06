@@ -11,6 +11,7 @@ import AdBanner from "@/components/AdBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { NewsArticle } from "@/components/NewsCard";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 import { categories } from "@/constants/categories";
 
@@ -128,10 +129,7 @@ const Index = () => {
       <AdBanner slot="banner_top" />
       <main>
         {loading ? (
-          <div className="container py-20 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">A carregar conteúdo...</p>
-          </div>
+          <LoadingSpinner fullScreen />
         ) : isFiltering ? (
           <div className="container py-8">
             <div className="flex items-center gap-3 mb-6">

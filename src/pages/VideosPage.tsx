@@ -6,6 +6,7 @@ import { withTimeout, getYoutubeId } from "@/lib/utils";
 import { Play, Clock, Eye, ArrowLeft, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Hls from "hls.js";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 /** Detecta o tipo de URL do vídeo */
 const getVideoType = (url: string): "youtube" | "hls" | "direct" | "unknown" => {
@@ -95,8 +96,8 @@ const VideosPage = () => {
         return (
             <div className="min-h-screen bg-background flex flex-col">
                 <Header />
-                <div className="flex-1 flex items-center justify-center">
-                    <Loader2 className="w-12 h-12 text-primary animate-spin" />
+                <div className="flex-1 flex flex-col items-center justify-center">
+                    <LoadingSpinner fullScreen />
                 </div>
                 <Footer />
             </div>
