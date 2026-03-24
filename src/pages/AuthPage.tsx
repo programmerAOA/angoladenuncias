@@ -61,7 +61,12 @@ const AuthPage = () => {
         },
       });
       if (error) {
-        setError(error.message);
+        setError(error.message === "User already registered"
+          ? "Este e-mail já está registado. Se ainda não confirmou, insira o código abaixo."
+          : error.message);
+        if (error.message === "User already registered" || error.message.includes("rate limit")) {
+          setOtpMode(true);
+        }
       } else {
         setSuccess("Conta criada! Introduza o código que recebeu no seu e-mail.");
         setOtpMode(true);
@@ -286,6 +291,18 @@ const AuthPage = () => {
               >
                 {loading ? "A processar..." : mode === "login" ? "Entrar" : "Criar conta"}
               </button>
+
+              {mode === "signup" && (
+                <div className="mt-4 pt-4 border-t border-border flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setOtpMode(true)}
+                    className="text-xs text-primary hover:underline transition-colors"
+                  >
+                    Já tem um código de verificação? Clique aqui
+                  </button>
+                </div>
+              )}
             </form>
           )}
 
