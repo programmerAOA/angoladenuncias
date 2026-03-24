@@ -531,14 +531,21 @@ const AdminPage = () => {
       });
 
       if (error) {
-        // Try to parse error from reaction if possible
-        if (typeof error.context?.body === 'string') {
+        let errorMsg = error.message;
+        if (error.context) {
           try {
-            const body = JSON.parse(error.context.body);
-            if (body.error) throw new Error(body.error);
-          } catch (e) { }
+            const bodyText = typeof error.context.text === 'function'
+              ? await error.context.text()
+              : (error.context.body || "");
+            if (bodyText) {
+              const body = JSON.parse(bodyText);
+              if (body.error) errorMsg = body.error;
+            }
+          } catch (e) {
+            console.error("Could not parse error body:", e);
+          }
         }
-        throw error;
+        throw new Error(errorMsg);
       };
 
       toast.success(`Newsletter enviada com sucesso para ${data.sent || 0} utilizadores!`);
