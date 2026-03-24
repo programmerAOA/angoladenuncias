@@ -3,18 +3,16 @@ import { Button } from "./ui/button";
 import { Cookie, X, CheckCircle2 } from "lucide-react";
 
 const CookieConsent = () => {
-    const [showBanner, setShowBanner] = useState(false);
-
-    useEffect(() => {
-        // Check localStorage first
-        const savedConsent = localStorage.getItem("cookie-consent");
-        // Fallback: Check functional cookie
-        const hasCookie = document.cookie.split(';').some((item) => item.trim().startsWith('cookie-consent='));
-
-        if (!savedConsent && !hasCookie) {
-            setShowBanner(true);
+    const [showBanner, setShowBanner] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        try {
+            const savedConsent = localStorage.getItem("cookie-consent");
+            const hasCookie = document.cookie.split(';').some((item) => item.trim().startsWith('cookie-consent='));
+            return !savedConsent && !hasCookie;
+        } catch (e) {
+            return true;
         }
-    }, []);
+    });
 
     const setConsentAttributes = (status: string) => {
         // Save to localStorage

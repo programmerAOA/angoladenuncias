@@ -9,10 +9,22 @@ const ServicesPage = () => {
     const fetchViews = async () => {
       let realViewsCount = 0;
       try {
+        // 1. Visitas globais (site_visits)
         const { count } = await supabase.from('site_visits').select('*', { count: 'exact', head: true });
-        if (count) {
-          realViewsCount = count;
+        if (count) realViewsCount += count;
+
+        // 2. Visualizações de Vídeos
+        const { data: videos } = await supabase.from('video_news').select('views');
+        if (videos) {
+          realViewsCount += videos.reduce((acc, curr) => acc + (curr.views || 0), 0);
         }
+
+        // 3. Visualizações de Notícias
+        const { data: news } = await supabase.from('news_articles').select('views');
+        if (news) {
+          realViewsCount += news.reduce((acc, curr) => acc + (curr.views || 0), 0);
+        }
+
       } catch (err) {
         console.error("Erro ao buscar visualizações reais:", err);
       }
@@ -309,7 +321,7 @@ const ServicesPage = () => {
           <div className="services-card">
             <h3>Vídeo Vertical (30s)</h3>
             <p className="services-price">200.000 KZ</p>
-            <div className="details">Vídeo publicitário até 30 segundos exibido em formato moderno tipo reels.</div>
+            <div className="details">Vídeo publicitário até 60 segundos exibido em formato moderno tiktok + divulgação no canal @vemsabertv.</div>
           </div>
         </div>
       </section>
@@ -320,7 +332,7 @@ const ServicesPage = () => {
           <div className="services-card">
             <h3>Fotografia + Publicação</h3>
             <p className="services-price">180.000 KZ</p>
-            <div className="details">Cobertura até 2 horas com entrega de 40 a 50 fotografias editadas + publicação no portal.</div>
+            <div className="details">Cobertura até 2 horas com entrega de 20 fotografias editadas + publicação no portal.</div>
           </div>
           <div className="services-card">
             <h3>Vídeo/Entrevista</h3>
