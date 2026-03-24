@@ -59,7 +59,7 @@ const AuthPage = () => {
         }
       }
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -74,6 +74,11 @@ const AuthPage = () => {
         if (error.message === "User already registered" || error.message.includes("rate limit")) {
           setOtpMode(true);
         }
+      } else if (data?.session) {
+        setSuccess("Conta criada com sucesso! A entrar...");
+        setTimeout(() => {
+          navigate("/");
+        }, 1500);
       } else {
         setSuccess("Conta criada! Introduza o código que recebeu no seu e-mail.");
         setOtpMode(true);
