@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .from("user_roles")
           .select("role")
           .eq("user_id", userId),
-        15000
+        5000
       ) as any;
 
       if (error) {

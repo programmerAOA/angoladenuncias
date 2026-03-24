@@ -21,7 +21,7 @@ const BreakingNewsTicker = ({
   ];
 
   return (
-    <div className="bg-primary text-primary-foreground overflow-hidden">
+    <div className="bg-primary text-primary-foreground overflow-hidden pause-on-hover">
       <div className="container flex items-center">
         <div className="flex items-center gap-2 py-2 pr-4 flex-shrink-0 font-semibold text-xs uppercase tracking-wider bg-primary">
           <Zap className="w-3.5 h-3.5" />
@@ -53,6 +53,9 @@ const BreakingNewsTicker = ({
         @keyframes scroll {
           0% { transform: translateX(0); }
           100% { transform: translateX(-50%); }
+        }
+        .pause-on-hover:hover .animate-scroll {
+          animation-play-state: paused;
         }
       `}</style>
     </div>

@@ -56,7 +56,10 @@ const AdCarousel = () => {
         return (
             <div className="w-full aspect-square bg-secondary/50 border border-dashed border-border rounded-sm flex flex-col items-center justify-center gap-2 text-muted-foreground/50 mb-6">
                 <Megaphone className="w-5 h-5" />
-                <span className="text-xs font-semibold uppercase tracking-widest">Publicite Aqui</span>
+                <span className="text-xs font-semibold uppercase tracking-widest text-center">
+                    Publicite Aqui<br />
+                    <span className="text-[10px] font-normal normal-case">300 × 300 — Sidebar Square</span>
+                </span>
             </div>
         );
     }
@@ -73,7 +76,7 @@ const AdCarousel = () => {
                 <img
                     src={ad.image_url || ""}
                     alt={ad.title}
-                    className="w-full aspect-square object-cover rounded-sm border border-border/50"
+                    className="w-full aspect-square object-contain rounded-sm border border-border/50 bg-black/5"
                 />
             </Wrapper>
 

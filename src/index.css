@@ -32,6 +32,9 @@
 
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.4 61.4% 91.2%;
+
     --ring: 0 72% 51%;
 
     --radius: 0.25rem;
@@ -76,6 +79,9 @@
 
     --border: 0 0% 18%;
     --input: 0 0% 18%;
+    --success: 142.1 70.6% 45.3%;
+    --success-foreground: 144.4 61.4% 91.2%;
+
     --ring: 0 72% 51%;
 
     --sidebar-background: 0 0% 8%;

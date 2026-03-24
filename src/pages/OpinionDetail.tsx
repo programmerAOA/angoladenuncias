@@ -45,7 +45,7 @@ const OpinionDetail = () => {
             setLoading(true);
             try {
                 const { data, error } = await withTimeout(
-                    supabase.from("opinion_articles").select("*").eq("id", id).single()
+                    supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at").eq("id", id).single()
                 ) as any;
 
                 if (error) throw error;

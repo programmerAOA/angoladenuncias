@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import Header from "@/components/Header";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 import HeroSection from "@/components/HeroSection";
@@ -15,8 +15,34 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 import { categories } from "@/constants/categories";
 
-const Index = () => {
+interface IndexProps {
+  defaultCategory?: string;
+}
+
+const Index = ({ defaultCategory }: IndexProps) => {
+  const { id: categoryParam } = useParams();
+  const location = useLocation();
   const [selectedCategory, setSelectedCategory] = useState("Destaque");
+
+  useEffect(() => {
+    // Priority 1: URL param (e.g. /category/política)
+    if (categoryParam) {
+      const decoded = decodeURIComponent(categoryParam);
+      const found = categories.find(c => c.toLowerCase() === decoded.toLowerCase());
+      if (found) { setSelectedCategory(found); return; }
+    }
+    // Priority 2: Navigation state from footer/header link (e.g. navigate("/", { state: { category: "Economia" } }))
+    const stateCategory = (location.state as any)?.category;
+    if (stateCategory) {
+      const found = categories.find(c => c.toLowerCase() === stateCategory.toLowerCase());
+      if (found) { setSelectedCategory(found); return; }
+    }
+    // Priority 3: defaultCategory prop
+    if (defaultCategory) {
+      setSelectedCategory(defaultCategory);
+    }
+  }, [categoryParam, defaultCategory, location.state]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -33,14 +59,16 @@ const Index = () => {
       try {
         // Carregamento em paralelo para máxima performance
         const results = await Promise.all([
-          withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(40), 30000),
-          withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(6), 30000),
-          withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(5), 30000)
+          withTimeout(supabase.from("news_articles").select("id, title, summary, category, image_url, created_at, author, published").eq("published", true).order("created_at", { ascending: false }).limit(40), 20000),
+          withTimeout(supabase.from("video_news").select("id, title, description, thumbnail_url, video_url, duration, views, category").order("created_at", { ascending: false }).limit(6), 20000),
+          withTimeout(supabase.from("opinion_articles").select("id, title, author, created_at").order("created_at", { ascending: false }).limit(5), 20000),
+          withTimeout(supabase.from("breaking_news").select("id, text, active").eq("active", true).order("created_at", { ascending: false }), 10000)
         ]) as any[];
 
         const articlesRes = results[0];
         const videosRes = results[1];
         const opinionsRes = results[2];
+        const breakingRes = results[3];
 
         if (articlesRes.data) {
           const mappedArticles = articlesRes.data.map((a: any) => ({
@@ -49,6 +77,15 @@ const Index = () => {
             timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
           }));
           setArticles(mappedArticles);
+        }
+
+        if (breakingRes.data && breakingRes.data.length > 0) {
+          setBreakingHeadlines(breakingRes.data.map((b: any) => ({
+            id: b.id,
+            title: b.text
+          })));
+        } else if (articlesRes.data) {
+          // Fallback if no specific breaking news are active
           setBreakingHeadlines(articlesRes.data.slice(0, 10).map((a: any) => ({
             id: a.id,
             title: a.title

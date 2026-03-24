@@ -220,7 +220,7 @@ const AdminPage = () => {
     if (!loading && user && !isAdmin && !isEditor) navigate("/");
   }, [user, isAdmin, loading, navigate]);
 
-  const allCategories = ["Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
+  const allCategories = ["Destaque", "Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
   const displayedCategories = useMemo(() => {
     return isAdmin || (isEditor && allowedCategories.length === 0)
       ? allCategories
@@ -243,18 +243,29 @@ const AdminPage = () => {
   useEffect(() => {
     if (!isAdmin && !isEditor) return;
 
-    console.log("Setting up real-time channels...");
+    console.log("Setting up comprehensive real-time dashboard...");
     const channel = supabase
-      .channel("admin-realtime")
+      .channel("admin-realtime-v2")
+      // Monitor news, videos, and opinions for dashboard stats and tab updates
       .on("postgres_changes", { event: "*", schema: "public", table: "news_articles" }, () => {
-        console.log("Articles changed, refreshing...");
         if (activeTab === "articles" || activeTab === "dashboard") loadData(activeTab);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "video_news" }, () => {
         if (activeTab === "videos" || activeTab === "dashboard") loadData(activeTab);
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "opinion_articles" }, () => {
+        if (activeTab === "opinions" || activeTab === "dashboard") loadData(activeTab);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "breaking_news" }, () => {
+        if (activeTab === "breaking" || activeTab === "dashboard") loadData(activeTab);
+      })
+      // Monitor user profiles for registration stats
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        if (activeTab === "users" || activeTab === "stats" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTab === "users" || activeTab === "dashboard") loadData(activeTab);
+      })
+      // CRITICAL: Monitor site visits for real-time traffic dashboard
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "site_visits" }, () => {
+        if (activeTab === "stats" || activeTab === "dashboard") loadData(activeTab);
       })
       .subscribe();
 
@@ -267,49 +278,71 @@ const AdminPage = () => {
     console.log("Loading data for tab:", tab);
     setDataLoading(true);
     try {
-      if (tab === "dashboard" || tab === "articles") {
-        const { data, error } = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
+      if (tab === "articles") {
+        const { data, error } = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(200), 20000) as any;
         if (error) {
           console.error("Error loading articles:", error);
           toast.error("Erro ao carregar artigos: " + error.message);
         }
-        if (data) {
-          setArticles(data);
-          if (tab === "dashboard") setStats(s => ({ ...s, articles: data.length }));
-        }
+        if (data) setArticles(data);
       }
-      if (tab === "dashboard" || tab === "videos") {
-        const { data, error } = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(50), 20000) as any;
+
+      if (tab === "dashboard") {
+        // Efficiently fetch counts for dashboard stats
+        const [
+          { count: articleCount },
+          { count: videoCount },
+          { count: opinionCount },
+          { count: breakingCount },
+          { count: userCount },
+          { count: visitCount }
+        ] = await Promise.all([
+          supabase.from("news_articles").select("*", { count: 'exact', head: true }),
+          supabase.from("video_news").select("*", { count: 'exact', head: true }),
+          supabase.from("opinion_articles").select("*", { count: 'exact', head: true }),
+          supabase.from("breaking_news").select("*", { count: 'exact', head: true }),
+          supabase.from("profiles").select("*", { count: 'exact', head: true }),
+          supabase.from("site_visits").select("*", { count: 'exact', head: true })
+        ]);
+
+        setStats({
+          articles: articleCount || 0,
+          videos: videoCount || 0,
+          opinions: opinionCount || 0,
+          breaking: breakingCount || 0,
+          users: userCount || 0,
+          totalVisits: visitCount || 0
+        });
+
+        // Also fetch just a few recent articles for the dashboard preview
+        const { data: recentArticles } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(10);
+        if (recentArticles) setArticles(recentArticles);
+      }
+
+      if (tab === "videos") {
+        const { data, error } = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
         if (error) {
           console.error("Error loading videos:", error);
           toast.error("Erro ao carregar vídeos: " + error.message);
         }
-        if (data) {
-          setVideos(data);
-          if (tab === "dashboard") setStats(s => ({ ...s, videos: data.length }));
-        }
+        if (data) setVideos(data);
       }
-      if (tab === "dashboard" || tab === "opinions") {
-        const { data, error } = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(50), 20000) as any;
+
+      if (tab === "opinions") {
+        const { data, error } = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
         if (error) {
           console.error("Error loading opinions:", error);
           toast.error("Erro ao carregar opiniões: " + error.message);
         }
-        if (data) {
-          setOpinions(data);
-          if (tab === "dashboard") setStats(s => ({ ...s, opinions: data.length }));
-        }
+        if (data) setOpinions(data);
       }
-      if (tab === "dashboard" || tab === "breaking") {
-        const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }).limit(50), 20000) as any;
+      if (tab === "breaking") {
+        const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
         if (error) {
           console.error("Error loading breaking news:", error);
           toast.error("Erro ao carregar notícias: " + error.message);
         }
-        if (data) {
-          setBreakingNews(data);
-          if (tab === "dashboard") setStats(s => ({ ...s, breaking: data.length }));
-        }
+        if (data) setBreakingNews(data);
 
         // Load ticker speed
         const { data: settings } = await supabase.from("system_settings").select("value").eq("key", "ticker").single();
@@ -318,26 +351,20 @@ const AdminPage = () => {
           if (val.speed) setTickerSpeed(Number(val.speed));
         }
       }
-      if (tab === "dashboard" || tab === "users" || tab === "stats") {
-        const { data, error } = await withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(100), 20000) as any;
+      if (tab === "users") {
+        const { data, error } = await withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(200), 20000) as any;
         if (error) {
           console.error("Error loading profiles:", error);
           toast.error("Erro ao carregar perfis: " + error.message);
         }
-        if (data) {
-          setProfiles(data);
-          if (tab === "dashboard" || tab === "stats") setStats(s => ({ ...s, users: data.length }));
-        }
+        if (data) setProfiles(data);
       }
-      if (tab === "dashboard" || tab === "stats") {
-        const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
+      if (tab === "stats") {
+        const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(500), 20000) as any;
         if (visitError) {
           console.error("Error loading visits:", visitError);
         }
-        if (visitData) {
-          setSiteVisits(visitData);
-          setStats(s => ({ ...s, totalVisits: visitData.length }));
-        }
+        if (visitData) setSiteVisits(visitData);
       }
       if (tab === "users") {
         const { data, error } = await withTimeout(supabase.from("user_roles").select("*"), 20000) as any;
@@ -386,8 +413,8 @@ const AdminPage = () => {
           if (val.speed) setAdCarouselSpeed(Number(val.speed) / 1000);
         }
       }
-      if (tab === "dashboard" || tab === "digital-editions") {
-        const { data, error } = await supabase.from("digital_editions" as any).select("*").order("edition_date", { ascending: false }) as any;
+      if (tab === "digital-editions") {
+        const { data, error } = await supabase.from("digital_editions" as any).select("*").order("edition_date", { ascending: false }).limit(100) as any;
         if (error) {
           console.error("Error loading digital editions:", error);
           toast.error("Erro ao carregar edições digitais: " + error.message);

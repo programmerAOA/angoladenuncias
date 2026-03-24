@@ -22,7 +22,21 @@ const Footer = () => {
               <ul className="space-y-2">
                 {section.links.map((link) => (
                   <li key={link}>
-                    <button className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left w-full">
+                    <button
+                      onClick={() => {
+                        if (section.title === "Secções") {
+                          navigate("/", { state: { category: link } });
+                        } else if (section.title === "Opinião") {
+                          navigate("/", { state: { category: "Opinião" } });
+                        } else if (section.title === "Multimédia") {
+                          if (link === "Vídeos") navigate("/videos");
+                          else navigate("/videos");
+                        } else {
+                          navigate("/");
+                        }
+                      }}
+                      className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left w-full"
+                    >
                       {link}
                     </button>
                   </li>

@@ -178,20 +178,20 @@ const DigitalEditions = () => {
                                 </div>
 
                                 {/* Conteúdo do Card */}
-                                <div className="p-6 flex flex-col gap-5">
-                                    <div className="flex flex-col items-center gap-1">
-                                        <p className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Pague por</p>
-                                        <p className="text-[#22c55e] text-xl font-black tabular-nums">
-                                            {edition.is_free ? "GRÁTIS" : `${edition.price_aoa.toLocaleString()} Kz / ${edition.price_usd.toLocaleString()}$`}
-                                        </p>
-                                    </div>
+                                    <div className="p-6 flex flex-col gap-5">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Pague por</p>
+                                            <p className="text-[#22c55e] text-xl font-black tabular-nums font-heading">
+                                                {edition.is_free ? "GRÁTIS" : `${edition.price_aoa.toLocaleString()} Kz / ${edition.price_usd.toLocaleString()}$`}
+                                            </p>
+                                        </div>
 
-                                    <div className="flex items-center justify-center gap-2 border-y border-white/5 py-2">
-                                        <span className="text-[#eab308] text-xs font-bold uppercase tracking-tighter">Edição de</span>
-                                        <span className="text-white font-bold text-sm">
-                                            {format(new Date(edition.edition_date), "dd/MM/yyyy")}
-                                        </span>
-                                    </div>
+                                        <div className="flex items-center justify-center gap-2 border-y border-border/10 py-2">
+                                            <span className="text-[#eab308] text-xs font-bold uppercase tracking-tighter">Edição de</span>
+                                            <span className="text-foreground font-bold text-sm">
+                                                {format(new Date(edition.edition_date), "dd/MM/yyyy")}
+                                            </span>
+                                        </div>
 
                                     {edition.is_free || purchases.includes(edition.id) ? (
                                         <button

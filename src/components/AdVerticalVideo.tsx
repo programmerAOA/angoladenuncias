@@ -91,7 +91,7 @@ const AdVerticalVideo = () => {
                 <Megaphone className="w-5 h-5" />
                 <span className="text-xs font-semibold uppercase tracking-widest text-center leading-tight">
                     Publicite Aqui<br />
-                    <span className="text-[10px] font-normal normal-case">Formato Vídeo Vertical</span>
+                    <span className="text-[10px] font-normal normal-case">9:16 — Vertical Video</span>
                 </span>
             </div>
         );
@@ -124,24 +124,23 @@ const AdVerticalVideo = () => {
                                 <iframe
                                     src={embedUrl}
                                     title={ad.title}
-                                    className="border-0"
-                                    style={{ position: "absolute", top: "-10%", left: "-10%", width: "120%", height: "120%" }}
+                                    className="border-0 w-full h-full"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                 />
                             </div>
                         ) : isDirectVideo ? (
-                            <video
-                                ref={(el) => (videoRefs.current[ad.id] = el)}
-                                src={videoUrl}
-                                muted
-                                loop
-                                playsInline
-                                className="w-full h-full object-cover pointer-events-none"
-                            />
+                                <video
+                                    ref={(el) => (videoRefs.current[ad.id] = el)}
+                                    src={videoUrl}
+                                    muted
+                                    loop
+                                    playsInline
+                                    className="w-full h-full object-contain pointer-events-none"
+                                />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-b from-zinc-800 to-zinc-900 flex items-center justify-center">
                                 {ad.image_url ? (
-                                    <img src={ad.image_url} alt={ad.title} className="w-full h-full object-cover" />
+                                    <img src={ad.image_url} alt={ad.title} className="w-full h-full object-contain" />
                                 ) : (
                                     <span className="text-white/40 text-xs font-semibold uppercase">{ad.title}</span>
                                 )}

@@ -46,7 +46,7 @@ const ArticleDetail = () => {
             setLoading(true);
             try {
                 const { data, error } = await withTimeout(
-                    supabase.from("news_articles").select("*").eq("id", id).single()
+                    supabase.from("news_articles").select("id, title, summary, content, category, image_url, created_at, author").eq("id", id).single()
                 ) as any;
 
                 if (error) throw error;

@@ -24,7 +24,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme" attribute="class">
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme" attribute="class">
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -33,10 +33,12 @@ const App = () => (
             <SecurityLayer>
               <Routes>
                 <Route path="/" element={<Index />} />
+                <Route path="/category/:id" element={<Index />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/article/:id" element={<ArticleDetail />} />
                 <Route path="/opinion/:id" element={<OpinionDetail />} />
+                <Route path="/opinioes" element={<Index defaultCategory="Opinião" />} />
                 <Route path="/edicao-digital" element={<DigitalEditions />} />
                 <Route path="/publicidade" element={<AdvertisingPage />} />
                 <Route path="/videos" element={<VideosPage />} />

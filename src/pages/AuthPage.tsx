@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Newspaper } from "lucide-react";
 
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+
 const AuthPage = () => {
+  const { user, isAdmin, isEditor, loading: authLoading } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -14,6 +18,16 @@ const AuthPage = () => {
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      if (isAdmin || isEditor) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
+    }
+  }, [user, isAdmin, isEditor, authLoading, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -21,13 +35,19 @@ const AuthPage = () => {
     setSuccess("");
 
     if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setError(error.message === "Invalid login credentials"
           ? "Email ou senha incorretos."
           : error.message);
-      } else {
-        navigate("/");
+      } else if (data.user) {
+        const metadata = data.user.user_metadata;
+        const role = metadata?.role;
+        if (role === 'admin' || role === 'editor') {
+          navigate("/admin");
+        } else {
+          navigate("/");
+        }
       }
     } else {
       const { error } = await supabase.auth.signUp({
@@ -147,7 +167,7 @@ const AuthPage = () => {
             )}
 
             {success && (
-              <div className="bg-accent/10 border border-accent/30 text-accent text-sm px-3 py-2">
+              <div className="bg-success/10 border border-success/30 text-success text-sm px-3 py-2 font-medium">
                 {success}
               </div>
             )}
