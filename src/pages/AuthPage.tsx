@@ -18,6 +18,7 @@ const AuthPage = () => {
   const [success, setSuccess] = useState("");
   const [otpMode, setOtpMode] = useState(false);
   const [otpToken, setOtpToken] = useState("");
+  const [resendCountdown, setResendCountdown] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -39,9 +40,15 @@ const AuthPage = () => {
     if (mode === "login") {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        setError(error.message === "Invalid login credentials"
-          ? "Email ou senha incorretos."
-          : error.message);
+        if (error.message.includes("Email not confirmed")) {
+          setError("Seu e-mail ainda não foi confirmado. Insira o código enviado por e-mail.");
+          setOtpMode(true);
+          setMode("signup"); // Ensure we are in a state that shows OTP if needed
+        } else {
+          setError(error.message === "Invalid login credentials"
+            ? "Email ou senha incorretos."
+            : error.message);
+        }
       } else if (data.user) {
         const metadata = data.user.user_metadata;
         const role = metadata?.role;
@@ -89,7 +96,13 @@ const AuthPage = () => {
     });
 
     if (error) {
-      setError(error.message === "Token has expired" ? "Código expirado. Tente novamente." : error.message);
+      if (error.message.includes("Expired") || error.message.includes("expired")) {
+        setError("O código expirou. Clique em 'Reenviar' para receber um novo.");
+      } else if (error.message.includes("invalid") || error.message.includes("Invalid")) {
+        setError("Código inválido. Verifique se digitou corretamente.");
+      } else {
+        setError(error.message);
+      }
       setLoading(false);
     } else if (data.user) {
       setSuccess("E-mail confirmado com sucesso! Bem-vindo.");
@@ -106,6 +119,8 @@ const AuthPage = () => {
   };
 
   const handleResendOtp = async () => {
+    if (resendCountdown > 0) return;
+
     setLoading(true);
     setError("");
     setSuccess("");
@@ -113,12 +128,25 @@ const AuthPage = () => {
       type: 'signup',
       email: email,
     });
+
     if (error) {
       setError(error.message);
+      setLoading(false);
     } else {
       setSuccess("Novo código enviado para o seu e-mail.");
+      setResendCountdown(60);
+      setLoading(false);
+
+      const timer = setInterval(() => {
+        setResendCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     }
-    setLoading(false);
   };
 
   return (
@@ -202,10 +230,12 @@ const AuthPage = () => {
                 <button
                   type="button"
                   onClick={handleResendOtp}
-                  disabled={loading}
-                  className="w-full text-xs text-primary hover:underline transition-colors py-1"
+                  disabled={loading || resendCountdown > 0}
+                  className="w-full text-xs text-primary hover:underline transition-colors py-1 disabled:text-muted-foreground"
                 >
-                  Não recebeu o código? Reenviar
+                  {resendCountdown > 0
+                    ? `Aguarde ${resendCountdown}s para reenviar`
+                    : "Não recebeu o código? Reenviar"}
                 </button>
                 <button
                   type="button"
