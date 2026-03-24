@@ -15,6 +15,7 @@ import AdvertisingPage from "./pages/AdvertisingPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import VideosPage from "./pages/VideosPage";
+import ServicesPage from "./pages/ServicesPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
 import CookieConsent from "@/components/CookieConsent";
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/edicao-digital" element={<DigitalEditions />} />
                 <Route path="/publicidade" element={<AdvertisingPage />} />
                 <Route path="/videos" element={<VideosPage />} />
+                <Route path="/servicos" element={<ServicesPage />} />
                 <Route path="/termos" element={<TermsPage />} />
                 <Route path="/privacidade" element={<PrivacyPage />} />
                 <Route path="*" element={<NotFound />} />

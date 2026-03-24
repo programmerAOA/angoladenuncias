@@ -82,5 +82,42 @@ EXCEPTION WHEN OTHERS THEN
   NULL;
 END $$;
 
--- 9. RECARREGAR CACHE
+-- 9. CONFIGURAÇÃO DE JORNAIS DIGITAIS
+CREATE TABLE IF NOT EXISTS public.digital_editions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    description TEXT,
+    edition_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    price_aoa DECIMAL(12, 2) NOT NULL DEFAULT 0,
+    price_usd DECIMAL(12, 2) NOT NULL DEFAULT 0,
+    cover_url TEXT,
+    pdf_url TEXT NOT NULL,
+    is_free BOOLEAN DEFAULT false,
+    published BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+ALTER TABLE public.digital_editions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Anyone can view published digital editions" ON public.digital_editions;
+CREATE POLICY "Anyone can view published digital editions" ON public.digital_editions FOR SELECT USING (published = true);
+
+CREATE TABLE IF NOT EXISTS public.digital_purchases (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    edition_id UUID NOT NULL REFERENCES public.digital_editions(id) ON DELETE CASCADE,
+    amount DECIMAL(12, 2) NOT NULL,
+    currency TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    UNIQUE(user_id, edition_id)
+);
+
+ALTER TABLE public.digital_purchases ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view their own purchases" ON public.digital_purchases;
+CREATE POLICY "Users can view their own purchases" ON public.digital_purchases FOR SELECT USING (auth.uid() = user_id);
+
+-- 10. STORAGE PARA JORNAIS (PDFs)
+INSERT INTO storage.buckets (id, name, public) VALUES ('digital-editions', 'digital-editions', false) ON CONFLICT (id) DO NOTHING;
+
+-- 11. RECARREGAR CACHE
 NOTIFY pgrst, 'reload schema';

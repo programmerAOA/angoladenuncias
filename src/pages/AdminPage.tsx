@@ -191,6 +191,7 @@ const AdminPage = () => {
   // User role form
   const [newUserEmail, setNewUserEmail] = useState("");
   const [newUserRole, setNewUserRole] = useState<"admin" | "editor">("editor");
+  const [userSearch, setUserSearch] = useState("");
 
   // AI Discovery & Adaptation state
   const [discoveryQuery, setDiscoveryQuery] = useState("");
@@ -1414,6 +1415,16 @@ const AdminPage = () => {
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Duração (ex: 12:34)</label>
                       <input value={videoForm.duration} onChange={e => setVideoForm(f => ({ ...f, duration: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary" />
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Categoria</label>
+                      <select
+                        value={videoForm.category || "Vídeo"}
+                        onChange={e => setVideoForm(f => ({ ...f, category: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      >
+                        {displayedCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                    </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Descrição</label>
                       <textarea value={videoForm.description} onChange={e => setVideoForm(f => ({ ...f, description: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none" rows={2} />
@@ -1779,6 +1790,18 @@ const AdminPage = () => {
                 </button>
               </div>
 
+              <div className="bg-card border border-border p-4 rounded-xl shadow-sm">
+                <div className="relative">
+                  <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={userSearch}
+                    onChange={e => setUserSearch(e.target.value)}
+                    className="w-full bg-secondary border border-border text-foreground pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
+                    placeholder="Filtrar utilizadores por UUID, Email ou Nome..."
+                  />
+                </div>
+              </div>
+
               <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
                 <table className="w-full text-left">
                   <thead>
@@ -1792,7 +1815,24 @@ const AdminPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {profiles.map(p => {
+                    {profiles
+                      .filter(p => {
+                        const roles = userRoles.filter(r => r.user_id === p.user_id).map(r => r.role);
+                        const isUserAdmin = roles.includes("admin");
+
+                        // Ocultar administradores por segurança
+                        if (isUserAdmin) return false;
+
+                        // Filtrar por pesquisa
+                        if (!userSearch) return true;
+                        const query = userSearch.toLowerCase().trim();
+                        return (
+                          (p.email?.toLowerCase().includes(query)) ||
+                          (p.user_id?.toLowerCase().includes(query)) ||
+                          (p.full_name?.toLowerCase().includes(query))
+                        );
+                      })
+                      .map(p => {
                       const roles = userRoles.filter(r => r.user_id === p.user_id).map(r => r.role);
                       const role = roles.includes("admin") ? "admin" : (roles.includes("editor") ? "editor" : (roles.includes("user") ? "user" : null));
                       return (
