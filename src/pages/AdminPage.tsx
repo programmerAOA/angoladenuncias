@@ -5,14 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
-  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText
+  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { categories } from "@/constants/categories";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter";
 
 interface Article {
   id: string;
@@ -165,6 +165,10 @@ const AdminPage = () => {
   const [digitalCoverFile, setDigitalCoverFile] = useState<File | null>(null);
   const [digitalPdfFile, setDigitalPdfFile] = useState<File | null>(null);
 
+  // Newsletter
+  const [newsletterLogs, setNewsletterLogs] = useState<any[]>([]);
+  const [newsletterForm, setNewsletterForm] = useState({ subject: "", content: "" });
+  const [sendingNewsletter, setSendingNewsletter] = useState(false);
 
   // Article form
   const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false });
@@ -422,6 +426,14 @@ const AdminPage = () => {
         }
         if (data) setDigitalEditions(data);
       }
+      if (tab === "newsletter") {
+        const { data, error } = await supabase.from("newsletter_logs" as any).select("*").order("created_at", { ascending: false }).limit(50) as any;
+        if (error) {
+          console.error("Error loading newsletter logs:", error);
+          toast.error("Erro ao carregar histórico de newsletters: " + error.message);
+        }
+        if (data) setNewsletterLogs(data);
+      }
     } catch (err) {
       console.error("Unexpected error in loadData:", err);
       toast.error("Erro inesperado ao carregar dados.");
@@ -472,6 +484,11 @@ const AdminPage = () => {
     }
   };
 
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copiado!`);
+  };
+
   const uploadFile = async (file: File, bucket: string = "news", returnPath = false) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
@@ -492,6 +509,37 @@ const AdminPage = () => {
       .getPublicUrl(filePath);
 
     return publicUrl;
+  };
+
+  const handleSendNewsletter = async () => {
+    if (!newsletterForm.subject || !newsletterForm.content) {
+      toast.error("Assunto e conteúdo são obrigatórios.");
+      return;
+    }
+
+    if (!confirm("Tem a certeza que deseja enviar esta newsletter para TODOS os utilizadores? Esta ação pode demorar alguns minutos e não pode ser desfeita.")) {
+      return;
+    }
+
+    setSendingNewsletter(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-newsletter', {
+        body: {
+          subject: newsletterForm.subject,
+          content: newsletterForm.content
+        }
+      });
+      if (error) throw error;
+
+      toast.success(`Newsletter enviada com sucesso para ${data.recipients_count || 0} utilizadores!`);
+      setNewsletterForm({ subject: "", content: "" });
+      loadData("newsletter");
+    } catch (err: any) {
+      console.error("Error sending newsletter:", err);
+      toast.error("Erro ao enviar newsletter: " + err.message);
+    } finally {
+      setSendingNewsletter(false);
+    }
   };
 
   const saveArticle = async () => {
@@ -1024,7 +1072,8 @@ const AdminPage = () => {
     ...(isAdmin ? [
       { id: "stats" as Tab, label: "Estatísticas", icon: RefreshCw },
       { id: "ads" as Tab, label: "Publicidade", icon: Megaphone },
-      { id: "users" as Tab, label: "Utilizadores", icon: Users }
+      { id: "users" as Tab, label: "Utilizadores", icon: Users },
+      { id: "newsletter" as Tab, label: "Newsletter", icon: Mail }
     ] : []),
   ].filter(tab => {
     if (isAdmin) return true;
@@ -1833,117 +1882,129 @@ const AdminPage = () => {
                         );
                       })
                       .map(p => {
-                      const roles = userRoles.filter(r => r.user_id === p.user_id).map(r => r.role);
-                      const role = roles.includes("admin") ? "admin" : (roles.includes("editor") ? "editor" : (roles.includes("user") ? "user" : null));
-                      return (
-                        <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
-                          <td className="px-6 py-4">
-                            <p className="text-sm font-bold text-foreground">{p.full_name || p.email || "Utilizador"}</p>
-                            <p className="text-[10px] text-muted-foreground font-mono">{p.user_id}</p>
-                          </td>
-                          <td className="px-6 py-4 text-xs text-muted-foreground hidden lg:table-cell">{p.country || "Desconhecido"}</td>
-                          <td className="px-6 py-4 text-xs text-muted-foreground hidden sm:table-cell font-mono">{p.access_count || 0}</td>
-                          <td className="px-6 py-4 text-xs text-muted-foreground hidden md:table-cell">
-                            {p.last_access ? formatRelativeDate(p.last_access) : "Nunca"}
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex flex-col gap-2">
-                              {role ? (
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter w-fit ${role === "admin" ? "bg-primary/10 text-primary border border-primary/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
-                                  {role}
-                                </span>
-                              ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium uppercase tracking-tighter w-fit">Leitor</span>
-                              )}
-
-                              {role === "editor" && (
-                                <>
-                                  <label className="text-[8px] font-bold uppercase text-muted-foreground mt-2">Categorias Permitidas</label>
-                                  <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
-                                    {displayedCategories.map(cat => {
-                                      const isSelected = editorCategories[p.user_id]?.includes(cat);
-                                      return (
-                                        <button
-                                          key={cat}
-                                          onClick={async () => {
-                                            if (isSelected) {
-                                              await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
-                                            } else {
-                                              await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
-                                            }
-                                            loadData("users");
-                                          }}
-                                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
-                                          title={isSelected ? "Remover categoria" : "Adicionar categoria"}
-                                        >
-                                          {cat}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-
-                                  <label className="text-[8px] font-bold uppercase text-muted-foreground mt-3">Módulos do Menu</label>
-                                  <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
-                                    {[
-                                      { id: "articles", label: "Artigos" },
-                                      { id: "videos", label: "Vídeos" },
-                                      { id: "opinions", label: "Opinião" },
-                                      { id: "breaking", label: "Última Hora" },
-                                      { id: "digital-editions", label: "Jornal Digital" },
-                                      { id: "ai-discovery", label: "Descoberta IA" }
-                                    ].map(menu => {
-                                      const isSelected = editorMenuPermissions[p.user_id]?.includes(menu.id);
-                                      return (
-                                        <button
-                                          key={menu.id}
-                                          onClick={async () => {
-                                            if (isSelected) {
-                                              await supabase.from("editor_menu_permissions" as any).delete().eq("user_id", p.user_id).eq("menu_id", menu.id);
-                                            } else {
-                                              await supabase.from("editor_menu_permissions" as any).insert({ user_id: p.user_id, menu_id: menu.id });
-                                            }
-                                            loadData("users");
-                                          }}
-                                          className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-blue-600 text-white border-blue-600" : "bg-secondary text-muted-foreground border-border hover:border-blue-400"}`}
-                                          title={isSelected ? "Remover acesso ao menu" : "Permitir acesso ao menu"}
-                                        >
-                                          {menu.label}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <select
-                                className="bg-secondary border border-border text-[10px] px-2 py-1 rounded focus:outline-none"
-                                value={role || "leitor"}
-                                onChange={(e) => handleSetRole(p.user_id, e.target.value)}
-                              >
-                                <option value="leitor">Leitor</option>
-                                <option value="editor">Editor</option>
-                                <option value="admin">Admin</option>
-                              </select>
-                              {role && (
-                                <button
-                                  onClick={() => {
-                                    const ur = userRoles.find(r => r.user_id === p.user_id);
-                                    if (ur) deleteRecord("user_roles", ur.id);
-                                  }}
-                                  className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
-                                  title="Remover permissões"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
+                        const roles = userRoles.filter(r => r.user_id === p.user_id).map(r => r.role);
+                        const role = roles.includes("admin") ? "admin" : (roles.includes("editor") ? "editor" : (roles.includes("user") ? "user" : null));
+                        return (
+                          <tr key={p.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-bold text-foreground">{p.full_name || p.email || "Utilizador"}</p>
+                                {p.email && (
+                                  <button onClick={() => handleCopy(p.email!, "E-mail")} className="text-muted-foreground hover:text-primary transition-colors">
+                                    <Copy className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-[10px] text-muted-foreground font-mono">{p.user_id}</p>
+                                <button onClick={() => handleCopy(p.user_id, "ID do utilizador")} className="text-muted-foreground hover:text-primary transition-colors">
+                                  <Copy className="w-2.5 h-2.5" />
                                 </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-muted-foreground hidden lg:table-cell">{p.country || "Desconhecido"}</td>
+                            <td className="px-6 py-4 text-xs text-muted-foreground hidden sm:table-cell font-mono">{p.access_count || 0}</td>
+                            <td className="px-6 py-4 text-xs text-muted-foreground hidden md:table-cell">
+                              {p.last_access ? formatRelativeDate(p.last_access) : "Nunca"}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col gap-2">
+                                {role ? (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter w-fit ${role === "admin" ? "bg-primary/10 text-primary border border-primary/20" : "bg-blue-500/10 text-blue-400 border border-blue-500/20"}`}>
+                                    {role}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium uppercase tracking-tighter w-fit">Leitor</span>
+                                )}
+
+                                {role === "editor" && (
+                                  <>
+                                    <label className="text-[8px] font-bold uppercase text-muted-foreground mt-2">Categorias Permitidas</label>
+                                    <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
+                                      {displayedCategories.map(cat => {
+                                        const isSelected = editorCategories[p.user_id]?.includes(cat);
+                                        return (
+                                          <button
+                                            key={cat}
+                                            onClick={async () => {
+                                              if (isSelected) {
+                                                await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
+                                              } else {
+                                                await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
+                                              }
+                                              loadData("users");
+                                            }}
+                                            className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
+                                            title={isSelected ? "Remover categoria" : "Adicionar categoria"}
+                                          >
+                                            {cat}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+
+                                    <label className="text-[8px] font-bold uppercase text-muted-foreground mt-3">Módulos do Menu</label>
+                                    <div className="flex flex-wrap gap-1 mt-1 max-w-[200px]">
+                                      {[
+                                        { id: "articles", label: "Artigos" },
+                                        { id: "videos", label: "Vídeos" },
+                                        { id: "opinions", label: "Opinião" },
+                                        { id: "breaking", label: "Última Hora" },
+                                        { id: "digital-editions", label: "Jornal Digital" },
+                                        { id: "ai-discovery", label: "Descoberta IA" }
+                                      ].map(menu => {
+                                        const isSelected = editorMenuPermissions[p.user_id]?.includes(menu.id);
+                                        return (
+                                          <button
+                                            key={menu.id}
+                                            onClick={async () => {
+                                              if (isSelected) {
+                                                await supabase.from("editor_menu_permissions" as any).delete().eq("user_id", p.user_id).eq("menu_id", menu.id);
+                                              } else {
+                                                await supabase.from("editor_menu_permissions" as any).insert({ user_id: p.user_id, menu_id: menu.id });
+                                              }
+                                              loadData("users");
+                                            }}
+                                            className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-blue-600 text-white border-blue-600" : "bg-secondary text-muted-foreground border-border hover:border-blue-400"}`}
+                                            title={isSelected ? "Remover acesso ao menu" : "Permitir acesso ao menu"}
+                                          >
+                                            {menu.label}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <select
+                                  className="bg-secondary border border-border text-[10px] px-2 py-1 rounded focus:outline-none"
+                                  value={role || "leitor"}
+                                  onChange={(e) => handleSetRole(p.user_id, e.target.value)}
+                                >
+                                  <option value="leitor">Leitor</option>
+                                  <option value="editor">Editor</option>
+                                  <option value="admin">Admin</option>
+                                </select>
+                                {role && (
+                                  <button
+                                    onClick={() => {
+                                      const ur = userRoles.find(r => r.user_id === p.user_id);
+                                      if (ur) deleteRecord("user_roles", ur.id);
+                                    }}
+                                    className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                                    title="Remover permissões"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     {profiles.length === 0 && <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">Não foram encontrados perfis de utilizadores.</td></tr>}
                   </tbody>
                 </table>
@@ -2785,6 +2846,96 @@ const AdminPage = () => {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Newsletter Panel */}
+          {activeTab === "newsletter" && (
+            <div className="space-y-6">
+              <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                <h3 className="font-heading font-bold text-foreground mb-4 flex items-center gap-2">
+                  <Mail className="w-5 h-5 text-primary" />
+                  Enviar Nova Newsletter
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Assunto do E-mail *</label>
+                    <input
+                      value={newsletterForm.subject}
+                      onChange={e => setNewsletterForm({ ...newsletterForm, subject: e.target.value })}
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
+                      placeholder="Ex: Notícias da Semana - Portal Sem Filtros"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Conteúdo (Suporta HTML) *</label>
+                    <textarea
+                      value={newsletterForm.content}
+                      onChange={e => setNewsletterForm({ ...newsletterForm, content: e.target.value })}
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-mono focus:outline-none focus:border-primary rounded-md min-h-[300px]"
+                      placeholder="<h1>Olá!</h1><p>Esta é a nossa newsletter...</p>"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSendNewsletter}
+                    disabled={sendingNewsletter}
+                    className="mt-4 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 disabled:opacity-50 transition-opacity rounded-md w-full md:w-auto shadow-lg shadow-primary/20"
+                  >
+                    {sendingNewsletter ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                    {sendingNewsletter ? "A enviar para todos os utilizadores..." : "Enviar Newsletter Agora"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-border bg-secondary/30">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Últimos Envios</h4>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-muted/10 border-b border-border">
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Data do Envio</th>
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Assunto</th>
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">Destinatários</th>
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {newsletterLogs.map(log => (
+                        <tr key={log.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                          <td className="px-6 py-4 text-xs text-muted-foreground">
+                            {format(new Date(log.created_at), "dd/MM/yyyy • HH:mm")}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-foreground max-w-xs truncate flex items-center gap-2">
+                            {log.subject}
+                            <button onClick={() => handleCopy(log.subject, "Assunto")} className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0">
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-mono text-center">
+                            {log.recipient_count}
+                          </td>
+                          <td className="px-6 py-4">
+                            {log.status === "success" ? (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-green-500/10 text-green-400 font-bold uppercase">Enviado</span>
+                            ) : (
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-bold uppercase" title={log.error_details || "Erro desconhecido"}>Falhou</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {newsletterLogs.length === 0 && !dataLoading && (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                            Nenhuma newsletter enviada ainda.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </div>
