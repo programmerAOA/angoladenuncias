@@ -529,14 +529,25 @@ const AdminPage = () => {
           content: newsletterForm.content
         }
       });
-      if (error) throw error;
 
-      toast.success(`Newsletter enviada com sucesso para ${data.recipients_count || 0} utilizadores!`);
+      if (error) {
+        // Try to parse error from reaction if possible
+        if (typeof error.context?.body === 'string') {
+          try {
+            const body = JSON.parse(error.context.body);
+            if (body.error) throw new Error(body.error);
+          } catch (e) { }
+        }
+        throw error;
+      };
+
+      toast.success(`Newsletter enviada com sucesso para ${data.sent || 0} utilizadores!`);
       setNewsletterForm({ subject: "", content: "" });
       loadData("newsletter");
     } catch (err: any) {
       console.error("Error sending newsletter:", err);
-      toast.error("Erro ao enviar newsletter: " + err.message);
+      const msg = err.message || (typeof err === 'string' ? err : "Erro desconhecido");
+      toast.error("Erro ao enviar newsletter: " + msg);
     } finally {
       setSendingNewsletter(false);
     }
