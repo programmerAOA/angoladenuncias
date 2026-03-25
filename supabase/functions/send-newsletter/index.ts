@@ -22,12 +22,13 @@ serve(async (req) => {
         const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         if (userError || !user) throw new Error('Não autorizado');
 
-        // Verificar se o utilizador possui regra de 'admin' ou 'manager'
+        // Verificar se o utilizador possui regra de 'admin'
+        // De acordo com o enum app_role: admin, editor, user
         const { data: roles } = await supabaseClient
             .from('user_roles')
             .select('role')
             .eq('user_id', user.id)
-            .in('role', ['admin', 'manager'])
+            .eq('role', 'admin') // Apenas admins podem enviar newsletters por agora
             .single();
 
         if (!roles) {
