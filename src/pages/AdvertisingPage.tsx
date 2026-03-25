@@ -79,12 +79,10 @@ const AdvertisingPage = () => {
                         </div>
 
                         <a
-                            href="mailto:publicidade@angolasemfiltros.com"
-                            className="flex items-center gap-3 bg-white text-primary px-8 py-4 rounded-full font-bold shadow-lg hover:bg-zinc-100 transition-colors group"
+                            href="mailto:angolasemfiltros@gmail.com"
+                            className="bg-primary text-white px-8 py-3 rounded-full font-heading font-semibold hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl"
                         >
-                            <Mail className="w-5 h-5" />
-                            publicidade@angolasemfiltros.com
-                            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            angolasemfiltros@gmail.com
                         </a>
                     </div>
                 </section>

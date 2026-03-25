@@ -294,14 +294,7 @@ const AdminPage = () => {
 
       if (tab === "dashboard") {
         // Efficiently fetch counts for dashboard stats
-        const [
-          { count: articleCount },
-          { count: videoCount },
-          { count: opinionCount },
-          { count: breakingCount },
-          { count: userCount },
-          { count: visitCount }
-        ] = await Promise.all([
+        const results = await Promise.all([
           supabase.from("news_articles").select("*", { count: 'exact', head: true }),
           supabase.from("video_news").select("*", { count: 'exact', head: true }),
           supabase.from("opinion_articles").select("*", { count: 'exact', head: true }),
@@ -310,17 +303,24 @@ const AdminPage = () => {
           supabase.from("site_visits").select("*", { count: 'exact', head: true })
         ]);
 
+        const errors = results.filter(r => r.error).map(r => r.error?.message);
+        if (errors.length > 0) {
+          console.error("Errors in dashboard counts:", errors);
+          toast.error("Alguns dados do dashboard não puderam ser carregados.");
+        }
+
         setStats({
-          articles: articleCount || 0,
-          videos: videoCount || 0,
-          opinions: opinionCount || 0,
-          breaking: breakingCount || 0,
-          users: userCount || 0,
-          totalVisits: visitCount || 0
+          articles: results[0].count || 0,
+          videos: results[1].count || 0,
+          opinions: results[2].count || 0,
+          breaking: results[3].count || 0,
+          users: results[4].count || 0,
+          totalVisits: results[5].count || 0
         });
 
         // Also fetch just a few recent articles for the dashboard preview
-        const { data: recentArticles } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(10);
+        const { data: recentArticles, error: recentError } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(10);
+        if (recentError) console.error("Error loading recent articles:", recentError);
         if (recentArticles) setArticles(recentArticles);
       }
 
@@ -341,6 +341,7 @@ const AdminPage = () => {
         }
         if (data) setOpinions(data);
       }
+
       if (tab === "breaking") {
         const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
         if (error) {
@@ -356,53 +357,56 @@ const AdminPage = () => {
           if (val.speed) setTickerSpeed(Number(val.speed));
         }
       }
-      if (tab === "users") {
-        const { data, error } = await withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(200), 20000) as any;
-        if (error) {
-          console.error("Error loading profiles:", error);
-          toast.error("Erro ao carregar perfis: " + error.message);
-        }
-        if (data) setProfiles(data);
-      }
+
       if (tab === "stats") {
         const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(500), 20000) as any;
         if (visitError) {
           console.error("Error loading visits:", visitError);
+          toast.error("Erro ao carregar dados de visitas: " + visitError.message);
         }
         if (visitData) setSiteVisits(visitData);
       }
-      if (tab === "users") {
-        const { data, error } = await withTimeout(supabase.from("user_roles").select("*"), 20000) as any;
-        if (error) {
-          console.error("Error loading user roles:", error);
-          toast.error("Erro ao carregar permissões: " + error.message);
-        }
-        if (data) setUserRoles(data);
 
-        // Load editor categories and menu permissions for all users
-        const [{ data: catData }, { data: menuData }] = await Promise.all([
+      if (tab === "users") {
+        // Consolidated users logic
+        const [profilesRes, rolesRes, catRes, menuRes] = await Promise.all([
+          withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(200), 20000),
+          withTimeout(supabase.from("user_roles").select("*"), 20000),
           supabase.from("editor_categories" as any).select("*"),
           supabase.from("editor_menu_permissions" as any).select("*")
-        ]);
+        ]) as any[];
 
-        if (catData) {
+        if (profilesRes.error) {
+          console.error("Error loading profiles:", profilesRes.error);
+          toast.error("Erro ao carregar perfis: " + profilesRes.error.message);
+        }
+        if (profilesRes.data) setProfiles(profilesRes.data);
+
+        if (rolesRes.error) {
+          console.error("Error loading user roles:", rolesRes.error);
+          toast.error("Erro ao carregar permissões: " + rolesRes.error.message);
+        }
+        if (rolesRes.data) setUserRoles(rolesRes.data);
+
+        if (catRes.data) {
           const catMapping: Record<string, string[]> = {};
-          catData.forEach((item: any) => {
+          catRes.data.forEach((item: any) => {
             if (!catMapping[item.user_id]) catMapping[item.user_id] = [];
             catMapping[item.user_id].push(item.category);
           });
           setEditorCategories(catMapping);
         }
 
-        if (menuData) {
+        if (menuRes.data) {
           const menuMapping: Record<string, string[]> = {};
-          menuData.forEach((item: any) => {
+          menuRes.data.forEach((item: any) => {
             if (!menuMapping[item.user_id]) menuMapping[item.user_id] = [];
             menuMapping[item.user_id].push(item.menu_id);
           });
           setEditorMenuPermissions(menuMapping);
         }
       }
+
       if (tab === "ads") {
         const { data, error } = await supabase.from("advertisements").select("*").order("slot").order("display_order");
         if (error) {
@@ -418,6 +422,7 @@ const AdminPage = () => {
           if (val.speed) setAdCarouselSpeed(Number(val.speed) / 1000);
         }
       }
+
       if (tab === "digital-editions") {
         const { data, error } = await supabase.from("digital_editions" as any).select("*").order("edition_date", { ascending: false }).limit(100) as any;
         if (error) {
@@ -426,6 +431,7 @@ const AdminPage = () => {
         }
         if (data) setDigitalEditions(data);
       }
+
       if (tab === "newsletter") {
         const { data, error } = await supabase.from("newsletter_logs" as any).select("*").order("created_at", { ascending: false }).limit(50) as any;
         if (error) {
@@ -434,9 +440,9 @@ const AdminPage = () => {
         }
         if (data) setNewsletterLogs(data);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Unexpected error in loadData:", err);
-      toast.error("Erro inesperado ao carregar dados.");
+      toast.error("Erro inesperado ao carregar dados: " + (err.message || "Tente novamente mais tarde."));
     } finally {
       setDataLoading(false);
     }
@@ -971,12 +977,12 @@ const AdminPage = () => {
     console.log("AI: Generating rewrite with line:", aiWorkspace.editorialLine);
 
     try {
-      // Chamada à futura Edge Function 'ai-rewrite'
+      // Chamada à Edge Function 'ai-rewrite'
       const { data, error } = await supabase.functions.invoke('ai-rewrite', {
         body: {
           content: aiWorkspace.sourceContent,
           title: aiWorkspace.sourceTitle,
-          line: aiWorkspace.editorialLine
+          url: aiWorkspace.sourceUrl
         }
       });
 
@@ -2539,7 +2545,19 @@ const AdminPage = () => {
                       <div key={idx} className="bg-secondary/20 border border-border p-4 rounded hover:border-primary/30 transition-all group">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
+                            {item.url ? (
+                              <a
+                                href={item.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:underline flex items-center gap-1"
+                              >
+                                {item.source || "Fonte Externa"}
+                                <ExternalLink className="w-2 h-2" />
+                              </a>
+                            ) : (
+                              <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
+                            )}
                             {item.isTranslated && (
                               <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 border border-blue-500/20 rounded-sm font-bold flex items-center gap-1">
                                 <Sparkles className="w-2 h-2" /> TRADUZIDO
@@ -2555,7 +2573,7 @@ const AdminPage = () => {
                           className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 transition-all py-1.5 text-xs font-bold uppercase tracking-wider"
                         >
                           <Wand2 className="w-3.5 h-3.5" />
-                          Adaptar Linha Editorial
+                          Adaptar para o Modelo Sem Filtros
                         </button>
                       </div>
                     ))}
@@ -2585,19 +2603,11 @@ const AdminPage = () => {
                     )}
                   </div>
                   <div className="flex-1 overflow-auto p-4 space-y-6">
-                    {/* Linha Editorial Selector */}
                     <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Linha Editorial Desejada</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {["Informativa", "Investigativa", "Crítica", "Formal", "Popular", "Analítica"].map(line => (
-                          <button
-                            key={line}
-                            onClick={() => setAiWorkspace({ ...aiWorkspace, editorialLine: line })}
-                            className={`px-3 py-2 text-xs font-semibold border transition-all ${aiWorkspace.editorialLine === line ? "bg-primary text-primary-foreground border-primary" : "bg-secondary border-border text-muted-foreground hover:border-primary/50"}`}
-                          >
-                            {line}
-                          </button>
-                        ))}
+                      {/* Editorial line selection removed as per user request */}
+                      <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-6">
+                        <p className="text-[10px] font-bold uppercase text-primary mb-1">Modelo Editorial Ativo</p>
+                        <p className="text-xs text-muted-foreground">O sistema irá reestruturar a notícia automaticamente seguindo o novo padrão "Sem Filtros".</p>
                       </div>
                     </div>
 
@@ -2637,74 +2647,13 @@ const AdminPage = () => {
                             placeholder="Conteúdo reestruturado..."
                           />
 
-                          <div className="grid grid-cols-2 gap-2 mt-2">
-                            <div>
-                              <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Impacto Previsto</label>
-                              <input
-                                value={aiWorkspace.impacto}
-                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, impacto: e.target.value })}
-                                placeholder="Impacto da notícia..."
-                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary transition-colors"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Categoria Sugerida</label>
-                              <input
-                                value={aiWorkspace.category}
-                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, category: e.target.value })}
-                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary transition-colors"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="mt-2">
-                            <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Resumo Executivo (Standard)</label>
-                            <textarea
-                              value={aiWorkspace.adaptedSummary}
-                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedSummary: e.target.value })}
-                              placeholder="Resumo curto para redes sociais e destaques..."
-                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
+                          <div className="mt-4">
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 text-right">Preview do Post Completo</label>
+                            <div
+                              className="w-full bg-secondary/30 border border-border p-4 rounded text-sm text-foreground prose prose-invert max-w-none min-h-[300px] overflow-auto"
+                              dangerouslySetInnerHTML={{ __html: aiWorkspace.adaptedContent }}
                             />
-                          </div>
-
-                          <div className="mt-2">
-                            <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Análise de Relevância (Angola)</label>
-                            <textarea
-                              value={aiWorkspace.relevancia_para_angola}
-                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, relevancia_para_angola: e.target.value })}
-                              placeholder="Indique a importância desta notícia para o portal..."
-                              className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 gap-2 mt-2">
-                            <div>
-                              <label className="block text-[9px] font-bold uppercase text-red-500/70 mb-1">Leitura Crítica (Sem Filtros)</label>
-                              <textarea
-                                value={aiWorkspace.leitura_critica}
-                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, leitura_critica: e.target.value })}
-                                placeholder="A análise real e directa dos factos..."
-                                className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[11px] focus:outline-none focus:border-primary min-h-[60px] font-mono"
-                              />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <div>
-                                <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Factos Puros</label>
-                                <textarea
-                                  value={aiWorkspace.factos}
-                                  onChange={(e) => setAiWorkspace({ ...aiWorkspace, factos: e.target.value })}
-                                  className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[10px] focus:outline-none focus:border-primary min-h-[50px]"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[9px] font-bold uppercase text-primary/70 mb-1">Contexto Histórico</label>
-                                <textarea
-                                  value={aiWorkspace.contexto}
-                                  onChange={(e) => setAiWorkspace({ ...aiWorkspace, contexto: e.target.value })}
-                                  className="w-full bg-secondary border border-border text-foreground px-2 py-1.5 text-[10px] focus:outline-none focus:border-primary min-h-[50px]"
-                                />
-                              </div>
-                            </div>
+                            <p className="text-[10px] text-muted-foreground mt-2 italic">* O conteúdo acima já inclui a análise crítica final de acordo com o modelo "Sem Filtros".</p>
                           </div>
                         </div>
                         <button

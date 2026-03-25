@@ -61,7 +61,7 @@ serve(async (req) => {
 
         for (let i = 0; i < profiles.length; i += BATCH_SIZE) {
             const batch = profiles.slice(i, i + BATCH_SIZE).map(profile => ({
-                from: 'Angola Sem Filtros <newsletter@angolasemfiltros.com>',
+                from: 'Angola Sem Filtros <angolasemfiltros@gmail.com>',
                 to: [profile.email],
                 subject: subject,
                 html: content,

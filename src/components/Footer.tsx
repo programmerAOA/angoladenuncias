@@ -54,10 +54,10 @@ const Footer = () => {
               <li>
                 <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Email Geral</span>
                 <a
-                  href="mailto:geral@angolasemfiltros.com"
-                  className="text-sm text-foreground hover:text-primary transition-colors font-medium break-all"
+                  href="mailto:angolasemfiltros@gmail.com"
+                  className="hover:underline transition-all"
                 >
-                  geral@angolasemfiltros.com
+                  angolasemfiltros@gmail.com
                 </a>
               </li>
               <li>

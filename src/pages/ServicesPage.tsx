@@ -401,8 +401,8 @@ const ServicesPage = () => {
         <div className="services-contacts-grid">
           <div className="services-contact-item">
             <p className="text-muted-foreground uppercase text-[10px] font-bold tracking-widest mb-2">Email Geral</p>
-            <a href="mailto:geral@angolasemfiltros.com" className="hover:underline transition-all">
-              geral@angolasemfiltros.com
+            <a href="mailto:angolasemfiltros@gmail.com" className="hover:underline transition-all">
+              angolasemfiltros@gmail.com
             </a>
           </div>
           <div className="services-contact-item">

@@ -79,10 +79,10 @@ const TermsPage = () => {
                         Se tiver qualquer questão sobre os nossos termos de uso, não hesite em contactar-nos.
                     </p>
                     <a
-                        href="mailto:geral@angolasemfiltros.com"
+                        href="mailto:angolasemfiltros@gmail.com"
                         className="text-primary font-bold hover:underline"
                     >
-                        geral@angolasemfiltros.com
+                        angolasemfiltros@gmail.com
                     </a>
                 </div>
             </main>
