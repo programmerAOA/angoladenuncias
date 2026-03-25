@@ -2613,17 +2613,30 @@ const AdminPage = () => {
                     </div>
 
                     {/* Source Preview */}
-                    <div>
-                      <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Original (Fonte)</label>
-                      <div className="p-3 bg-secondary/10 border border-border rounded">
-                        <h6 className="text-xs font-bold mb-1">{aiWorkspace.sourceTitle || "Nenhuma notícia selecionada"}</h6>
-                        <p className="text-[11px] text-muted-foreground italic h-24 overflow-auto">{aiWorkspace.sourceContent || "Selecione uma notícia dos resultados ou cole o texto aqui..."}</p>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Título da Fonte (Opcional)</label>
+                        <input
+                          value={aiWorkspace.sourceTitle}
+                          onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceTitle: e.target.value })}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-xs focus:outline-none focus:border-primary"
+                          placeholder="Título da notícia original..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Conteúdo da Fonte (Cole aqui)</label>
+                        <textarea
+                          value={aiWorkspace.sourceContent}
+                          onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceContent: e.target.value })}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-[11px] focus:outline-none focus:border-primary min-h-[120px] resize-none"
+                          placeholder="Cole o texto da notícia original aqui..."
+                        />
                       </div>
                     </div>
 
                     <button
                       onClick={handleGenerateAI}
-                      disabled={isAdapting || !aiWorkspace.sourceTitle}
+                      disabled={isAdapting || !aiWorkspace.sourceContent}
                       className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
                     >
                       {isAdapting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bot className="w-5 h-5" />}
