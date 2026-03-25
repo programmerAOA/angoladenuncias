@@ -1945,12 +1945,21 @@ const AdminPage = () => {
                                           <button
                                             key={cat}
                                             onClick={async () => {
-                                              if (isSelected) {
-                                                await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
-                                              } else {
-                                                await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
+                                              try {
+                                                if (isSelected) {
+                                                  const { error } = await supabase.from("editor_categories" as any).delete().eq("user_id", p.user_id).eq("category", cat);
+                                                  if (error) throw error;
+                                                  toast.success(`Categoria "${cat}" removida`);
+                                                } else {
+                                                  const { error } = await supabase.from("editor_categories" as any).insert({ user_id: p.user_id, category: cat });
+                                                  if (error) throw error;
+                                                  toast.success(`Categoria "${cat}" adicionada`);
+                                                }
+                                                await loadData("users");
+                                              } catch (err: any) {
+                                                console.error("Error toggling category:", err);
+                                                toast.error("Erro ao atualizar categoria: " + err.message);
                                               }
-                                              loadData("users");
                                             }}
                                             className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/50"}`}
                                             title={isSelected ? "Remover categoria" : "Adicionar categoria"}
@@ -1976,12 +1985,21 @@ const AdminPage = () => {
                                           <button
                                             key={menu.id}
                                             onClick={async () => {
-                                              if (isSelected) {
-                                                await supabase.from("editor_menu_permissions" as any).delete().eq("user_id", p.user_id).eq("menu_id", menu.id);
-                                              } else {
-                                                await supabase.from("editor_menu_permissions" as any).insert({ user_id: p.user_id, menu_id: menu.id });
+                                              try {
+                                                if (isSelected) {
+                                                  const { error } = await supabase.from("editor_menu_permissions" as any).delete().eq("user_id", p.user_id).eq("menu_id", menu.id);
+                                                  if (error) throw error;
+                                                  toast.success(`Acesso a "${menu.label}" removido`);
+                                                } else {
+                                                  const { error } = await supabase.from("editor_menu_permissions" as any).insert({ user_id: p.user_id, menu_id: menu.id });
+                                                  if (error) throw error;
+                                                  toast.success(`Acesso a "${menu.label}" concedido`);
+                                                }
+                                                await loadData("users");
+                                              } catch (err: any) {
+                                                console.error("Error toggling menu:", err);
+                                                toast.error("Erro ao atualizar menu: " + err.message);
                                               }
-                                              loadData("users");
                                             }}
                                             className={`text-[8px] px-1.5 py-0.5 rounded border transition-colors ${isSelected ? "bg-blue-600 text-white border-blue-600" : "bg-secondary text-muted-foreground border-border hover:border-blue-400"}`}
                                             title={isSelected ? "Remover acesso ao menu" : "Permitir acesso ao menu"}
