@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
-  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy
+  Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
+  ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
