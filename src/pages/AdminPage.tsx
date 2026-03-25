@@ -928,11 +928,9 @@ const AdminPage = () => {
     console.log("Discovery: Searching for:", effectiveQuery, "filter:", activeFilter);
 
     try {
-      const { data, error } = await supabase.functions.invoke('news-search', {
+      const { data, error } = await supabase.functions.invoke('news-osint', {
         body: {
-          query: effectiveQuery,
-          filter: activeFilter,
-          max: 15
+          q: effectiveQuery
         }
       });
 
