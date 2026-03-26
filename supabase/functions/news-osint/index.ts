@@ -12,14 +12,17 @@ serve(async (req: Request) => {
     }
 
     let query = "angola";
+    let tbs = "qdr:d2"; // Padrão: últimas 48 horas
 
     try {
         if (req.method === 'POST') {
             const body = await req.json();
             query = body.q || body.query || query;
+            if (body.tbs !== undefined) tbs = body.tbs;
         } else {
             const { searchParams } = new URL(req.url);
             query = searchParams.get("q") || query;
+            if (searchParams.get("tbs")) tbs = searchParams.get("tbs")!;
         }
     } catch (e) {
         // Fallback to URL params if body parsing fails
@@ -35,8 +38,9 @@ serve(async (req: Request) => {
         });
     }
 
-    // tbs=qdr:d2 filtra resultados das últimas 48 horas (2 dias)
-    const url = `https://serpapi.com/search?engine=google_news&q=${encodeURIComponent(query)}&gl=ao&hl=pt&tbs=qdr:d2&api_key=${apiKey}`;
+    // tbs dinâmico: qdr:h1 (1h), qdr:d1 (24h), qdr:d2 (48h), qdr:w1 (1 semana), qdr:m1 (1 mês), "" (qualquer)
+    const tbsParam = tbs ? `&tbs=${encodeURIComponent(tbs)}` : "";
+    const url = `https://serpapi.com/search?engine=google_news&q=${encodeURIComponent(query)}&gl=ao&hl=pt${tbsParam}&api_key=${apiKey}`;
 
     try {
         const response = await fetch(url);

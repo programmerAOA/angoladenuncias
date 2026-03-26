@@ -204,6 +204,7 @@ const AdminPage = () => {
   const [discoveryResults, setDiscoveryResults] = useState<any[]>([]);
   const [isDiscovering, setIsDiscovering] = useState(false);
   const [discoveryFilter, setDiscoveryFilter] = useState("Tudo");
+  const [discoveryTime, setDiscoveryTime] = useState("qdr:d2");
   const [aiWorkspace, setAiWorkspace] = useState({
     sourceUrl: "",
     sourceTitle: "",
@@ -969,7 +970,8 @@ const AdminPage = () => {
     try {
       const { data, error } = await supabase.functions.invoke('news-osint', {
         body: {
-          q: effectiveQuery
+          q: effectiveQuery,
+          tbs: discoveryTime
         }
       });
 
@@ -2540,24 +2542,41 @@ const AdminPage = () => {
                     Pesquisar
                   </button>
                 </div>
-                <div className="flex items-center gap-4 mt-3">
-                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
-                  <div className="flex gap-2">
-                    {["Tudo", "Angola", "Luanda", "Política Angola", "Economia Angola", "Energia & Petróleo", "Sociedade Angolana", "Negócios Angola", "Relações Internacionais", "Cuanza"].map(f => (
-                      <button
-                        key={f}
-                        onClick={() => {
-                          setDiscoveryFilter(f);
-                          handleDiscoverNews(f);
-                        }}
-                        className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
-                          }`}
-                      >
-                        {f}
-                      </button>
-                    ))}
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
+                    <div className="flex flex-wrap gap-2">
+                      {["Tudo", "Angola", "Luanda", "Política Angola", "Economia Angola", "Energia & Petróleo", "Sociedade Angolana", "Negócios Angola", "Relações Internacionais", "Cuanza"].map(f => (
+                        <button
+                          key={f}
+                          onClick={() => {
+                            setDiscoveryFilter(f);
+                            handleDiscoverNews(f);
+                          }}
+                          className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
+                            }`}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 md:ml-auto">
+                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Período:</span>
+                    <select
+                      value={discoveryTime}
+                      onChange={(e) => setDiscoveryTime(e.target.value)}
+                      className="bg-secondary border border-border text-xs font-semibold text-foreground px-3 py-1 focus:outline-none focus:border-primary cursor-pointer"
+                    >
+                      <option value="">Qualquer período</option>
+                      <option value="qdr:h1">Última hora</option>
+                      <option value="qdr:d1">Últimas 24h</option>
+                      <option value="qdr:d2">Últimas 48h</option>
+                      <option value="qdr:w1">Última semana</option>
+                      <option value="qdr:m1">Último mês</option>
+                    </select>
                   </div>
                 </div>
               </div>
