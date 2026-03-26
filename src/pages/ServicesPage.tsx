@@ -300,27 +300,27 @@ const ServicesPage = () => {
         <div className="services-grid">
           <div className="services-card">
             <h3>Banner Topo (1350x300)</h3>
-            <p className="services-price">150.000 KZ / semana</p>
+            <p className="services-price">150.000 KZ / Mês</p>
             <div className="details">Exibição na parte superior do site com máxima visibilidade. Ideal para campanhas principais.</div>
           </div>
           <div className="services-card">
             <h3>Banner Final (1350x300)</h3>
-            <p className="services-price">100.000 KZ / semana</p>
+            <p className="services-price">100.000 KZ / Mês</p>
             <div className="details">Exibição no final das páginas, reforçando a mensagem ao utilizador.</div>
           </div>
           <div className="services-card">
             <h3>Banner Lateral (300x300)</h3>
-            <p className="services-price">85.000 KZ / semana</p>
+            <p className="services-price">85.000 KZ / Mês</p>
             <div className="details">Banner fixo nas laterais do site com visualização contínua.</div>
           </div>
           <div className="services-card">
             <h3>Carrossel Lateral (300x300)</h3>
-            <p className="services-price">120.000 KZ / semana</p>
+            <p className="services-price">120.000 KZ / Mês</p>
             <div className="details">Rotação automática de anúncios com maior dinamismo e visibilidade.</div>
           </div>
           <div className="services-card">
             <h3>Vídeo Vertical (30s)</h3>
-            <p className="services-price">200.000 KZ</p>
+            <p className="services-price">200.000 KZ / Mês</p>
             <div className="details">Vídeo publicitário até 60 segundos exibido em formato moderno tiktok + divulgação no canal @vemsabertv.</div>
           </div>
         </div>
@@ -331,17 +331,17 @@ const ServicesPage = () => {
         <div className="services-grid">
           <div className="services-card">
             <h3>Fotografia + Publicação</h3>
-            <p className="services-price">180.000 KZ</p>
-            <div className="details">Cobertura até 2 horas com entrega de 20 fotografias editadas + publicação no portal.</div>
+            <p className="services-price">380.000 KZ</p>
+            <div className="details">Cobertura até 2 horas com entrega de 20 fotografias editadas + publicação no portal com 10 fotografias.</div>
           </div>
           <div className="services-card">
             <h3>Vídeo/Entrevista</h3>
-            <p className="services-price">270.000 KZ</p>
-            <div className="details">Cobertura até 2 horas com gravação de vídeo ou entrevistas + edição e publicação.</div>
+            <p className="services-price">370.000 KZ</p>
+            <div className="details">Cobertura até 1 hora com gravação de vídeo ou entrevistas + edição de até 10 minutos e publicação.</div>
           </div>
           <div className="services-card">
             <h3>Completo (Foto + Vídeo)</h3>
-            <p className="services-price">350.000 KZ</p>
+            <p className="services-price">750.000 KZ</p>
             <div className="details">Cobertura total até 2 horas com fotos + vídeo + publicação completa no portal.</div>
           </div>
         </div>
@@ -353,13 +353,13 @@ const ServicesPage = () => {
         <div className="services-grid">
           <div className="services-card !bg-white/5 !text-white !border-white/10 hover:!bg-white/10">
             <h3>Live até 1 hora</h3>
-            <p className="services-price">150.000 KZ</p>
-            <div className="details !text-white/70">Transmissão ao vivo até 60 minutos com integração OBS/YouTube no portal.</div>
+            <p className="services-price">280.000 KZ</p>
+            <div className="details !text-white/70">Transmissão ao vivo até 1h com integração OBS/YouTube no portal.</div>
           </div>
           <div className="services-card !bg-white/5 !text-white !border-white/10 hover:!bg-white/10">
-            <h3>Live + Destaque</h3>
+            <h3>Live com menos de 30min + Destaque</h3>
             <p className="services-price">200.000 KZ</p>
-            <div className="details !text-white/70">Live até 1 hora com destaque na homepage durante a transmissão.</div>
+            <div className="details !text-white/70">Live até 30min com destaque na homepage durante a transmissão.</div>
           </div>
           <div className="services-card !bg-white/5 !text-white !border-white/10 hover:!bg-white/10">
             <h3>Pacote Completo</h3>

@@ -285,12 +285,16 @@ const AdminPage = () => {
     setDataLoading(true);
     try {
       if (tab === "articles") {
-        const { data, error } = await withTimeout(supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(200), 20000) as any;
+        console.log("[LoadData] Fetching articles...");
+        const { data, error } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(200);
         if (error) {
           console.error("Error loading articles:", error);
           toast.error("Erro ao carregar artigos: " + error.message);
         }
-        if (data) setArticles(data);
+        if (data) {
+          console.log(`[LoadData] Received ${data.length} articles.`);
+          setArticles(data);
+        }
       }
 
       if (tab === "dashboard") {
@@ -629,14 +633,20 @@ const AdminPage = () => {
       if (result.error) {
         console.error("[SaveArticle] Supabase error:", result.error);
         toast.error("Erro ao guardar artigo: " + result.error.message);
-      } else if (!result.data || result.data.length === 0) {
+      } else if (!result.data) {
+        console.warn("[SaveArticle] No data returned from operation.", result);
         toast.error("O artigo não foi guardado. Verifique as suas permissões.");
       } else {
+        console.log("[SaveArticle] Success! Data saved:", result.data);
         toast.success("Artigo guardado com sucesso!");
+
+        // Clear form and close
         setShowArticleForm(false);
         setEditingArticle(null);
         setArticleImageFile(null);
         setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false });
+
+        // Reload data
         loadData("articles");
       }
     } catch (err: any) {
