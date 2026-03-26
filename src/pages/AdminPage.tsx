@@ -129,6 +129,7 @@ const AdminPage = () => {
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
+  const [dashboardArticles, setDashboardArticles] = useState<Article[]>([]);
   const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0 });
   const [dataLoading, setDataLoading] = useState(false);
   const [editorCategories, setEditorCategories] = useState<Record<string, string[]>>({});
@@ -326,7 +327,7 @@ const AdminPage = () => {
         // Also fetch just a few recent articles for the dashboard preview
         const { data: recentArticles, error: recentError } = await supabase.from("news_articles").select("*").order("created_at", { ascending: false }).limit(10);
         if (recentError) console.error("Error loading recent articles:", recentError);
-        if (recentArticles) setArticles(recentArticles);
+        if (recentArticles) setDashboardArticles(recentArticles);
       }
 
       if (tab === "videos") {
@@ -1232,7 +1233,7 @@ const AdminPage = () => {
               <div className="bg-card border border-border p-5">
                 <h3 className="font-heading font-semibold text-foreground mb-4">Últimos artigos</h3>
                 <div className="space-y-2">
-                  {articles.slice(0, 5).map(a => (
+                  {dashboardArticles.slice(0, 5).map(a => (
                     <div key={a.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                       <div>
                         <p className="text-sm text-foreground line-clamp-1">{a.title}</p>
@@ -1243,7 +1244,7 @@ const AdminPage = () => {
                       </span>
                     </div>
                   ))}
-                  {articles.length === 0 && <p className="text-sm text-muted-foreground">Sem artigos ainda.</p>}
+                  {dashboardArticles.length === 0 && <p className="text-sm text-muted-foreground">Sem artigos ainda.</p>}
                 </div>
               </div>
             </div>
