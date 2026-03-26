@@ -608,13 +608,25 @@ const AdminPage = () => {
       console.log("[SaveArticle] Sending payload to DB...", payload);
       toast.info("A gravar artigo...");
 
-      const queryBuilder = editingArticle
-        ? supabase.from("news_articles").update(payload).eq("id", editingArticle).select()
-        : supabase.from("news_articles").insert(payload).select();
+      const startTime = Date.now();
+      let result;
 
-      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
+      if (editingArticle) {
+        console.log("[SaveArticle] Updating article:", editingArticle);
+        result = await withTimeout(
+          supabase.from("news_articles").update(payload).eq("id", editingArticle).select().single(),
+          45000
+        );
+      } else {
+        console.log("[SaveArticle] Inserting new article");
+        result = await withTimeout(
+          supabase.from("news_articles").insert(payload).select().single(),
+          45000
+        );
+      }
 
-      console.log("[SaveArticle] Result from DB:", result);
+      const duration = Date.now() - startTime;
+      console.log(`[SaveArticle] DB Operation took ${duration}ms. Result:`, result);
 
       if (result.error) {
         console.error("[SaveArticle] Supabase error:", result.error);
