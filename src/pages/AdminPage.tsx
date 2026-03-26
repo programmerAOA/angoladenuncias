@@ -633,6 +633,9 @@ const AdminPage = () => {
       if (result.error) {
         console.error("[SaveArticle] Supabase error:", result.error);
         toast.error("Erro ao guardar artigo: " + result.error.message);
+      } else if (!result.data || result.data.length === 0) {
+        console.warn("[SaveArticle] Empty data returned");
+        toast.error("A notícia não foi guardada. Verifique as suas permissões.");
       } else {
         console.log("[SaveArticle] Success! Operation completed in", duration, "ms");
         toast.success("Artigo guardado com sucesso!");
