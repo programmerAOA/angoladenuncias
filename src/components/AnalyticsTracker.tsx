@@ -92,15 +92,20 @@ export const AnalyticsTracker = () => {
         trackVisit();
 
         // Listen for Auth Changes to update the current visit with an email if they log in
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN' && session?.user?.email) {
                 const currentRecordId = sessionStorage.getItem("current_visit_record_id");
                 if (currentRecordId) {
-                    console.log("User signed in, updating current visit record with email...");
-                    await supabase
-                        .from("site_visits")
-                        .update({ user_email: session.user.email })
-                        .eq("id", currentRecordId);
+                    // Defer the database query to avoid deadlocking supabase-js internal locks 
+                    // during token refresh/sign in events that block other ongoing queries.
+                    setTimeout(() => {
+                        console.log("User signed in, updating current visit record with email...");
+                        supabase
+                            .from("site_visits")
+                            .update({ user_email: session.user.email })
+                            .eq("id", currentRecordId)
+                            .then();
+                    }, 0);
                 }
             }
         });
