@@ -42,11 +42,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .from("user_roles")
           .select("role")
           .eq("user_id", userId),
-        5000
+        30000
       ) as any;
 
       if (error) {
         console.error("[Auth] Role check error:", error);
+        // Mesmo com erro, não bloqueamos o resto da inicialização
         return;
       }
 
