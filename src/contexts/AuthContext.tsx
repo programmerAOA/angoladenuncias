@@ -37,13 +37,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkRoles = async (userId: string) => {
     console.log("[Auth] Checking roles for:", userId);
     try {
-      const { data, error } = await withTimeout(
-        supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId),
-        30000
-      ) as any;
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
 
       if (error) {
         console.error("[Auth] Role check error:", error);

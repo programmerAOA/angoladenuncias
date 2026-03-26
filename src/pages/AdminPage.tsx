@@ -333,7 +333,7 @@ const AdminPage = () => {
       }
 
       if (tab === "videos") {
-        const { data, error } = await withTimeout(supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
+        const { data, error } = await supabase.from("video_news").select("*").order("created_at", { ascending: false }).limit(100);
         if (error) {
           console.error("Error loading videos:", error);
           toast.error("Erro ao carregar vídeos: " + error.message);
@@ -342,7 +342,7 @@ const AdminPage = () => {
       }
 
       if (tab === "opinions") {
-        const { data, error } = await withTimeout(supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
+        const { data, error } = await supabase.from("opinion_articles").select("*").order("created_at", { ascending: false }).limit(100);
         if (error) {
           console.error("Error loading opinions:", error);
           toast.error("Erro ao carregar opiniões: " + error.message);
@@ -351,7 +351,7 @@ const AdminPage = () => {
       }
 
       if (tab === "breaking") {
-        const { data, error } = await withTimeout(supabase.from("breaking_news").select("*").order("created_at", { ascending: false }).limit(100), 20000) as any;
+        const { data, error } = await supabase.from("breaking_news").select("*").order("created_at", { ascending: false }).limit(100);
         if (error) {
           console.error("Error loading breaking news:", error);
           toast.error("Erro ao carregar notícias: " + error.message);
@@ -367,7 +367,7 @@ const AdminPage = () => {
       }
 
       if (tab === "stats") {
-        const { data: visitData, error: visitError } = await withTimeout(supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(500), 20000) as any;
+        const { data: visitData, error: visitError } = await supabase.from("site_visits").select("*").order("created_at", { ascending: false }).limit(500);
         if (visitError) {
           console.error("Error loading visits:", visitError);
           toast.error("Erro ao carregar dados de visitas: " + visitError.message);
@@ -378,8 +378,8 @@ const AdminPage = () => {
       if (tab === "users") {
         // Consolidated users logic
         const [profilesRes, rolesRes, catRes, menuRes] = await Promise.all([
-          withTimeout(supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(200), 20000),
-          withTimeout(supabase.from("user_roles").select("*"), 20000),
+          supabase.from("profiles").select("*").order("last_access", { ascending: false }).limit(200),
+          supabase.from("user_roles").select("*"),
           supabase.from("editor_categories" as any).select("*"),
           supabase.from("editor_menu_permissions" as any).select("*")
         ]) as any[];
