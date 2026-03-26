@@ -116,7 +116,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          await checkRoles(newSession.user.id);
+          // Defer role checking to avoid deadlocking the supabase-js internal fetch queue
+          // during a TOKEN_REFRESH event that is blocking an ongoing query.
+          setTimeout(() => {
+            if (mounted) checkRoles(newSession.user.id);
+          }, 0);
         } else {
           setIsAdmin(false);
           setIsEditor(false);
