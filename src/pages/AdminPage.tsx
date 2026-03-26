@@ -621,10 +621,10 @@ const AdminPage = () => {
 
       if (editingArticle) {
         console.log("[SaveArticle] Updating article:", editingArticle);
-        result = await supabase.from("news_articles").update(payload).eq("id", editingArticle);
+        result = await supabase.from("news_articles").update(payload).eq("id", editingArticle).select();
       } else {
         console.log("[SaveArticle] Inserting new article");
-        result = await supabase.from("news_articles").insert(payload);
+        result = await supabase.from("news_articles").insert(payload).select();
       }
 
       const duration = Date.now() - startTime;
@@ -669,7 +669,7 @@ const AdminPage = () => {
       if (videoThumbnailFile) {
         console.log("[SaveVideo] Uploading thumbnail...", videoThumbnailFile.name);
         toast.info("A carregar miniatura...");
-        currentThumbnailUrl = await withTimeout(uploadFile(videoThumbnailFile), 180000);
+        currentThumbnailUrl = await uploadFile(videoThumbnailFile);
         console.log("[SaveVideo] Thumbnail upload success:", currentThumbnailUrl);
       }
 
@@ -691,8 +691,7 @@ const AdminPage = () => {
         ? supabase.from("video_news").update(payload).eq("id", editingVideo).select()
         : supabase.from("video_news").insert(payload).select();
 
-      // Ensure it's a real promise for withTimeout
-      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
+      const result = await queryBuilder;
 
       console.log("[SaveVideo] Result from DB:", result);
 
@@ -733,7 +732,7 @@ const AdminPage = () => {
       if (opinionAvatarFile) {
         console.log("[SaveOpinion] Uploading avatar...", opinionAvatarFile.name);
         toast.info("A carregar avatar...");
-        currentAvatarUrl = await withTimeout(uploadFile(opinionAvatarFile), 180000);
+        currentAvatarUrl = await uploadFile(opinionAvatarFile);
         console.log("[SaveOpinion] Avatar upload success:", currentAvatarUrl);
       }
 
@@ -753,7 +752,7 @@ const AdminPage = () => {
         ? supabase.from("opinion_articles").update(payload).eq("id", editingOpinion).select()
         : supabase.from("opinion_articles").insert(payload).select();
 
-      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
+      const result = await queryBuilder;
 
       console.log("[SaveOpinion] Result:", result);
 
@@ -830,7 +829,7 @@ const AdminPage = () => {
     try {
       const queryBuilder = supabase.from("breaking_news").insert({ text: breakingForm, active: true }).select();
 
-      const result = await withTimeout(Promise.resolve(queryBuilder), 30000) as any;
+      const result = await queryBuilder;
       console.log("[SaveBreaking] Result:", result);
 
       if (result.error) {
@@ -867,14 +866,14 @@ const AdminPage = () => {
       if (digitalCoverFile) {
         console.log("[SaveDigital] Uploading cover...", digitalCoverFile.name);
         toast.info("A carregar capa...");
-        currentCoverUrl = await withTimeout(uploadFile(digitalCoverFile), 180000);
+        currentCoverUrl = await uploadFile(digitalCoverFile);
         console.log("[SaveDigital] Cover upload success:", currentCoverUrl);
       }
 
       if (digitalPdfFile) {
         console.log("[SaveDigital] Uploading PDF...", digitalPdfFile.name);
         toast.info("A carregar PDF...");
-        currentPdfUrl = await withTimeout((uploadFile as any)(digitalPdfFile, "digital-editions", true), 300000);
+        currentPdfUrl = await uploadFile(digitalPdfFile, "digital-editions", true);
         console.log("[SaveDigital] PDF upload success:", currentPdfUrl);
       }
 
@@ -897,7 +896,7 @@ const AdminPage = () => {
         ? supabase.from("digital_editions" as any).update(payload).eq("id", editingDigital).select()
         : supabase.from("digital_editions" as any).insert(payload).select();
 
-      const result = await withTimeout(Promise.resolve(queryBuilder), 60000) as any;
+      const result = await queryBuilder;
 
       console.log("[SaveDigital] Result:", result);
 
