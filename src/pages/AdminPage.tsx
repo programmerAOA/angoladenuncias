@@ -929,8 +929,21 @@ const AdminPage = () => {
     setDiscoveryResults([]); // Clear previous results
     const activeFilter = filterOverride || discoveryFilter;
 
-    // Fallback: If no query, use the filter as the search term
-    const effectiveQuery = discoveryQuery.trim() || (activeFilter !== 'Tudo' ? activeFilter : 'Angola');
+    // Garantir que a pesquisa é sempre contextualizada com "Angola"
+    let queryBase = discoveryQuery.trim();
+    let effectiveQuery = "";
+
+    if (!queryBase) {
+      // Se o utilizador não digitou nada, usa o filtro + Angola
+      effectiveQuery = activeFilter !== 'Tudo' ? `${activeFilter} Angola` : 'Angola';
+    } else {
+      // Se o utilizador digitou, garante que "Angola" está lá se não for redundante
+      if (!queryBase.toLowerCase().includes('angola')) {
+        effectiveQuery = `${queryBase} Angola`;
+      } else {
+        effectiveQuery = queryBase;
+      }
+    }
 
     console.log("Discovery: Searching for:", effectiveQuery, "filter:", activeFilter);
 
@@ -2511,7 +2524,7 @@ const AdminPage = () => {
                 <div className="flex items-center gap-4 mt-3">
                   <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
                   <div className="flex gap-2">
-                    {["Tudo", "Angola", "Política", "Economia", "Energia & Petróleo", "Negócios", "Sociedade", "Relações Internacionais", "Tecnologia", "Segurança"].map(f => (
+                    {["Tudo", "Angola", "Luanda", "Política Angola", "Economia Angola", "Energia & Petróleo", "Sociedade Angolana", "Negócios Angola", "Relações Internacionais", "Cuanza"].map(f => (
                       <button
                         key={f}
                         onClick={() => {
