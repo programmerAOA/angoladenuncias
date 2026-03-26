@@ -633,11 +633,8 @@ const AdminPage = () => {
       if (result.error) {
         console.error("[SaveArticle] Supabase error:", result.error);
         toast.error("Erro ao guardar artigo: " + result.error.message);
-      } else if (!result.data) {
-        console.warn("[SaveArticle] No data returned from operation.", result);
-        toast.error("O artigo não foi guardado. Verifique as suas permissões.");
       } else {
-        console.log("[SaveArticle] Success! Data saved:", result.data);
+        console.log("[SaveArticle] Success! Operation completed in", duration, "ms");
         toast.success("Artigo guardado com sucesso!");
 
         // Clear form and close
@@ -978,8 +975,14 @@ const AdminPage = () => {
       if (error) throw error;
 
       if (data?.results && data.results.length > 0) {
-        setDiscoveryResults(data.results);
-        toast.success(`Pesquisa OSINT concluída com ${data.results.length} resultados.`);
+        // Ordenar por data (mais recente primeiro)
+        const sorted = [...data.results].sort((a: any, b: any) => {
+          const dateA = Date.parse(a.date) || 0;
+          const dateB = Date.parse(b.date) || 0;
+          return dateB - dateA;
+        });
+        setDiscoveryResults(sorted);
+        toast.success(`Pesquisa OSINT concluída com ${sorted.length} resultados.`);
       } else {
         setDiscoveryResults([]);
         toast.info("Nenhum resultado encontrado. Tente outra pesquisa.");
