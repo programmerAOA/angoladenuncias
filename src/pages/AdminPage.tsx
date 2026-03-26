@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -247,6 +247,9 @@ const AdminPage = () => {
     }
   }, [showArticleForm, editingArticle, isAdmin, displayedCategories]);
 
+  const activeTabRef = useRef(activeTab);
+  activeTabRef.current = activeTab;
+
   // Setup real-time subscriptions
   useEffect(() => {
     if (!isAdmin && !isEditor) return;
@@ -256,31 +259,31 @@ const AdminPage = () => {
       .channel("admin-realtime-v2")
       // Monitor news, videos, and opinions for dashboard stats and tab updates
       .on("postgres_changes", { event: "*", schema: "public", table: "news_articles" }, () => {
-        if (activeTab === "articles" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTabRef.current === "articles" || activeTabRef.current === "dashboard") loadData(activeTabRef.current);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "video_news" }, () => {
-        if (activeTab === "videos" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTabRef.current === "videos" || activeTabRef.current === "dashboard") loadData(activeTabRef.current);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "opinion_articles" }, () => {
-        if (activeTab === "opinions" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTabRef.current === "opinions" || activeTabRef.current === "dashboard") loadData(activeTabRef.current);
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "breaking_news" }, () => {
-        if (activeTab === "breaking" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTabRef.current === "breaking" || activeTabRef.current === "dashboard") loadData(activeTabRef.current);
       })
       // Monitor user profiles for registration stats
       .on("postgres_changes", { event: "*", schema: "public", table: "profiles" }, () => {
-        if (activeTab === "users" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTabRef.current === "users" || activeTabRef.current === "dashboard") loadData(activeTabRef.current);
       })
       // CRITICAL: Monitor site visits for real-time traffic dashboard
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "site_visits" }, () => {
-        if (activeTab === "stats" || activeTab === "dashboard") loadData(activeTab);
+        if (activeTabRef.current === "stats" || activeTabRef.current === "dashboard") loadData(activeTabRef.current);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, isEditor, activeTab]);
+  }, [isAdmin, isEditor]);
 
   const loadData = async (tab: Tab) => {
     console.log("Loading data for tab:", tab);
