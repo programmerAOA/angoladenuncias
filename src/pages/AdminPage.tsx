@@ -130,7 +130,7 @@ const AdminPage = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [siteVisits, setSiteVisits] = useState<SiteVisit[]>([]);
   const [dashboardArticles, setDashboardArticles] = useState<Article[]>([]);
-  const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0 });
+  const [stats, setStats] = useState({ articles: 0, videos: 0, opinions: 0, breaking: 0, users: 0, totalVisits: 0, digitalEditions: 0 });
   const [dataLoading, setDataLoading] = useState(false);
   const [editorCategories, setEditorCategories] = useState<Record<string, string[]>>({});
   const [editorMenuPermissions, setEditorMenuPermissions] = useState<Record<string, string[]>>({});
@@ -306,13 +306,13 @@ const AdminPage = () => {
           supabase.from("opinion_articles").select("*", { count: 'exact', head: true }),
           supabase.from("breaking_news").select("*", { count: 'exact', head: true }),
           supabase.from("profiles").select("*", { count: 'exact', head: true }),
-          supabase.from("site_visits").select("*", { count: 'exact', head: true })
+          supabase.from("site_visits").select("*", { count: 'exact', head: true }),
+          supabase.from("digital_editions").select("*", { count: 'exact', head: true })
         ]);
 
         const errors = results.filter(r => r.error).map(r => r.error?.message);
         if (errors.length > 0) {
           console.error("Errors in dashboard counts:", errors);
-          toast.error("Alguns dados do dashboard não puderam ser carregados.");
         }
 
         setStats({
@@ -321,7 +321,8 @@ const AdminPage = () => {
           opinions: results[2].count || 0,
           breaking: results[3].count || 0,
           users: results[4].count || 0,
-          totalVisits: results[5].count || 0
+          totalVisits: results[5].count || 0,
+          digitalEditions: results[6].count || 0
         });
 
         // Also fetch just a few recent articles for the dashboard preview
@@ -1211,9 +1212,9 @@ const AdminPage = () => {
             <div>
               <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
                 {[
-                  { label: "Artigos", value: articles.length, icon: Newspaper, color: "text-blue-400" },
-                  { label: "Vídeos", value: videos.length, icon: Video, color: "text-purple-400" },
-                  { label: "Jornais", value: digitalEditions.length, icon: Newspaper, color: "text-pink-400" },
+                  { label: "Artigos", value: stats.articles, icon: Newspaper, color: "text-blue-400" },
+                  { label: "Vídeos", value: stats.videos, icon: Video, color: "text-purple-400" },
+                  { label: "Jornais", value: stats.digitalEditions, icon: Newspaper, color: "text-pink-400" },
                   { label: "Utilizadores", value: stats.users, icon: Users, color: "text-green-400" },
                   { label: "Visitas Reais", value: stats.totalVisits.toLocaleString(), icon: Eye, color: "text-orange-400" },
                 ].map(({ label, value, icon: Icon, color }) => (
