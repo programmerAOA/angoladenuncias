@@ -35,14 +35,16 @@ serve(async (req: Request) => {
         });
     }
 
-    const url = `https://serpapi.com/search?engine=google_news&q=${encodeURIComponent(query)}&gl=ao&hl=pt&api_key=${apiKey}`;
+    // tbs=qdr:d2 filtra resultados das últimas 48 horas (2 dias)
+    const url = `https://serpapi.com/search?engine=google_news&q=${encodeURIComponent(query)}&gl=ao&hl=pt&tbs=qdr:d2&api_key=${apiKey}`;
 
     try {
         const response = await fetch(url);
         const data = await response.json();
 
         // Map SerpApi results to the format expected by the frontend
-        const results = (data.news_results || []).map((item: any) => ({
+        const newsResults = data.news_results || [];
+        const results = newsResults.map((item: any) => ({
             title: item.title,
             source: item.source?.name || "Google News",
             date: item.date || "Recente",
