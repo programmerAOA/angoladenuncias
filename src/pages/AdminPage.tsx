@@ -611,9 +611,6 @@ const AdminPage = () => {
       };
 
       console.log("[SaveArticle] Sending payload to DB...", payload);
-      toast.info("A gravar artigo...");
-
-      console.log("[SaveArticle] Sending payload to DB...", payload);
       console.log("[SaveArticle] Payload size (chars):", JSON.stringify(payload).length);
       toast.info("A gravar artigo...");
 
@@ -622,10 +619,10 @@ const AdminPage = () => {
 
       if (editingArticle) {
         console.log("[SaveArticle] Updating article:", editingArticle);
-        result = await supabase.from("news_articles").update(payload).eq("id", editingArticle).select().single();
+        result = await supabase.from("news_articles").update(payload).eq("id", editingArticle);
       } else {
         console.log("[SaveArticle] Inserting new article");
-        result = await supabase.from("news_articles").insert(payload).select().single();
+        result = await supabase.from("news_articles").insert(payload);
       }
 
       const duration = Date.now() - startTime;
