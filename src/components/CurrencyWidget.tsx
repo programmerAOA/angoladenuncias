@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DollarSign, EuroSign } from "lucide-react";
+import { DollarSign, Euro } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 const CurrencyWidget = () => {
@@ -43,7 +43,7 @@ const CurrencyWidget = () => {
                 <span className="text-foreground">{rates.usd.toFixed(2)} <span className="text-[8px] text-muted-foreground ml-0.5">AOA</span></span>
             </div>
             <div className="flex items-center gap-1 px-2 py-0.5 bg-secondary/80 rounded border border-border/30">
-                <EuroSign className="w-3 h-3 text-blue-600" />
+                <Euro className="w-3 h-3 text-blue-600" />
                 <span className="text-foreground">{rates.eur.toFixed(2)} <span className="text-[8px] text-muted-foreground ml-0.5">AOA</span></span>
             </div>
         </div>
