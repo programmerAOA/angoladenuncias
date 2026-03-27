@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
-  Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw,
+  Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw, Lock,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
   ExternalLink
 } from "lucide-react";
@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { categories } from "@/constants/categories";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter" | "authorized-services";
 
 interface Article {
   id: string;
@@ -141,6 +141,9 @@ const AdminPage = () => {
   const [tickerSpeed, setTickerSpeed] = useState(30);
   const [adCarouselSpeed, setAdCarouselSpeed] = useState(6);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [authorizedEmails, setAuthorizedEmails] = useState<{ id: string, email: string, created_at: string }[]>([]);
+  const [newAuthorizedEmail, setNewAuthorizedEmail] = useState("");
+  const [savingAuthorizedEmail, setSavingAuthorizedEmail] = useState(false);
 
   // Ads
   const [advertisements, setAdvertisements] = useState<any[]>([]);
@@ -450,6 +453,15 @@ const AdminPage = () => {
           toast.error("Erro ao carregar histórico de newsletters: " + error.message);
         }
         if (data) setNewsletterLogs(data);
+      }
+
+      if (tab === "authorized-services") {
+        const { data, error } = await supabase.from("authorized_services_emails").select("*").order("created_at", { ascending: false });
+        if (error) {
+          console.error("Error loading authorized emails:", error);
+          toast.error("Erro ao carregar e-mails autorizados: " + error.message);
+        }
+        if (data) setAuthorizedEmails(data);
       }
     } catch (err: any) {
       console.error("Unexpected error in loadData:", err);
@@ -804,6 +816,37 @@ const AdminPage = () => {
     }
   };
 
+  const saveAuthorizedEmail = async () => {
+    if (!newAuthorizedEmail || !newAuthorizedEmail.includes("@")) {
+      toast.error("Por favor, introduza um e-mail válido.");
+      return;
+    }
+
+    setSavingAuthorizedEmail(true);
+    try {
+      const { error } = await supabase
+        .from("authorized_services_emails")
+        .insert({ email: newAuthorizedEmail.trim().toLowerCase(), created_by: user?.id });
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.error("Este e-mail já está autorizado.");
+        } else {
+          toast.error("Erro ao autorizar e-mail: " + error.message);
+        }
+      } else {
+        toast.success("E-mail autorizado com sucesso!");
+        setNewAuthorizedEmail("");
+        loadData("authorized-services");
+      }
+    } catch (err: any) {
+      console.error("Error saving authorized email:", err);
+      toast.error("Erro inesperado ao autorizar e-mail.");
+    } finally {
+      setSavingAuthorizedEmail(false);
+    }
+  };
+
   const saveAdCarouselSpeed = async () => {
     setSavingSettings(true);
     try {
@@ -1138,7 +1181,8 @@ const AdminPage = () => {
       { id: "stats" as Tab, label: "Estatísticas", icon: RefreshCw },
       { id: "ads" as Tab, label: "Publicidade", icon: Megaphone },
       { id: "users" as Tab, label: "Utilizadores", icon: Users },
-      { id: "newsletter" as Tab, label: "Newsletter", icon: Mail }
+      { id: "newsletter" as Tab, label: "Newsletter", icon: Mail },
+      { id: "authorized-services" as Tab, label: "Serviços Autorizados", icon: Lock }
     ] : []),
   ].filter(tab => {
     if (isAdmin) return true;
@@ -2985,6 +3029,106 @@ const AdminPage = () => {
                         <tr>
                           <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
                             Nenhuma newsletter enviada ainda.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Authorized Services */}
+          {activeTab === "authorized-services" && (
+            <div className="space-y-6">
+              <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                <h3 className="font-heading font-bold text-foreground mb-1 flex items-center gap-2">
+                  <Lock className="w-5 h-5 text-primary" />
+                  Autorizar Acesso aos Serviços
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">Adicione e-mails de utilizadores que terão permissão para aceder à secção "Nossos Serviços".</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    value={newAuthorizedEmail}
+                    onChange={e => setNewAuthorizedEmail(e.target.value)}
+                    className="flex-1 bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
+                    placeholder="E-mail do utilizador (ex: usuario@email.com)"
+                    onKeyDown={e => e.key === "Enter" && saveAuthorizedEmail()}
+                  />
+                  <button
+                    onClick={saveAuthorizedEmail}
+                    disabled={savingAuthorizedEmail}
+                    className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2 text-sm font-bold hover:opacity-90 transition-opacity rounded-md disabled:opacity-50"
+                  >
+                    {savingAuthorizedEmail ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    Autorizar E-mail
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">E-mails Autorizados ({authorizedEmails.length})</h4>
+                  <button
+                    onClick={() => loadData("authorized-services")}
+                    className="text-[10px] text-primary hover:underline font-bold uppercase"
+                  >
+                    Atualizar Lista
+                  </button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-muted/30 border-b border-border">
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">E-mail</th>
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Data de Autorização</th>
+                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {authorizedEmails.map((item) => (
+                        <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium text-foreground">{item.email}</span>
+                              <button onClick={() => handleCopy(item.email, "E-mail")} className="text-muted-foreground hover:text-primary transition-colors">
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-xs text-muted-foreground">
+                            {format(new Date(item.created_at), "dd/MM/yyyy • HH:mm")}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button
+                              onClick={async () => {
+                                if (confirm(`Tem a certeza que deseja revogar o acesso de ${item.email}?`)) {
+                                  setDataLoading(true);
+                                  try {
+                                    const { error } = await supabase.from("authorized_services_emails").delete().eq("id", item.id);
+                                    if (error) throw error;
+                                    toast.success("Acesso revogado com sucesso!");
+                                    await loadData("authorized-services");
+                                  } catch (err: any) {
+                                    toast.error("Erro ao revogar acesso: " + err.message);
+                                  } finally {
+                                    setDataLoading(false);
+                                  }
+                                }
+                              }}
+                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                              title="Revogar acesso"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {authorizedEmails.length === 0 && (
+                        <tr>
+                          <td colSpan={3} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                            Nenhum e-mail autorizado ainda.
                           </td>
                         </tr>
                       )}

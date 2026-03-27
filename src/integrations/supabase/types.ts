@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -20,7 +20,7 @@ export type Database = {
           created_at: string | null
           display_order: number | null
           id: string
-          image_url: string | null
+          image_url: string
           link_url: string | null
           slot: string
           title: string
@@ -32,7 +32,7 @@ export type Database = {
           created_at?: string | null
           display_order?: number | null
           id?: string
-          image_url?: string | null
+          image_url: string
           link_url?: string | null
           slot: string
           title: string
@@ -55,66 +55,207 @@ export type Database = {
       }
       article_comments: {
         Row: {
-          article_id: string
+          article_id: string | null
           content: string
-          created_at: string
+          created_at: string | null
           id: string
+          status: string | null
+          user_avatar: string | null
           user_id: string | null
-          user_name: string | null
+          user_name: string
         }
         Insert: {
-          article_id: string
+          article_id?: string | null
           content: string
-          created_at?: string
+          created_at?: string | null
           id?: string
+          status?: string | null
+          user_avatar?: string | null
           user_id?: string | null
-          user_name?: string | null
+          user_name: string
         }
         Update: {
-          article_id?: string
+          article_id?: string | null
           content?: string
-          created_at?: string
+          created_at?: string | null
           id?: string
+          status?: string | null
+          user_avatar?: string | null
           user_id?: string | null
-          user_name?: string | null
+          user_name?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "article_comments_article_id_fkey"
-            columns: ["article_id"]
-            isOneToOne: false
-            referencedRelation: "news_articles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      authorized_services_emails: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          email: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          email: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          email?: string
+          id?: string
+        }
+        Relationships: []
       }
       breaking_news: {
         Row: {
           active: boolean | null
-          created_at: string
+          created_at: string | null
           id: string
           text: string
         }
         Insert: {
           active?: boolean | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           text: string
         }
         Update: {
           active?: boolean | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           text?: string
+        }
+        Relationships: []
+      }
+      digital_editions: {
+        Row: {
+          cover_url: string | null
+          created_at: string | null
+          description: string | null
+          edition_date: string | null
+          id: string
+          is_free: boolean | null
+          pdf_url: string | null
+          price_aoa: number | null
+          price_usd: number | null
+          published: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          edition_date?: string | null
+          id?: string
+          is_free?: boolean | null
+          pdf_url?: string | null
+          price_aoa?: number | null
+          price_usd?: number | null
+          published?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string | null
+          description?: string | null
+          edition_date?: string | null
+          id?: string
+          is_free?: boolean | null
+          pdf_url?: string | null
+          price_aoa?: number | null
+          price_usd?: number | null
+          published?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      digital_purchases: {
+        Row: {
+          amount: number
+          edition_id: string | null
+          id: string
+          purchase_date: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount: number
+          edition_id?: string | null
+          id?: string
+          purchase_date?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          edition_id?: string | null
+          id?: string
+          purchase_date?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_purchases_edition_id_fkey"
+            columns: ["edition_id"]
+            isOneToOne: false
+            referencedRelation: "digital_editions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      editor_categories: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      editor_menu_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          menu_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          menu_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          menu_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
       news_articles: {
         Row: {
           author: string | null
-          category: string
+          category: string | null
           content: string | null
-          created_at: string
+          created_at: string | null
           id: string
           image_url: string | null
           is_breaking: boolean | null
@@ -122,14 +263,14 @@ export type Database = {
           published: boolean | null
           summary: string | null
           title: string
-          updated_at: string
+          updated_at: string | null
           views: number | null
         }
         Insert: {
           author?: string | null
-          category?: string
+          category?: string | null
           content?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           image_url?: string | null
           is_breaking?: boolean | null
@@ -137,14 +278,14 @@ export type Database = {
           published?: boolean | null
           summary?: string | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
           views?: number | null
         }
         Update: {
           author?: string | null
-          category?: string
+          category?: string | null
           content?: string | null
-          created_at?: string
+          created_at?: string | null
           id?: string
           image_url?: string | null
           is_breaking?: boolean | null
@@ -152,38 +293,41 @@ export type Database = {
           published?: boolean | null
           summary?: string | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
           views?: number | null
         }
         Relationships: []
       }
-      notifications: {
+      newsletter_logs: {
         Row: {
-          created_at: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          error_details: string | null
           id: string
-          is_read: boolean | null
-          link: string | null
-          message: string
-          title: string
-          user_id: string
+          recipient_count: number
+          status: string
+          subject: string
         }
         Insert: {
-          created_at?: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          error_details?: string | null
           id?: string
-          is_read?: boolean | null
-          link?: string | null
-          message: string
-          title: string
-          user_id: string
+          recipient_count?: number
+          status: string
+          subject: string
         }
         Update: {
-          created_at?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          error_details?: string | null
           id?: string
-          is_read?: boolean | null
-          link?: string | null
-          message?: string
-          title?: string
-          user_id?: string
+          recipient_count?: number
+          status?: string
+          subject?: string
         }
         Relationships: []
       }
@@ -192,88 +336,82 @@ export type Database = {
           author: string
           avatar_url: string | null
           content: string | null
-          created_at: string
+          created_at: string | null
           excerpt: string | null
           id: string
           published: boolean | null
           title: string
-          updated_at: string
+          updated_at: string | null
+          views: number | null
         }
         Insert: {
           author: string
           avatar_url?: string | null
           content?: string | null
-          created_at?: string
+          created_at?: string | null
           excerpt?: string | null
           id?: string
           published?: boolean | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
+          views?: number | null
         }
         Update: {
           author?: string
           avatar_url?: string | null
           content?: string | null
-          created_at?: string
+          created_at?: string | null
           excerpt?: string | null
           id?: string
           published?: boolean | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
+          views?: number | null
         }
         Relationships: []
       }
       profiles: {
         Row: {
-          access_count: number | null
           avatar_url: string | null
-          blocked_reason: string | null
           country: string | null
-          created_at: string
+          created_at: string | null
           email: string | null
           full_name: string | null
           id: string
-          is_blocked: boolean | null
           last_access: string | null
-          phone: string | null
-          updated_at: string
-          user_id: string
-          user_type: string | null
-          wallet_balance: number | null
+          nome: string | null
+          role: Database["public"]["Enums"]["app_role"] | null
+          status: string | null
+          updated_at: string | null
+          user_id: string | null
         }
         Insert: {
-          access_count?: number | null
           avatar_url?: string | null
-          blocked_reason?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           full_name?: string | null
-          id?: string
-          is_blocked?: boolean | null
+          id: string
           last_access?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id: string
-          user_type?: string | null
-          wallet_balance?: number | null
+          nome?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
-          access_count?: number | null
           avatar_url?: string | null
-          blocked_reason?: string | null
           country?: string | null
-          created_at?: string
+          created_at?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
-          is_blocked?: boolean | null
           last_access?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id?: string
-          user_type?: string | null
-          wallet_balance?: number | null
+          nome?: string | null
+          role?: Database["public"]["Enums"]["app_role"] | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -286,6 +424,7 @@ export type Database = {
           device_type: string | null
           id: string
           os: string | null
+          page_url: string | null
           user_email: string | null
           visitor_id: string | null
         }
@@ -297,6 +436,7 @@ export type Database = {
           device_type?: string | null
           id?: string
           os?: string | null
+          page_url?: string | null
           user_email?: string | null
           visitor_id?: string | null
         }
@@ -308,6 +448,7 @@ export type Database = {
           device_type?: string | null
           id?: string
           os?: string | null
+          page_url?: string | null
           user_email?: string | null
           visitor_id?: string | null
         }
@@ -317,78 +458,81 @@ export type Database = {
         Row: {
           id: string
           key: string
-          updated_at: string
+          updated_at: string | null
           value: Json
         }
         Insert: {
           id?: string
           key: string
-          updated_at?: string
-          value?: Json
+          updated_at?: string | null
+          value: Json
         }
         Update: {
           id?: string
           key?: string
-          updated_at?: string
+          updated_at?: string | null
           value?: Json
         }
         Relationships: []
       }
       user_roles: {
         Row: {
+          created_at: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
-          user_id: string
+          user_id: string | null
         }
         Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
+          created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string | null
         }
         Relationships: []
       }
       video_news: {
         Row: {
           category: string | null
-          created_at: string
+          created_at: string | null
           description: string | null
           duration: string | null
           id: string
           published: boolean | null
           thumbnail_url: string | null
           title: string
-          updated_at: string
+          updated_at: string | null
           video_url: string
           views: number | null
         }
         Insert: {
           category?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           duration?: string | null
           id?: string
           published?: boolean | null
           thumbnail_url?: string | null
           title: string
-          updated_at?: string
+          updated_at?: string | null
           video_url: string
           views?: number | null
         }
         Update: {
           category?: string | null
-          created_at?: string
+          created_at?: string | null
           description?: string | null
           duration?: string | null
           id?: string
           published?: boolean | null
           thumbnail_url?: string | null
           title?: string
-          updated_at?: string
+          updated_at?: string | null
           video_url?: string
           views?: number | null
         }
@@ -406,13 +550,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      increment_views_periodically: { Args: never; Returns: undefined }
-      track_user_access: { Args: never; Returns: undefined }
-      validate_referrer: { Args: { p_email: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "editor" | "user"
-      deposit_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -541,7 +681,6 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "editor", "user"],
-      deposit_status: ["pending", "approved", "rejected"],
     },
   },
 } as const

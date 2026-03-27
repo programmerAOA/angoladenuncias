@@ -8,6 +8,7 @@ interface AuthContextType {
   session: Session | null;
   isAdmin: boolean;
   isEditor: boolean;
+  isAuthorizedForServices: boolean;
   allowedCategories: string[];
   allowedMenus: string[];
   loading: boolean;
@@ -19,6 +20,7 @@ export const AuthContext = createContext<AuthContextType>({
   session: null,
   isAdmin: false,
   isEditor: false,
+  isAuthorizedForServices: false,
   allowedCategories: [],
   allowedMenus: [],
   loading: true,
@@ -30,6 +32,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
+  const [isAuthorizedForServices, setIsAuthorizedForServices] = useState(false);
   const [allowedCategories, setAllowedCategories] = useState<string[]>([]);
   const [allowedMenus, setAllowedMenus] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,6 +75,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsEditor(false);
         setAllowedCategories([]);
         setAllowedMenus([]);
+      }
+
+      // Check if user is authorized for "Our Services"
+      // We check if the user is an admin OR if their email is in the authorized list
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData?.user?.email) {
+        if (isAdmin) { // Early check if we already know they are admin
+          setIsAuthorizedForServices(true);
+        } else {
+          const { data: authorizedData } = await supabase
+            .from("authorized_services_emails")
+            .select("email")
+            .eq("email", userData.user.email)
+            .maybeSingle();
+
+          setIsAuthorizedForServices(!!authorizedData || isAdmin);
+        }
+      } else {
+        setIsAuthorizedForServices(false);
       }
     } catch (err) {
       console.error("[Auth] Unexpected role check failure:", err);
@@ -159,7 +181,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, isEditor, allowedCategories, allowedMenus, loading, signOut }}>
+    <AuthContext.Provider value={{
+      user,
+      session,
+      isAdmin,
+      isEditor,
+      isAuthorizedForServices,
+      allowedCategories,
+      allowedMenus,
+      loading,
+      signOut
+    }}>
       {children}
     </AuthContext.Provider>
   );

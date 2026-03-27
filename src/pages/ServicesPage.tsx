@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import React from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { LogIn, UserPlus, MessageCircle, Lock } from "lucide-react";
 
 const ServicesPage = () => {
+  const { user, isAuthorizedForServices, loading } = useAuth();
+  const navigate = useNavigate();
   const [views, setViews] = useState(12500);
 
   useEffect(() => {
@@ -66,6 +71,89 @@ const ServicesPage = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#cc0000]"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] font-sans flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 border border-black/5 animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-[#cc0000]" />
+          </div>
+          <h1 className="text-3xl font-black text-black mb-4 uppercase tracking-tighter">Acesso Restrito</h1>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            A secção <strong>Nossos Serviços</strong> é reservada apenas para utilizadores registados e autorizados.
+          </p>
+          <div className="flex flex-col gap-4">
+            <button
+              onClick={() => navigate("/auth?mode=signup")}
+              className="w-full py-4 bg-[#cc0000] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#a00000] transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-red-500/20"
+            >
+              <UserPlus className="w-5 h-5" />
+              CRIAR CONTA AGORA
+            </button>
+            <button
+              onClick={() => navigate("/auth?mode=login")}
+              className="w-full py-4 bg-black text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg"
+            >
+              <LogIn className="w-5 h-5" />
+              ENTRAR NA MINHA CONTA
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-3 text-gray-500 font-medium hover:text-black transition-colors"
+            >
+              VOLTAR À PÁGINA PRINCIPAL
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthorizedForServices) {
+    return (
+      <div className="min-h-screen bg-[#f5f5f5] font-sans flex flex-col items-center justify-center p-6 text-center">
+        <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 border border-black/5 animate-in fade-in zoom-in duration-500">
+          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Lock className="w-10 h-10 text-[#00a651]" />
+          </div>
+          <h1 className="text-3xl font-black text-black mb-4 uppercase tracking-tighter">Solicitar Acesso</h1>
+          <p className="text-gray-600 mb-8 leading-relaxed">
+            Olá <strong>{user.email}</strong>!<br />
+            Para aceder aos nossos serviços publicitários, por favor solicite a ativação da sua conta através do nosso suporte oficial.
+          </p>
+          <div className="flex flex-col gap-4">
+            <a
+              href={`https://wa.me/244952679780?text=Olá! Sou o utilizador ${user.email} e gostaria de solicitar acesso à secção de Nossos Serviços.`}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full py-4 bg-[#25D366] text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#1ebc56] transition-all transform hover:scale-[1.02] active:scale-95 shadow-lg shadow-green-500/20"
+            >
+              <MessageCircle className="w-5 h-5" />
+              SOLICITAR ACESSO VIA WHATSAPP
+            </a>
+            <button
+              onClick={() => navigate("/")}
+              className="w-full py-3 text-gray-500 font-medium hover:text-black transition-colors"
+            >
+              VOLTAR À PÁGINA PRINCIPAL
+            </button>
+          </div>
+          <div className="mt-8 pt-8 border-t border-gray-100 italic text-[10px] text-gray-400">
+            Tempo de resposta estimado: 15 minutos
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] font-sans selection:bg-primary/30">
