@@ -34,6 +34,14 @@ const CurrencyWidget = () => {
         );
     }
 
+    if (!rates && !loading) {
+        return (
+            <div className="flex items-center gap-1 text-[8px] text-muted-foreground uppercase opacity-70">
+                <span>Câmbio Indisponível</span>
+            </div>
+        );
+    }
+
     if (!rates) return null;
 
     return (

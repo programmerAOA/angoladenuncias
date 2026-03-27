@@ -76,7 +76,7 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
       <div className="container flex items-center justify-between py-2 border-b border-border">
         <div className="flex items-center gap-4">
           <span className="news-timestamp hidden sm:block border-r border-border pr-4 mr-1">{formattedDate}</span>
-          <div className="hidden lg:block">
+          <div className="flex items-center">
             <CurrencyWidget />
           </div>
           <div className="hidden md:flex items-center gap-3 border-l border-border pl-4 ml-1">
