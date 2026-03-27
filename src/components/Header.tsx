@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { pt } from "date-fns/locale";
 import { toast } from "sonner";
 import ThemeToggle from "./ThemeToggle";
+import CurrencyWidget from "./CurrencyWidget";
 
 interface HeaderProps {
   selectedCategory?: string;
@@ -74,7 +75,10 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
       {/* Top bar */}
       <div className="container flex items-center justify-between py-2 border-b border-border">
         <div className="flex items-center gap-4">
-          <span className="news-timestamp hidden sm:block">{formattedDate}</span>
+          <span className="news-timestamp hidden sm:block border-r border-border pr-4 mr-1">{formattedDate}</span>
+          <div className="hidden lg:block">
+            <CurrencyWidget />
+          </div>
           <div className="hidden md:flex items-center gap-3 border-l border-border pl-4 ml-1">
             <a href="https://facebook.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
               <Facebook className="w-3.5 h-3.5" />
