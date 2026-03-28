@@ -89,13 +89,13 @@ const ArticleDetail = () => {
                     Voltar
                 </button>
 
-                <article className="animate-fade-in">
+                <article className="animate-fade-in flex flex-col items-center">
                     <span className="news-category-badge mb-4 inline-block">{article.category}</span>
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-heading font-black tracking-tight text-foreground mb-6 leading-tight">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-heading font-black tracking-tight text-foreground mb-6 leading-tight text-center">
                         {article.title}
                     </h1>
 
-                    <div className="flex flex-wrap items-center gap-4 mb-8 pb-6 border-b border-border">
+                    <div className="flex flex-wrap items-center justify-center gap-4 mb-8 pb-6 border-b border-border w-full">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
                                 <User className="w-4 h-4 text-muted-foreground" />
@@ -108,7 +108,7 @@ const ArticleDetail = () => {
                         </div>
                         <button
                             onClick={handleShare}
-                            className="ml-auto text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"
+                            className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"
                             title="Partilhar artigo"
                         >
                             <Share2 className="w-5 h-5" />
@@ -131,7 +131,7 @@ const ArticleDetail = () => {
                     )}
 
                     <div className="prose prose-zinc dark:prose-invert max-w-none">
-                        <div className="text-foreground leading-relaxed text-lg whitespace-pre-wrap space-y-4">
+                        <div className="text-foreground leading-relaxed text-lg whitespace-pre-wrap space-y-4 text-justify">
                             {article.content}
                         </div>
                     </div>

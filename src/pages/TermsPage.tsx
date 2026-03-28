@@ -40,8 +40,8 @@ const TermsPage = () => {
         <div className="min-h-screen bg-background">
             <Header />
 
-            <main className="container py-16 max-w-4xl">
-                <header className="mb-12 animate-fade-in">
+            <main className="container py-16 max-w-4xl flex flex-col items-center">
+                <header className="mb-12 animate-fade-in text-center flex flex-col items-center">
                     <span className="news-category-badge mb-4 inline-block">Legal</span>
                     <h1 className="text-4xl font-heading font-black tracking-tight text-foreground mb-4 uppercase">
                         Termos de Uso
@@ -51,7 +51,7 @@ const TermsPage = () => {
                     </p>
                 </header>
 
-                <div className="prose prose-zinc dark:prose-invert max-w-none mb-12 animate-fade-in">
+                <div className="prose prose-zinc dark:prose-invert max-w-none mb-12 animate-fade-in text-justify">
                     <p className="text-lg leading-relaxed text-foreground/80">
                         Bem-vindo ao Sem Filtros. Ao utilizar os nossos serviços, o utilizador aceita as condições abaixo descritas. Estes termos visam garantir uma experiênca segura e informativa para todos os nossos leitores.
                     </p>
@@ -66,7 +66,7 @@ const TermsPage = () => {
                                 </div>
                                 <h3 className="font-heading font-bold text-foreground">{section.title}</h3>
                             </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed italic">
+                            <p className="text-sm text-muted-foreground leading-relaxed italic text-justify">
                                 {section.content}
                             </p>
                         </div>

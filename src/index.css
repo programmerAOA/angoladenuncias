@@ -174,3 +174,14 @@
     @apply text-primary;
   }
 }
+/* Justificar textos automaticamente */
+.text-justify {
+  text-align: justify;
+  text-justify: inter-word;
+}
+
+.prose p,
+.article-body p {
+  text-align: justify;
+  text-justify: inter-word;
+}

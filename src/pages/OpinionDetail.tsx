@@ -113,7 +113,7 @@ const OpinionDetail = () => {
                     <div className="relative">
                         <Quote className="absolute -top-6 -left-6 w-12 h-12 text-primary/10 -z-10" />
                         <div className="prose prose-zinc dark:prose-invert max-w-none">
-                            <div className="text-foreground leading-relaxed text-xl whitespace-pre-wrap space-y-6 font-serif">
+                            <div className="text-foreground leading-relaxed text-xl whitespace-pre-wrap space-y-6 font-serif text-justify">
                                 {opinion.content}
                             </div>
                         </div>

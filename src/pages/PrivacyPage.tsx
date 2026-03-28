@@ -7,8 +7,8 @@ const PrivacyPage = () => {
         <div className="min-h-screen bg-background">
             <Header />
 
-            <main className="container py-16 max-w-4xl">
-                <header className="mb-12 animate-fade-in">
+            <main className="container py-16 max-w-4xl flex flex-col items-center">
+                <header className="mb-12 animate-fade-in text-center flex flex-col items-center">
                     <span className="news-category-badge mb-4 inline-block">Legal</span>
                     <h1 className="text-4xl font-heading font-black tracking-tight text-foreground mb-4 uppercase">
                         Política de Privacidade
@@ -19,7 +19,7 @@ const PrivacyPage = () => {
                 </header>
 
                 <section className="space-y-12 animate-fade-in">
-                    <div className="prose prose-zinc dark:prose-invert max-w-none">
+                    <div className="prose prose-zinc dark:prose-invert max-w-none text-justify">
                         <p className="text-lg leading-relaxed text-foreground/80">
                             O **Sem Filtros** respeita a privacidade dos utilizadores. Esta política descreve como tratamos as suas informações pessoais e asseguramos a sua protecção.
                         </p>
@@ -78,7 +78,7 @@ const PrivacyPage = () => {
                             <Trash2 className="w-6 h-6 text-red-500" />
                             Os Seus Direitos
                         </h2>
-                        <p className="text-muted-foreground leading-relaxed">
+                        <p className="text-muted-foreground leading-relaxed text-justify">
                             O utilizador tem total controlo sobre os seus dados. Pode solicitar a **remoção total** das suas informações ou histórico a qualquer momento, bastando enviar um email para o nosso suporte técnico.
                         </p>
                         <div className="mt-6">

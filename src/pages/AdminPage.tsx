@@ -2767,7 +2767,7 @@ const AdminPage = () => {
                           <div className="mt-4">
                             <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 text-right">Preview do Post Completo</label>
                             <div
-                              className="w-full bg-secondary/30 border border-border p-4 rounded text-sm text-foreground prose prose-invert max-w-none min-h-[300px] overflow-auto"
+                              className="w-full bg-secondary/30 border border-border p-4 rounded text-sm text-foreground prose prose-invert max-w-none min-h-[300px] overflow-auto text-justify"
                               dangerouslySetInnerHTML={{ __html: aiWorkspace.adaptedContent }}
                             />
                             <p className="text-[10px] text-muted-foreground mt-2 italic">* O conteúdo acima já inclui a análise crítica final de acordo com o modelo "Sem Filtros".</p>
