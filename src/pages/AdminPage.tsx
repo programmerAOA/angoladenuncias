@@ -2844,6 +2844,7 @@ const AdminPage = () => {
                         <option value="banner_bottom">Banner Final</option>
                         <option value="sidebar_carousel">Carrossel Lateral</option>
                         <option value="sidebar_video">Vídeo Vertical</option>
+                        <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
                       </select>
                     </div>
                     <div>
@@ -2890,9 +2891,15 @@ const AdminPage = () => {
               )}
 
               {/* Ads list grouped by slot */}
-              {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video"].map(slot => {
+              {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar"].map(slot => {
                 const slotAds = advertisements.filter(a => a.slot === slot);
-                const labels: Record<string, string> = { banner_top: "Banner Topo", banner_bottom: "Banner Final", sidebar_carousel: "Carrossel Lateral", sidebar_video: "Vídeo Vertical" };
+                const labels: Record<string, string> = {
+                  banner_top: "Banner Topo",
+                  banner_bottom: "Banner Final",
+                  sidebar_carousel: "Carrossel Lateral",
+                  sidebar_video: "Vídeo Vertical",
+                  video_section_sidebar: "Destaque Vídeos (Lateral)"
+                };
                 return (
                   <div key={slot} className="mb-8">
                     <h3 className="text-sm font-heading font-bold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">

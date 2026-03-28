@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { Play, Clock, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getYoutubeId } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 import Hls from "hls.js";
+import AdSquare from "./AdSquare";
 
 export interface VideoItem {
   id: string;
@@ -68,6 +70,26 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const [featuredVideo, setFeaturedVideo] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
   const navigate = useNavigate();
+
+  const handlePlay = async () => {
+    if (!featuredVideo) return;
+
+    setPlaying(true);
+
+    // Incrementar visualizações na base de dados
+    try {
+      const { error } = await (supabase.rpc as any)('increment_video_views', { video_id: featuredVideo.id });
+      if (error) throw error;
+
+      // Actualizar estado local para reflectir o incremento imediato
+      setFeaturedVideo((prev: any) => ({
+        ...prev,
+        views: String(Number(prev.views || 0) + 1)
+      }));
+    } catch (err) {
+      console.error("Erro ao incrementar visualizações:", err);
+    }
+  };
 
   // Sincronizar vídeo em destaque quando a lista de vídeos mudar
   useEffect(() => {
@@ -147,7 +169,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
               {playing ? (
                 renderPlayer()
               ) : (
-                <div onClick={() => setPlaying(true)} className="relative w-full h-full">
+                <div onClick={handlePlay} className="relative w-full h-full">
                   <img
                     src={featuredVideo.thumbnail_url || featuredVideo.thumbnail}
                     alt={featuredVideo.title}
@@ -200,7 +222,8 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
             <h4 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-3 pb-2 border-b border-border">
               Mais vídeos
             </h4>
-            {videos.slice(1, 5).map((video) => (
+
+            {videos.slice(1, 3).map((video) => (
               <button
                 key={video.id}
                 onClick={() => {
@@ -241,6 +264,54 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                 </div>
               </button>
             ))}
+
+            {/* Ad Space 300x300 (Middle of Sidebar) */}
+            <div className="py-4 border-b border-border">
+              <AdSquare slot="video_section_sidebar" />
+            </div>
+
+            {videos.slice(3, 5).map((video) => (
+              <button
+                key={video.id}
+                onClick={() => {
+                  setFeaturedVideo(video);
+                  setPlaying(false);
+                  window.scrollTo({ top: document.getElementById('video-section')?.offsetTop || 0, behavior: 'smooth' });
+                }}
+                className={`flex gap-3 py-3 border-b border-border last:border-0 text-left group transition-colors hover:bg-background/50 -mx-2 px-2 ${featuredVideo.id === video.id ? "opacity-60" : ""
+                  }`}
+              >
+                {/* Thumbnail */}
+                <div className="relative flex-shrink-0 w-28 h-16 overflow-hidden">
+                  <img
+                    src={video.thumbnail_url || video.thumbnail}
+                    alt={video.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-background/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Play className="w-4 h-4 text-primary-foreground fill-primary-foreground" />
+                  </div>
+                  <span className="absolute bottom-1 right-1 text-[10px] font-mono bg-background/80 text-foreground px-1">
+                    {video.duration}
+                  </span>
+                </div>
+
+                {/* Info */}
+                <div className="flex flex-col justify-center min-w-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">
+                    {video.category}
+                  </span>
+                  <h4 className="text-sm font-heading font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors leading-snug">
+                    {video.title}
+                  </h4>
+                  <div className="flex items-center gap-2 mt-1 text-[11px] text-muted-foreground">
+                    <Eye className="w-3 h-3" />
+                    <span>{video.views}</span>
+                  </div>
+                </div>
+              </button>
+            ))}
+
           </div>
         </div>
       </div>

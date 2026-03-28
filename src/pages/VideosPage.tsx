@@ -50,6 +50,30 @@ const VideosPage = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    const handlePlay = async (video: any = null) => {
+        const targetVideo = video || featuredVideo;
+        if (!targetVideo) return;
+
+        setPlaying(true);
+        if (video) setFeaturedVideo(video);
+
+        // Incrementar visualizações na base de dados
+        try {
+            const { error } = await (supabase.rpc as any)('increment_video_views', { video_id: targetVideo.id });
+            if (error) throw error;
+
+            // Actualizar estado local
+            setVideos(prev => prev.map(v =>
+                v.id === targetVideo.id ? { ...v, views: String(Number(v.views || 0) + 1) } : v
+            ));
+            if (featuredVideo?.id === targetVideo.id) {
+                setFeaturedVideo((prev: any) => ({ ...prev, views: String(Number(prev.views || 0) + 1) }));
+            }
+        } catch (err) {
+            console.error("Erro ao incrementar visualizações:", err);
+        }
+    };
+
     useEffect(() => {
         const fetchVideos = async () => {
             setLoading(true);
@@ -128,7 +152,7 @@ const VideosPage = () => {
                             {playing && featuredVideo ? (
                                 renderPlayer()
                             ) : featuredVideo ? (
-                                <div onClick={() => setPlaying(true)} className="relative w-full h-full cursor-pointer">
+                                <div onClick={() => handlePlay()} className="relative w-full h-full cursor-pointer">
                                     <img
                                         src={featuredVideo.thumbnail_url || featuredVideo.thumbnail || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1200&q=80"}
                                         alt={featuredVideo.title}
@@ -177,8 +201,7 @@ const VideosPage = () => {
                                 <button
                                     key={video.id}
                                     onClick={() => {
-                                        setFeaturedVideo(video);
-                                        setPlaying(true);
+                                        handlePlay(video);
                                         window.scrollTo({ top: 0, behavior: 'smooth' });
                                     }}
                                     className={`flex gap-3 text-left group p-2 rounded-lg transition-all ${featuredVideo?.id === video.id ? "bg-primary/5 ring-1 ring-primary/20" : "hover:bg-secondary"
