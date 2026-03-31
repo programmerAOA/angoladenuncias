@@ -140,6 +140,7 @@ const AdminPage = () => {
   const [savingBreaking, setSavingBreaking] = useState(false);
   const [tickerSpeed, setTickerSpeed] = useState(30);
   const [adCarouselSpeed, setAdCarouselSpeed] = useState(6);
+  const [adCarouselTransition, setAdCarouselTransition] = useState<"fade" | "slide">("fade");
   const [savingSettings, setSavingSettings] = useState(false);
   const [authorizedEmails, setAuthorizedEmails] = useState<{ id: string, email: string, created_at: string }[]>([]);
   const [newAuthorizedEmail, setNewAuthorizedEmail] = useState("");
@@ -436,6 +437,7 @@ const AdminPage = () => {
         if (adSettings?.value && typeof adSettings.value === 'object') {
           const val = adSettings.value as any;
           if (val.speed) setAdCarouselSpeed(Number(val.speed) / 1000);
+          if (val.transition) setAdCarouselTransition(val.transition);
         }
       }
 
@@ -849,18 +851,23 @@ const AdminPage = () => {
     }
   };
 
-  const saveAdCarouselSpeed = async () => {
+  const saveAdCarouselSettings = async () => {
     setSavingSettings(true);
     try {
       const { error } = await supabase
         .from("system_settings")
-        .update({ value: { speed: adCarouselSpeed * 1000 } })
+        .update({
+          value: {
+            speed: adCarouselSpeed * 1000,
+            transition: adCarouselTransition
+          }
+        })
         .eq("key", "ad_carousel");
 
       if (error) {
-        toast.error("Erro ao salvar velocidade do carrossel: " + error.message);
+        toast.error("Erro ao salvar configurações do carrossel: " + error.message);
       } else {
-        toast.success("Velocidade do carrossel de publicidade actualizada!");
+        toast.success("Configurações do carrossel de publicidade actualizadas!");
       }
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
@@ -2798,7 +2805,7 @@ const AdminPage = () => {
                   <RefreshCw className="w-4 h-4 text-primary" />
                   Configuração de Exibição
                 </h3>
-                <div className="flex flex-col sm:flex-row items-end gap-4">
+                <div className="flex flex-col sm:flex-row items-end gap-6">
                   <div className="flex-1 max-w-xs">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade do Carrossel (segundos)</label>
                     <div className="flex items-center gap-3">
@@ -2814,15 +2821,28 @@ const AdminPage = () => {
                       <span className="text-sm font-mono font-bold text-primary w-12 text-center">{adCarouselSpeed}s</span>
                     </div>
                   </div>
+
+                  <div className="flex-1 max-w-xs">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Tipo de Transição</label>
+                    <select
+                      value={adCarouselTransition}
+                      onChange={e => setAdCarouselTransition(e.target.value as "fade" | "slide")}
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-9"
+                    >
+                      <option value="fade">Desvanecer (Fade)</option>
+                      <option value="slide">Deslizar (Slide)</option>
+                    </select>
+                  </div>
+
                   <button
-                    onClick={saveAdCarouselSpeed}
+                    onClick={saveAdCarouselSettings}
                     disabled={savingSettings}
-                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-10"
+                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-9"
                   >
                     {savingSettings ? "A guardar..." : "Salvar Configuração"}
                   </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-3">Define quanto tempo cada anúncio permanece visível no carrossel lateral.</p>
+                <p className="text-[10px] text-muted-foreground mt-3">Define quanto tempo cada anúncio permanece visível e como ele alterna para o próximo.</p>
               </div>
 
               <div className="flex items-center justify-between mb-6">

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Megaphone } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Megaphone, ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AdBannerProps {
@@ -14,52 +14,139 @@ interface Ad {
 }
 
 const AdBanner = ({ slot }: AdBannerProps) => {
-    const [ad, setAd] = useState<Ad | null>(null);
+    const [ads, setAds] = useState<Ad[]>([]);
+    const [current, setCurrent] = useState(0);
+    const [speed, setSpeed] = useState(6000);
+    const [transition, setTransition] = useState<"fade" | "slide">("fade");
+    const [isTransitioning, setIsTransitioning] = useState(false);
 
     useEffect(() => {
-        const fetchAd = async () => {
+        const fetchAds = async () => {
             const { data } = await supabase
                 .from("advertisements")
                 .select("id, image_url, link_url, title")
                 .eq("slot", slot)
                 .eq("active", true)
-                .order("display_order", { ascending: true })
-                .limit(1)
-                .single();
-            if (data) setAd(data);
+                .order("display_order", { ascending: true });
+
+            if (data && data.length > 0) {
+                setAds(data);
+            }
         };
-        fetchAd();
+
+        const fetchSettings = async () => {
+            const { data: settings } = await supabase
+                .from("system_settings")
+                .select("value")
+                .eq("key", "ad_carousel")
+                .single();
+
+            if (settings?.value && typeof settings.value === 'object') {
+                const val = settings.value as any;
+                if (val.speed) setSpeed(Number(val.speed));
+                if (val.transition) setTransition(val.transition);
+            }
+        };
+
+        fetchAds();
+        fetchSettings();
     }, [slot]);
 
-    const Wrapper = ad?.link_url ? "a" : "div";
-    const wrapperProps = ad?.link_url
-        ? { href: ad.link_url, target: "_blank", rel: "noopener noreferrer" }
-        : {};
+    useEffect(() => {
+        if (ads.length <= 1) return;
+        const interval = setInterval(() => {
+            handleNext();
+        }, speed);
+        return () => clearInterval(interval);
+    }, [ads.length, speed]);
 
-    // Both banner_top and banner_bottom are now 1350×300 Wide Banner
-    const placeholderHeight = "h-[300px]";
+    const handleNext = useCallback(() => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
+        setCurrent((prev) => (prev + 1) % ads.length);
+        setTimeout(() => setIsTransitioning(false), 600);
+    }, [ads.length, isTransitioning]);
+
+    const goTo = useCallback((dir: number) => {
+        if (isTransitioning) return;
+        setIsTransitioning(true);
+        setCurrent((prev) => (prev + dir + ads.length) % ads.length);
+        setTimeout(() => setIsTransitioning(false), 600);
+    }, [ads.length, isTransitioning]);
+
+    if (ads.length === 0) {
+        return (
+            <div className="w-full px-4 py-3">
+                <div className="relative w-full max-w-[1350px] mx-auto h-[100px] sm:h-[200px] md:h-[300px] bg-secondary/50 border border-dashed border-border rounded-sm flex flex-col items-center justify-center gap-2 text-muted-foreground/50 font-sans">
+                    <Megaphone className="w-5 h-5" />
+                    <span className="text-xs font-semibold uppercase tracking-widest">Publicite Aqui</span>
+                    <span className="text-[10px] text-muted-foreground/40">1350 × 300 — Wide Banner</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="w-full px-4 py-3">
-            <div className="relative w-full max-w-[1350px] mx-auto">
-                {ad?.image_url ? (
-                    <Wrapper {...wrapperProps} className="block group">
-                        <img
-                            src={ad.image_url}
-                            alt={ad.title}
-                            className="w-full h-full object-contain rounded-sm border border-border/50 group-hover:opacity-90 transition-opacity aspect-[1350/300] bg-black/5"
-                        />
-                        <span className="absolute bottom-1 right-2 text-[9px] uppercase tracking-widest text-muted-foreground/60 font-semibold">
-                            Publicidade
-                        </span>
-                    </Wrapper>
-                ) : (
-                    <div className={`w-full ${placeholderHeight} bg-secondary/50 border border-dashed border-border rounded-sm flex flex-col items-center justify-center gap-2 text-muted-foreground/50`}>
-                        <Megaphone className="w-5 h-5" />
-                        <span className="text-xs font-semibold uppercase tracking-widest">Publicite Aqui</span>
-                        <span className="text-[10px] text-muted-foreground/40">1350 × 300 — Wide Banner</span>
-                    </div>
+            <div className="relative w-full max-w-[1350px] mx-auto group overflow-hidden rounded-sm border border-border/50 bg-black/5 aspect-[1350/300]">
+                {/* Wrapper para Transições */}
+                <div
+                    className={`w-full h-full ${transition === 'slide' ? 'flex transition-transform duration-500 ease-in-out' : 'relative'}`}
+                    style={transition === 'slide' ? { transform: `translateX(-${current * 100}%)` } : {}}
+                >
+                    {ads.map((ad, i) => {
+                        const Wrapper = ad?.link_url ? "a" : "div";
+                        const wrapperProps = ad?.link_url
+                            ? { href: ad.link_url, target: "_blank", rel: "noopener noreferrer" }
+                            : {};
+
+                        return (
+                            <div
+                                key={ad.id}
+                                className={`${transition === 'slide' ? 'w-full h-full flex-shrink-0' : 'absolute inset-0 w-full h-full transition-opacity duration-500 ease-in-out'}`}
+                                style={transition === 'fade' ? { opacity: i === current ? 1 : 0, zIndex: i === current ? 1 : 1 } : {}}
+                            >
+                                <Wrapper {...wrapperProps} className="block w-full h-full">
+                                    <img
+                                        src={ad.image_url || ""}
+                                        alt={ad.title}
+                                        className="w-full h-full object-contain"
+                                    />
+                                </Wrapper>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {ads.length > 1 && (
+                    <>
+                        <button
+                            onClick={(e) => { e.preventDefault(); goTo(-1); }}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-primary hover:text-white"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={(e) => { e.preventDefault(); goTo(1); }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-background/80 backdrop-blur-sm flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-20 hover:bg-primary hover:text-white"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                        {/* Dots */}
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+                            {ads.map((_, i) => (
+                                <button
+                                    key={i}
+                                    onClick={(e) => { e.preventDefault(); setCurrent(i); }}
+                                    className={`w-2 h-2 rounded-full transition-all ${i === current ? "bg-primary w-4" : "bg-foreground/30"}`}
+                                />
+                            ))}
+                        </div>
+                    </>
                 )}
+                <span className="absolute top-2 right-4 text-[10px] uppercase tracking-widest text-white/70 font-bold drop-shadow-md z-20">
+                    Publicidade
+                </span>
             </div>
         </div>
     );
