@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import NewsCard from "./NewsCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Article {
   id: string;
@@ -22,17 +23,34 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
   const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const [isHovering, setIsHovering] = useState(false);
+  const [speed, setSpeed] = useState(5);
 
   const count = heroArticles.length;
 
-  // Auto-slide every 5s, pause on hover
+  useEffect(() => {
+    const fetchSpeed = async () => {
+      const { data } = await supabase
+        .from("system_settings")
+        .select("value")
+        .eq("key", "hero_speed")
+        .single();
+
+      if (data?.value && typeof data.value === 'object') {
+        const val = data.value as any;
+        if (val.speed) setSpeed(Number(val.speed));
+      }
+    };
+    fetchSpeed();
+  }, []);
+
+  // Auto-slide every dynamic speed seconds, pause on hover
   useEffect(() => {
     if (count <= 1 || isHovering) return;
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % count);
-    }, 5000);
+    }, speed * 1000);
     return () => clearInterval(interval);
-  }, [count, isHovering]);
+  }, [count, isHovering, speed]);
 
   const goTo = useCallback((dir: number) => {
     setCurrent((prev) => (prev + dir + count) % count);
@@ -104,8 +122,8 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
                     key={i}
                     onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
                     className={`h-1 rounded-full transition-all duration-300 ${i === current
-                        ? "w-6 bg-primary"
-                        : "w-2 bg-white/50 hover:bg-white/80"
+                      ? "w-6 bg-primary"
+                      : "w-2 bg-white/50 hover:bg-white/80"
                       }`}
                   />
                 ))}

@@ -141,6 +141,7 @@ const AdminPage = () => {
   const [tickerSpeed, setTickerSpeed] = useState(30);
   const [adCarouselSpeed, setAdCarouselSpeed] = useState(6);
   const [adCarouselTransition, setAdCarouselTransition] = useState<"fade" | "slide">("fade");
+  const [heroSpeed, setHeroSpeed] = useState(5);
   const [savingSettings, setSavingSettings] = useState(false);
   const [authorizedEmails, setAuthorizedEmails] = useState<{ id: string, email: string, created_at: string }[]>([]);
   const [newAuthorizedEmail, setNewAuthorizedEmail] = useState("");
@@ -436,8 +437,14 @@ const AdminPage = () => {
         const { data: adSettings } = await supabase.from("system_settings").select("value").eq("key", "ad_carousel").single();
         if (adSettings?.value && typeof adSettings.value === 'object') {
           const val = adSettings.value as any;
-          if (val.speed) setAdCarouselSpeed(Number(val.speed) / 1000);
+          if (val.speed) setAdCarouselSpeed(val.speed);
           if (val.transition) setAdCarouselTransition(val.transition);
+        }
+
+        const { data: heroSettings } = await supabase.from("system_settings").select("value").eq("key", "hero_speed").single();
+        if (heroSettings?.value && typeof heroSettings.value === 'object') {
+          const val = heroSettings.value as any;
+          if (val.speed) setHeroSpeed(val.speed);
         }
       }
 
@@ -812,6 +819,26 @@ const AdminPage = () => {
         toast.error("Erro ao salvar velocidade: " + error.message);
       } else {
         toast.success("Velocidade do ticker actualizada!");
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + err.message);
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  const saveHeroSpeed = async () => {
+    setSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .update({ value: { speed: heroSpeed } })
+        .eq("key", "hero_speed");
+
+      if (error) {
+        toast.error("Erro ao salvar velocidade do destaque: " + error.message);
+      } else {
+        toast.success("Velocidade do destaque principal actualizada!");
       }
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
@@ -1314,6 +1341,38 @@ const AdminPage = () => {
           {/* Articles */}
           {activeTab === "articles" && (
             <div>
+              <div className="bg-card border border-border p-6 mb-8 rounded-sm">
+                <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 text-primary" />
+                  Configuração dos Destaques Principais (Hero)
+                </h3>
+                <div className="flex flex-col sm:flex-row items-end gap-6">
+                  <div className="flex-1 max-w-xs">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade de Rotação (segundos)</label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min="3"
+                        max="20"
+                        step="1"
+                        value={heroSpeed}
+                        onChange={e => setHeroSpeed(Number(e.target.value))}
+                        className="flex-1 accent-primary"
+                      />
+                      <span className="text-sm font-mono font-bold text-primary w-12 text-center">{heroSpeed}s</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={saveHeroSpeed}
+                    disabled={savingSettings}
+                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 h-10 rounded-sm"
+                  >
+                    {savingSettings ? "A guardar..." : "Salvar Configuração"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground mt-3 italic">Esta configuração afecta apenas o slideshow principal na página inicial.</p>
+              </div>
+
               <div className="flex items-center justify-between mb-6">
                 <p className="text-sm text-muted-foreground">{articles.length} artigos no total</p>
                 <button
