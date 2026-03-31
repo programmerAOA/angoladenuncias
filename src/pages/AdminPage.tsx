@@ -150,6 +150,8 @@ const AdminPage = () => {
   const [showAdForm, setShowAdForm] = useState(false);
   const [editingAd, setEditingAd] = useState<string | null>(null);
   const [savingAd, setSavingAd] = useState(false);
+  const [adImageFile, setAdImageFile] = useState<File | null>(null);
+  const [adVideoFile, setAdVideoFile] = useState<File | null>(null);
   const [adForm, setAdForm] = useState({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 });
 
   // Digital Editions
@@ -2851,13 +2853,48 @@ const AdminPage = () => {
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título</label>
                       <input value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="Nome do anúncio" />
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL da Imagem</label>
-                      <input value={adForm.image_url} onChange={e => setAdForm({ ...adForm, image_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://..." />
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Imagem do Anúncio</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => setAdImageFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={adForm.image_url}
+                            onChange={e => setAdForm({ ...adForm, image_url: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou URL da imagem..."
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL do Vídeo (Shorts/TikTok)</label>
-                      <input value={adForm.video_url} onChange={e => setAdForm({ ...adForm, video_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://youtube.com/shorts/..." />
+
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Vídeo do Anúncio (Vertical 9:16 recomendado)</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={e => setAdVideoFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={adForm.video_url}
+                            onChange={e => setAdForm({ ...adForm, video_url: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou URL do vídeo..."
+                          />
+                        </div>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Link de Destino</label>
@@ -2873,14 +2910,44 @@ const AdminPage = () => {
                       if (!adForm.title) { toast.error("Título obrigatório"); return; }
                       setSavingAd(true);
                       try {
-                        const payload = { ...adForm, active: true };
+                        let currentImgUrl = adForm.image_url;
+                        let currentVidUrl = adForm.video_url;
+
+                        if (adImageFile) {
+                          toast.info("A carregar imagem...");
+                          currentImgUrl = await uploadFile(adImageFile);
+                        }
+
+                        if (adVideoFile) {
+                          toast.info("A carregar vídeo...");
+                          currentVidUrl = await uploadFile(adVideoFile);
+                        }
+
+                        const payload = {
+                          ...adForm,
+                          image_url: currentImgUrl,
+                          video_url: currentVidUrl,
+                          active: true
+                        };
+
                         const { error } = editingAd
                           ? await supabase.from("advertisements").update(payload).eq("id", editingAd)
                           : await supabase.from("advertisements").insert(payload);
-                        if (error) { toast.error("Erro: " + error.message); }
-                        else { toast.success(editingAd ? "Anúncio actualizado!" : "Anúncio criado!"); setShowAdForm(false); loadData("ads"); }
-                      } catch (err: any) { toast.error("Erro: " + err.message); }
-                      finally { setSavingAd(false); }
+
+                        if (error) {
+                          toast.error("Erro: " + error.message);
+                        } else {
+                          toast.success(editingAd ? "Anúncio actualizado!" : "Anúncio criado!");
+                          setShowAdForm(false);
+                          setAdImageFile(null);
+                          setAdVideoFile(null);
+                          loadData("ads");
+                        }
+                      } catch (err: any) {
+                        toast.error("Erro: " + err.message);
+                      } finally {
+                        setSavingAd(false);
+                      }
                     }}
                     disabled={savingAd}
                     className="mt-4 bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
