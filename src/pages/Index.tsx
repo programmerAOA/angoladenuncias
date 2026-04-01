@@ -165,6 +165,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
       />
       <AdBanner slot="banner_top" />
       <main>
+        <h1 className="sr-only">Sem Filtros Notícias e Investigação</h1>
         {loading ? (
           <LoadingSpinner fullScreen />
         ) : isFiltering ? (

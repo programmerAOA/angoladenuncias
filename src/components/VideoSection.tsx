@@ -152,7 +152,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
             <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
             <Play className="w-4 h-4 text-primary fill-primary" />
           </div>
-          <h2 className="text-xl font-heading font-bold text-foreground">Noticiário em Vídeo</h2>
+          <h2 className="text-xl font-heading font-bold text-foreground">Noticiário em Vídeo Sem Filtros</h2>
           <div className="flex-1 h-px bg-border" />
           <button
             onClick={() => navigate("/videos")}
@@ -173,6 +173,9 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                   <img
                     src={featuredVideo.thumbnail_url || featuredVideo.thumbnail}
                     alt={featuredVideo.title}
+                    width={800}
+                    height={450}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   {/* Overlay */}
@@ -239,6 +242,9 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                   <img
                     src={video.thumbnail_url || video.thumbnail}
                     alt={video.title}
+                    width={200}
+                    height={112}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-background/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -286,6 +292,9 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                   <img
                     src={video.thumbnail_url || video.thumbnail}
                     alt={video.title}
+                    width={200}
+                    height={112}
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-background/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">

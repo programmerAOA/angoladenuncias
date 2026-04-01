@@ -31,6 +31,8 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
         <img
           src={article.image}
           alt={article.title}
+          width={80}
+          height={80}
           className="w-20 h-20 object-cover flex-shrink-0"
           loading="lazy"
         />
@@ -54,6 +56,8 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
         <img
           src={article.image}
           alt={article.title}
+          width={208}
+          height={128}
           className="w-40 h-24 sm:w-52 sm:h-32 object-cover flex-shrink-0"
           loading="lazy"
         />
@@ -81,6 +85,8 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
         <img
           src={article.image}
           alt={article.title}
+          width={800}
+          height={500}
           className="w-full aspect-[16/10] object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />

@@ -152,6 +152,9 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
           <img
             src="/logo.png"
             alt="Sem Filtros"
+            width={200}
+            height={80}
+            fetchPriority="high"
             className="h-12 sm:h-16 md:h-20 w-auto object-contain transition-transform hover:scale-105"
             onError={(e) => {
               (e.target as HTMLImageElement).style.display = 'none';
@@ -159,9 +162,9 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
               if (sib) sib.style.display = 'block';
             }}
           />
-          <h1 className="font-heading text-2xl sm:text-3xl md:text-3xl font-black tracking-tight text-foreground uppercase hidden">
+          <span className="font-heading text-2xl sm:text-3xl md:text-3xl font-black tracking-tight text-foreground uppercase hidden">
             Sem Filtros
-          </h1>
+          </span>
         </div>
 
         <div className="flex items-center gap-2">

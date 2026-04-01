@@ -105,7 +105,7 @@ const Footer = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
-            <img src="/logo.png" alt="Sem Filtros" className="h-10 w-auto object-contain" />
+            <img src="/logo.png" alt="Sem Filtros" width={120} height={40} loading="lazy" className="h-10 w-auto object-contain" />
             <span className="font-heading font-black text-xl text-foreground uppercase tracking-tight ml-2 hidden sm:inline">
               Sem Filtros
             </span>

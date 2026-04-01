@@ -78,6 +78,9 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
                 key={article.id}
                 src={article.image}
                 alt={article.title}
+                width={1200}
+                height={675}
+                fetchPriority="high"
                 className="w-full aspect-[16/9] object-cover group-hover:scale-105 transition-transform duration-500 animate-fade-in"
               />
               {/* Gradient overlay for text legibility */}
@@ -134,7 +137,7 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
 
         {/* Side articles */}
         <div className="border-t lg:border-t-0 lg:border-l border-border lg:pl-6 pt-4 lg:pt-0">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">Últimas</h3>
+          <h3 className="text-xs font-semibold uppercase tracking-widest text-primary mb-4">Últimas do Sem Filtros</h3>
           {sideArticles.slice(0, 4).map((article) => (
             <NewsCard key={article.id} article={article} variant="compact" />
           ))}
