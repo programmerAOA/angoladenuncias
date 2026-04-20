@@ -147,6 +147,11 @@ const AdminPage = () => {
   const [newAuthorizedEmail, setNewAuthorizedEmail] = useState("");
   const [savingAuthorizedEmail, setSavingAuthorizedEmail] = useState(false);
 
+  // AdSense Validation
+  const [validationMethod, setValidationMethod] = useState<"adsense" | "ads.txt" | "metatag">("adsense");
+  const [validationContent, setValidationContent] = useState("");
+  const [savingValidation, setSavingValidation] = useState(false);
+
   // Ads
   const [advertisements, setAdvertisements] = useState<any[]>([]);
   const [showAdForm, setShowAdForm] = useState(false);
@@ -445,6 +450,14 @@ const AdminPage = () => {
         if (heroSettings?.value && typeof heroSettings.value === 'object') {
           const val = heroSettings.value as any;
           if (val.speed) setHeroSpeed(val.speed);
+        }
+
+        // Load AdSense validation settings
+        const { data: validationSettings } = await supabase.from("system_settings").select("value").eq("key", "site_validation").single();
+        if (validationSettings?.value && typeof validationSettings.value === 'object') {
+          const val = validationSettings.value as any;
+          if (val.method) setValidationMethod(val.method);
+          if (val.content) setValidationContent(val.content);
         }
       }
 
@@ -900,6 +913,31 @@ const AdminPage = () => {
       toast.error("Erro inesperado: " + err.message);
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const saveValidationSettings = async () => {
+    setSavingValidation(true);
+    try {
+      const { error } = await supabase
+        .from("system_settings")
+        .upsert({
+          key: "site_validation",
+          value: {
+            method: validationMethod,
+            content: validationContent
+          }
+        }, { onConflict: 'key' });
+
+      if (error) {
+        toast.error("Erro ao salvar configurações de validação: " + error.message);
+      } else {
+        toast.success("Configurações de validação actualizadas!");
+      }
+    } catch (err: any) {
+      toast.error("Erro inesperado: " + err.message);
+    } finally {
+      setSavingValidation(false);
     }
   };
 
@@ -2859,6 +2897,47 @@ const AdminPage = () => {
           {/* Ads management */}
           {activeTab === "ads" && (
             <div>
+              <div className="bg-card border border-border p-6 mb-8">
+                <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-primary" />
+                  Validação do Site (AdSense)
+                </h3>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-1">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Método de Validação</label>
+                      <select
+                        value={validationMethod}
+                        onChange={e => setValidationMethod(e.target.value as any)}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-9"
+                      >
+                        <option value="adsense">Fragmento do código do AdSense</option>
+                        <option value="ads.txt">Fragmento do ficheiro ads.txt</option>
+                        <option value="metatag">Metatag</option>
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Conteúdo / Fragmento</label>
+                      <textarea
+                        value={validationContent}
+                        onChange={e => setValidationContent(e.target.value)}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[80px] font-mono"
+                        placeholder="Cole aqui o código ou conteúdo..."
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={saveValidationSettings}
+                      disabled={savingValidation}
+                      className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-9"
+                    >
+                      {savingValidation ? "A guardar..." : "Salvar Validação"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-card border border-border p-6 mb-8">
                 <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 text-primary" />

@@ -16,6 +16,10 @@
             "destination": "/api/sitemap.xml"
         },
         {
+            "source": "/ads.txt",
+            "destination": "/api/ads-txt"
+        },
+        {
             "source": "/((?!api/).*)",
             "destination": "/index.html"
         }

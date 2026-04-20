@@ -20,6 +20,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
 import CookieConsent from "@/components/CookieConsent";
 import { AnalyticsTracker } from "@/components/AnalyticsTracker";
+import SiteValidation from "@/components/SiteValidation";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
               </Routes>
               <CookieConsent />
               <AnalyticsTracker />
+              <SiteValidation />
             </SecurityLayer>
           </AuthProvider>
         </BrowserRouter>
