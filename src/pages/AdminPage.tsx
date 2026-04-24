@@ -141,6 +141,7 @@ const AdminPage = () => {
   const [tickerSpeed, setTickerSpeed] = useState(30);
   const [adCarouselSpeed, setAdCarouselSpeed] = useState(6);
   const [adCarouselTransition, setAdCarouselTransition] = useState<"fade" | "slide">("fade");
+  const [selectedSettingsSlot, setSelectedSettingsSlot] = useState("banner_top");
   const [heroSpeed, setHeroSpeed] = useState(5);
   const [savingSettings, setSavingSettings] = useState(false);
   const [authorizedEmails, setAuthorizedEmails] = useState<{ id: string, email: string, created_at: string }[]>([]);
@@ -438,12 +439,26 @@ const AdminPage = () => {
         }
         if (data) setAdvertisements(data);
 
-        // Load ad carousel speed
-        const { data: adSettings } = await supabase.from("system_settings").select("value").eq("key", "ad_carousel").single();
+        // Load ad carousel settings for the selected slot
+        const settingsKey = `ad_carousel_${selectedSettingsSlot}`;
+        const { data: adSettings } = await supabase.from("system_settings").select("value").eq("key", settingsKey).single();
+
         if (adSettings?.value && typeof adSettings.value === 'object') {
           const val = adSettings.value as any;
-          if (val.speed) setAdCarouselSpeed(val.speed);
+          if (val.speed) setAdCarouselSpeed(val.speed / 1000); // UI uses seconds
           if (val.transition) setAdCarouselTransition(val.transition);
+        } else {
+          // Fallback to global if slot-specific not found
+          const { data: globalSettings } = await supabase.from("system_settings").select("value").eq("key", "ad_carousel").single();
+          if (globalSettings?.value && typeof globalSettings.value === 'object') {
+            const val = globalSettings.value as any;
+            if (val.speed) setAdCarouselSpeed(val.speed / 1000);
+            if (val.transition) setAdCarouselTransition(val.transition);
+          } else {
+            // Defaults
+            setAdCarouselSpeed(6);
+            setAdCarouselTransition("fade");
+          }
         }
 
         const { data: heroSettings } = await supabase.from("system_settings").select("value").eq("key", "hero_speed").single();
@@ -894,26 +909,38 @@ const AdminPage = () => {
   const saveAdCarouselSettings = async () => {
     setSavingSettings(true);
     try {
+      const settingsKey = `ad_carousel_${selectedSettingsSlot}`;
       const { error } = await supabase
         .from("system_settings")
-        .update({
+        .upsert({
+          key: settingsKey,
           value: {
             speed: adCarouselSpeed * 1000,
             transition: adCarouselTransition
           }
-        })
-        .eq("key", "ad_carousel");
+        }, { onConflict: 'key' });
 
       if (error) {
         toast.error("Erro ao salvar configurações do carrossel: " + error.message);
       } else {
-        toast.success("Configurações do carrossel de publicidade actualizadas!");
+        toast.success(`Configurações para "${getSlotLabel(selectedSettingsSlot)}" actualizadas!`);
       }
     } catch (err: any) {
       toast.error("Erro inesperado: " + err.message);
     } finally {
       setSavingSettings(false);
     }
+  };
+
+  const getSlotLabel = (slot: string) => {
+    const labels: Record<string, string> = {
+      banner_top: "Banner Topo",
+      banner_bottom: "Banner Final",
+      sidebar_carousel: "Carrossel Lateral",
+      sidebar_video: "Vídeo Vertical",
+      video_section_sidebar: "Destaque Vídeos (Lateral)"
+    };
+    return labels[slot] || slot;
   };
 
   const saveValidationSettings = async () => {
@@ -2943,9 +2970,28 @@ const AdminPage = () => {
                   <RefreshCw className="w-4 h-4 text-primary" />
                   Configuração de Exibição
                 </h3>
-                <div className="flex flex-col sm:flex-row items-end gap-6">
-                  <div className="flex-1 max-w-xs">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade do Carrossel (segundos)</label>
+                <div className="grid grid-cols-1 md:grid-cols-4 items-end gap-6">
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Secção a Configurar</label>
+                    <select
+                      value={selectedSettingsSlot}
+                      onChange={e => {
+                        setSelectedSettingsSlot(e.target.value);
+                        // Trigger a reload of settings for this slot
+                        loadData("ads");
+                      }}
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-10"
+                    >
+                      <option value="banner_top">Banner Topo</option>
+                      <option value="banner_bottom">Banner Final</option>
+                      <option value="sidebar_carousel">Carrossel Lateral</option>
+                      <option value="sidebar_video">Vídeo Vertical</option>
+                      <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-1">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade (segundos)</label>
                     <div className="flex items-center gap-3">
                       <input
                         type="range"
@@ -2960,25 +3006,27 @@ const AdminPage = () => {
                     </div>
                   </div>
 
-                  <div className="flex-1 max-w-xs">
+                  <div className="md:col-span-1">
                     <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Tipo de Transição</label>
                     <select
                       value={adCarouselTransition}
                       onChange={e => setAdCarouselTransition(e.target.value as "fade" | "slide")}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-9"
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-10"
                     >
                       <option value="fade">Desvanecer (Fade)</option>
                       <option value="slide">Deslizar (Slide)</option>
                     </select>
                   </div>
 
-                  <button
-                    onClick={saveAdCarouselSettings}
-                    disabled={savingSettings}
-                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-9"
-                  >
-                    {savingSettings ? "A guardar..." : "Salvar Configuração"}
-                  </button>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={saveAdCarouselSettings}
+                      disabled={savingSettings}
+                      className="w-full bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-10"
+                    >
+                      {savingSettings ? "A guardar..." : "Salvar Configuração"}
+                    </button>
+                  </div>
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-3">Define quanto tempo cada anúncio permanece visível e como ele alterna para o próximo.</p>
               </div>

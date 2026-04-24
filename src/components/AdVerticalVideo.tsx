@@ -30,13 +30,27 @@ const AdVerticalVideo = () => {
             if (data && data.length > 0) setAds(data);
         };
         const fetchSettings = async () => {
-            const { data } = await supabase
+            const slotSpecificKey = `ad_carousel_sidebar_video`;
+            const { data: settings } = await supabase
                 .from("system_settings")
                 .select("value")
-                .eq("key", "ad_carousel")
+                .eq("key", slotSpecificKey)
                 .single();
-            if (data?.value && typeof data.value === 'object') {
-                const val = data.value as any;
+
+            let targetValue = settings?.value;
+
+            // Fallback to global
+            if (!targetValue) {
+                const { data: globalSettings } = await supabase
+                    .from("system_settings")
+                    .select("value")
+                    .eq("key", "ad_carousel")
+                    .single();
+                targetValue = globalSettings?.value;
+            }
+
+            if (targetValue && typeof targetValue === 'object') {
+                const val = targetValue as any;
                 if (val.speed) setSpeed(Number(val.speed));
             }
         };

@@ -35,14 +35,27 @@ const AdBanner = ({ slot }: AdBannerProps) => {
         };
 
         const fetchSettings = async () => {
+            const slotSpecificKey = `ad_carousel_${slot}`;
             const { data: settings } = await supabase
                 .from("system_settings")
                 .select("value")
-                .eq("key", "ad_carousel")
+                .eq("key", slotSpecificKey)
                 .single();
 
-            if (settings?.value && typeof settings.value === 'object') {
-                const val = settings.value as any;
+            let targetValue = settings?.value;
+
+            // Fallback to global if slot-specific not found
+            if (!targetValue) {
+                const { data: globalSettings } = await supabase
+                    .from("system_settings")
+                    .select("value")
+                    .eq("key", "ad_carousel")
+                    .single();
+                targetValue = globalSettings?.value;
+            }
+
+            if (targetValue && typeof targetValue === 'object') {
+                const val = targetValue as any;
                 if (val.speed) setSpeed(Number(val.speed));
                 if (val.transition) setTransition(val.transition);
             }
