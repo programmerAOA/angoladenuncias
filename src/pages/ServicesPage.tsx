@@ -509,7 +509,7 @@ const ServicesPage = () => {
       <footer className="services-footer">
         <img src="/logo.png" alt="Logo Sem Filtros" className="mx-auto h-16 mb-6 object-contain grayscale brightness-200 opacity-50" />
         <p className="text-white/40 text-sm">© 2026 Sem Filtros - Todos os direitos reservados</p>
-        <p className="mt-4"><a href="/" className="text-white/20 hover:text-white/40 text-xs transition-colors">semfiltros.vercel.app</a></p>
+        <p className="mt-4"><a href="/" className="text-white/20 hover:text-white/40 text-xs transition-colors">www.semfiltros.com</a></p>
       </footer>
     </div>
   );

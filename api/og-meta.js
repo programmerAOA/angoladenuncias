@@ -2,7 +2,7 @@ export const config = {
     runtime: 'edge',
 };
 
-const SITE_URL = 'https://semfiltros.vercel.app';
+const SITE_URL = 'https://www.semfiltros.com';
 const DEFAULT_IMAGE = `${SITE_URL}/logo.png`;
 const SITE_NAME = 'Sem Filtros';
 

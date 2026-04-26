@@ -2,7 +2,7 @@ export const config = {
     runtime: 'edge',
 };
 
-const SITE_URL = 'https://semfiltros.vercel.app';
+const SITE_URL = 'https://www.semfiltros.com';
 
 function escapeXml(str) {
     if (!str) return '';
