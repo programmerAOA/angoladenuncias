@@ -6,6 +6,15 @@ const SITE_URL = 'https://www.semfiltros.com';
 const DEFAULT_IMAGE = `${SITE_URL}/logo.png`;
 const SITE_NAME = 'Sem Filtros';
 
+const DEFAULT_KEYWORDS = [
+    "notícias de angola hoje",
+    "últimas notícias angola",
+    "atualidade angolana",
+    "política angola atual",
+    "economia angola notícias",
+    "notícias em tempo real angola"
+].join(", ");
+
 function escapeHtml(str) {
     if (!str) return '';
     return str
@@ -29,6 +38,7 @@ function buildOgHtml({ title, description, image, url, type = 'article' }) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${safeTitle} | ${SITE_NAME}</title>
     <meta name="description" content="${safeDesc}" />
+    <meta name="keywords" content="${DEFAULT_KEYWORDS}" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="${type}" />

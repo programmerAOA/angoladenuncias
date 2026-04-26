@@ -50,9 +50,9 @@ export default async function handler(req) {
     try {
         // Fetch all content in parallel
         const [articles, opinions, videos] = await Promise.all([
-            fetchAllFromSupabase('news_articles', 'id,created_at,category', '&published=eq.true'),
-            fetchAllFromSupabase('opinion_articles', 'id,created_at'),
-            fetchAllFromSupabase('video_news', 'id,created_at'),
+            fetchAllFromSupabase('news_articles', 'id,created_at,category,title', '&published=eq.true'),
+            fetchAllFromSupabase('opinion_articles', 'id,created_at,title'),
+            fetchAllFromSupabase('video_news', 'id,created_at,title'),
         ]);
 
         const now = new Date().toISOString();
@@ -99,14 +99,32 @@ export default async function handler(req) {
         }
 
         // Articles
+        const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000);
         for (const article of articles) {
             const lastmod = article.created_at || now;
+            const articleDate = new Date(lastmod);
+
             urls += `
     <url>
         <loc>${SITE_URL}/article/${article.id}</loc>
         <lastmod>${lastmod}</lastmod>
         <changefreq>weekly</changefreq>
-        <priority>0.9</priority>
+        <priority>0.9</priority>`;
+
+            // Google News specific markup for recent articles
+            if (articleDate > fortyEightHoursAgo) {
+                urls += `
+        <news:news>
+            <news:publication>
+                <news:name>${SITE_NAME}</news:name>
+                <news:language>pt</news:language>
+            </news:publication>
+            <news:publication_date>${lastmod}</news:publication_date>
+            <news:title>${escapeXml(article.title)}</news:title>
+        </news:news>`;
+            }
+
+            urls += `
     </url>`;
         }
 
@@ -123,7 +141,8 @@ export default async function handler(req) {
         }
 
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">${urls}
 </urlset>`;
 
         return new Response(xml, {
