@@ -9,7 +9,19 @@ interface SEOMetadataProps {
     type?: "website" | "article";
     publishedDate?: string;
     category?: string;
+    keywords?: string[];
 }
+
+const DEFAULT_KEYWORDS = [
+    "notícias de angola hoje",
+    "últimas notícias angola",
+    "atualidade angolana",
+    "política angola atual",
+    "economia angola notícias",
+    "notícias em tempo real angola",
+    "Sem Filtros",
+    "investigação angola"
+];
 
 export const SEOMetadata = ({
     title = "Sem Filtros | Notícias Sem Censura",
@@ -19,9 +31,11 @@ export const SEOMetadata = ({
     url = window.location.href,
     type = "website",
     publishedDate,
-    category
+    category,
+    keywords = []
 }: SEOMetadataProps) => {
     useEffect(() => {
+        const allKeywords = Array.from(new Set([...DEFAULT_KEYWORDS, ...keywords]));
         // Atualizar meta tags básicas
         document.title = title;
 
@@ -46,6 +60,7 @@ export const SEOMetadata = ({
         updateMeta("twitter:description", description);
         updateMeta("twitter:image", image);
         updateMeta("twitter:card", "summary_large_image");
+        updateMeta("keywords", allKeywords.join(", "));
 
         // Canonical Link
         let canonical = document.querySelector('link[rel="canonical"]');
@@ -106,7 +121,8 @@ export const SEOMetadata = ({
                 "image": [image],
                 "datePublished": publishedDate || new Date().toISOString(),
                 "publisher": { "@id": "https://www.semfiltros.com/#organization" },
-                "articleSection": category || "Notícias"
+                "articleSection": category || "Notícias",
+                "keywords": allKeywords.join(", ")
             };
             baseSchema["@graph"].push(articleSchema);
 
