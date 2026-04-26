@@ -8,6 +8,7 @@ import { ArrowLeft, User, Calendar, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { SEOMetadata } from "@/components/SEOMetadata";
 
 const ArticleDetail = () => {
     const { id } = useParams();
@@ -78,6 +79,15 @@ const ArticleDetail = () => {
 
     return (
         <div className="min-h-screen bg-background">
+            <SEOMetadata
+                title={`${article.title} | Sem Filtros`}
+                description={article.summary || article.title}
+                author={article.author}
+                image={article.image_url}
+                type="article"
+                publishedDate={article.created_at}
+                category={article.category}
+            />
             <Header />
 
             <main className="container py-8 max-w-4xl">

@@ -8,6 +8,7 @@ import VideoSection, { VideoItem } from "@/components/VideoSection";
 import Footer from "@/components/Footer";
 import RadioPlayer from "@/components/RadioPlayer";
 import AdBanner from "@/components/AdBanner";
+import { SEOMetadata } from "@/components/SEOMetadata";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { NewsArticle } from "@/components/NewsCard";
@@ -153,6 +154,10 @@ const Index = ({ defaultCategory }: IndexProps) => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEOMetadata
+        title="Sem Filtros | Notícias Sem Censura e Investigação em Angola"
+        description="Portal de notícias independente dedicado à investigação e informação sem censura sobre Angola e o mundo."
+      />
       <Header
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
