@@ -5,11 +5,21 @@ export const config = {
 const SITE_URL = 'https://www.semfiltros.com';
 const SITE_NAME = 'Sem Filtros';
 
+function escapeXml(str) {
+    if (!str) return '';
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+}
+
 async function fetchFromSupabase(table, selectFields, filter = '') {
     const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://qsjhkhiohpfslfkpjoeb.supabase.co';
     const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_-cH7Xx0cAUTgGeK7KLFP4w_a2TLTf9x';
 
-    const url = `${supabaseUrl}/rest/v1/${table}?select=${selectFields}${filter}&order=created_at.desc&limit=1000`;
+    const url = `${supabaseUrl}/rest/v1/${table}?select=${selectFields}${filter}&order=created_at.desc&limit=100`;
 
     try {
         const response = await fetch(url, {
@@ -24,49 +34,39 @@ async function fetchFromSupabase(table, selectFields, filter = '') {
         const data = await response.json();
         return Array.isArray(data) ? data : [];
     } catch (err) {
-        console.error(`[Sitemap] Fetch failed for ${table}:`, err);
-        throw err; // Propagate error
+        console.error(`[News Sitemap] Fetch failed:`, err);
+        throw err;
     }
 }
 
 export default async function handler(req) {
     try {
-        const [articles, opinions] = await Promise.all([
-            fetchFromSupabase('news_articles', 'id,created_at', '&published=eq.true'),
-            fetchFromSupabase('opinion_articles', 'id,created_at'),
-        ]);
+        // Only fetch articles from last 48 hours
+        const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+        const articles = await fetchFromSupabase('news_articles', 'id,created_at,title', `&published=eq.true&created_at=gt.${fortyEightHoursAgo}`);
 
         const now = new Date().toISOString();
         let urls = '';
 
-        const addUrl = (path, priority = '0.5', freq = 'weekly', lastmod = now) => {
+        articles.forEach(art => {
+            const date = art.created_at || now;
             urls += `
   <url>
-    <loc>${SITE_URL}${path}</loc>
-    <lastmod>${lastmod}</lastmod>
-    <changefreq>${freq}</changefreq>
-    <priority>${priority}</priority>
+    <loc>${SITE_URL}/article/${art.id}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>${escapeXml(SITE_NAME)}</news:name>
+        <news:language>pt</news:language>
+      </news:publication>
+      <news:publication_date>${date}</news:publication_date>
+      <news:title>${escapeXml(art.title)}</news:title>
+    </news:news>
   </url>`;
-        };
-
-        addUrl('/', '1.0', 'hourly');
-
-        // Static Pages
-        ['/videos', '/opinioes', '/edicao-digital'].forEach(p => addUrl(p, '0.8', 'daily'));
-
-        // Categories
-        ['Política', 'Economia', 'Sociedade', 'Internacional'].forEach(cat =>
-            addUrl(`/category/${encodeURIComponent(cat)}`, '0.6', 'daily')
-        );
-
-        // Articles
-        articles.forEach(art => addUrl(`/article/${art.id}`, '0.9', 'weekly', art.created_at || now));
-
-        // Opinions
-        opinions.forEach(op => addUrl(`/opinion/${op.id}`, '0.8', 'weekly', op.created_at || now));
+        });
 
         const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
 ${urls}
 </urlset>`;
 
