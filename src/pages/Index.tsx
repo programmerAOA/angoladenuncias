@@ -53,83 +53,106 @@ const Index = ({ defaultCategory }: IndexProps) => {
   const [tickerSpeed, setTickerSpeed] = useState(30);
   const [loading, setLoading] = useState(true);
 
+  // Carregamento de dados estáticos (apenas uma vez)
   useEffect(() => {
-    const fetchData = async () => {
-      console.log("Index: Iniciar carregamento de dados...");
+    const fetchStaticData = async () => {
+      try {
+        const { data: breakingRes } = await supabase.from("breaking_news").select("id, text, active").eq("active", true).order("created_at", { ascending: false });
+        if (breakingRes) {
+          setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text })));
+        }
+
+        const { data: tickerSettings } = await supabase.from("system_settings").select("value").eq("key", "ticker").single();
+        if (tickerSettings?.value && typeof tickerSettings.value === 'object') {
+          const value = tickerSettings.value as any;
+          if (value.speed) setTickerSpeed(Number(value.speed));
+        }
+      } catch (err) {
+        console.error("Erro ao carregar dados estáticos:", err);
+      }
+    };
+    fetchStaticData();
+  }, []);
+
+  // Carregamento de artigos dinâmico (sempre que a categoria mudar)
+  useEffect(() => {
+    const fetchArticles = async () => {
       setLoading(true);
       try {
-        // Carregamento em paralelo para máxima performance
-        const results = await Promise.all([
-          withTimeout(supabase.from("news_articles").select("id, title, summary, category, image_url, created_at, author, published").eq("published", true).order("created_at", { ascending: false }).limit(40), 20000),
-          withTimeout(supabase.from("video_news").select("id, title, description, thumbnail_url, video_url, duration, views, category").order("created_at", { ascending: false }).limit(6), 20000),
-          withTimeout(supabase.from("opinion_articles").select("id, title, author, created_at").order("created_at", { ascending: false }).limit(5), 20000),
-          withTimeout(supabase.from("breaking_news").select("id, text, active").eq("active", true).order("created_at", { ascending: false }), 10000)
-        ]) as any[];
+        console.log(`Buscando artigos para: ${selectedCategory}`);
 
-        const articlesRes = results[0];
-        const videosRes = results[1];
-        const opinionsRes = results[2];
-        const breakingRes = results[3];
+        // 1. Artigos de Notícias
+        let newsQuery = supabase
+          .from("news_articles")
+          .select("id, title, summary, category, image_url, created_at, author, published")
+          .eq("published", true)
+          .order("created_at", { ascending: false });
 
-        if (articlesRes.data) {
-          const mappedArticles = articlesRes.data.map((a: any) => ({
+        if (selectedCategory !== "Destaque") {
+          newsQuery = newsQuery.eq("category", selectedCategory);
+        }
+
+        const { data: articlesData } = (await withTimeout(newsQuery.limit(40), 15000)) as any;
+
+        if (articlesData) {
+          setArticles(articlesData.map((a: any) => ({
             id: a.id, title: a.title, summary: a.summary, category: a.category,
             image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
             timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
-          }));
-          setArticles(mappedArticles);
-        }
-
-        if (breakingRes.data && breakingRes.data.length > 0) {
-          setBreakingHeadlines(breakingRes.data.map((b: any) => ({
-            id: b.id,
-            title: b.text
-          })));
-        } else if (articlesRes.data) {
-          // Fallback if no specific breaking news are active
-          setBreakingHeadlines(articlesRes.data.slice(0, 10).map((a: any) => ({
-            id: a.id,
-            title: a.title
           })));
         }
 
-        if (videosRes.data) {
-          setVideos(videosRes.data.map((v: any) => ({
-            id: v.id, title: v.title, description: v.description || "",
-            thumbnail: v.thumbnail_url || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
-            duration: v.duration || "0:00", views: String(v.views || 0), category: v.category || "Geral",
-            video_url: v.video_url
-          })));
-        }
+        if (selectedCategory === "Destaque" || selectedCategory === "Opinião") {
+          const { data: opinionsData } = (await withTimeout(
+            supabase.from("opinion_articles").select("id, title, author, created_at").order("created_at", { ascending: false }).limit(selectedCategory === "Opinião" ? 40 : 5),
+            15000
+          )) as any;
+          if (opinionsData) {
+            const mappedOpinions = opinionsData.map((o: any) => ({
+              id: o.id, title: o.title, author: o.author, timestamp: formatRelativeDate(o.created_at)
+            }));
+            setOpinions(mappedOpinions);
 
-        if (opinionsRes.data) {
-          setOpinions(opinionsRes.data.map((o: any) => ({
-            id: o.id, title: o.title, author: o.author, timestamp: formatRelativeDate(o.created_at)
-          })));
-        }
+            // Se a categoria selecionada for "Opinião", adicionamos estes também à lista principal caso queiramos ver tudo junto
+            if (selectedCategory === "Opinião") {
+              const newsOpinions = (articlesData || []).map((a: any) => ({
+                id: a.id, title: a.title, summary: a.summary, category: a.category,
+                image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
+                timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
+              }));
 
-        // Ticker settings (não crítico, pode ser depois)
-        supabase
-          .from("system_settings")
-          .select("value")
-          .eq("key", "ticker")
-          .single()
-          .then(({ data: tickerSettings }) => {
-            if (tickerSettings?.value && typeof tickerSettings.value === 'object') {
-              const value = tickerSettings.value as any;
-              if (value.speed) setTickerSpeed(Number(value.speed));
+              // Unificar se desejar, mas por agora o grid de notícias renderiza filteredArticles
+              // Para Opinião, vamos forçar que filteredArticles contenha ambos se necessário, 
+              // ou lidar no JSX. Vamos lidar no JSX para ser mais limpo.
             }
-          });
+          }
+        }
 
-      } catch (error) {
-        console.error("Index: Erro de carregamento fatal:", error);
+        // 3. Vídeos (Apenas para Destaque)
+        if (selectedCategory === "Destaque") {
+          const { data: videosData } = (await withTimeout(
+            supabase.from("video_news").select("id, title, description, thumbnail_url, video_url, duration, views, category").order("created_at", { ascending: false }).limit(6),
+            15000
+          )) as any;
+          if (videosData) {
+            setVideos(videosData.map((v: any) => ({
+              id: v.id, title: v.title, description: v.description || "",
+              thumbnail: v.thumbnail_url || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
+              duration: v.duration || "0:00", views: String(v.views || 0), category: v.category || "Geral",
+              video_url: v.video_url
+            })));
+          }
+        }
+
+      } catch (err) {
+        console.error("Erro ao carregar artigos:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData().catch(err => console.error("Index: Erro não capturado em fetchData:", err));
-  }, []);
+    fetchArticles();
+  }, [selectedCategory, formatRelativeDate]);
 
   // Filtrar artigos com base na categoria e/ou pesquisa
   const isFiltering = selectedCategory !== "Destaque" || searchQuery.trim() !== "";
@@ -186,8 +209,9 @@ const Index = ({ defaultCategory }: IndexProps) => {
                 {filteredArticles.length} artigo{filteredArticles.length !== 1 ? "s" : ""}
               </span>
             </div>
-            {filteredArticles.length > 0 ? (
+            {(filteredArticles.length > 0 || (selectedCategory === "Opinião" && opinions.length > 0)) ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Renderizar artigos de notícias filtrados */}
                 {filteredArticles.map((article, i) => (
                   <article
                     key={article.id}
@@ -219,6 +243,34 @@ const Index = ({ defaultCategory }: IndexProps) => {
                       </span>
                       <span className="text-muted-foreground">·</span>
                       <span className="news-timestamp">{article.timestamp}</span>
+                    </div>
+                  </article>
+                ))}
+
+                {/* Renderizar artigos de opinião se a categoria for Opinião */}
+                {selectedCategory === "Opinião" && opinions.map((opinion, i) => (
+                  <article
+                    key={opinion.id}
+                    onClick={() => navigate(`/opinion/${opinion.id}`)}
+                    className="group cursor-pointer animate-fade-in bg-secondary/30 p-4 border-l-4 border-primary"
+                    style={{ animationDelay: `${(filteredArticles.length + i) * 80}ms` }}
+                  >
+                    <span className="news-category-badge mb-2 inline-block bg-primary text-primary-foreground">
+                      Opinião
+                    </span>
+                    <h3 className="news-headline news-headline-hover text-lg italic">
+                      "{opinion.title}"
+                    </h3>
+                    <div className="flex items-center gap-2 mt-4">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-xs font-bold">{opinion.author.charAt(0)}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-foreground font-bold">
+                          {opinion.author}
+                        </span>
+                        <span className="news-timestamp">{opinion.timestamp}</span>
+                      </div>
                     </div>
                   </article>
                 ))}
