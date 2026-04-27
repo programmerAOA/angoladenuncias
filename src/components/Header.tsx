@@ -8,6 +8,7 @@ import { pt } from "date-fns/locale";
 import { toast } from "sonner";
 import ThemeToggle from "./ThemeToggle";
 import CurrencyWidget from "./CurrencyWidget";
+import OpinionsCarousel from "./OpinionsCarousel";
 
 interface HeaderProps {
   selectedCategory?: string;
@@ -176,6 +177,8 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
             Sem Filtros
           </span>
         </div>
+
+        <OpinionsCarousel />
 
         <div className="flex items-center gap-2">
           {/* Campo de pesquisa expandível */}
