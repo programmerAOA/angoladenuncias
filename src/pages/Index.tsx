@@ -57,9 +57,26 @@ const Index = ({ defaultCategory }: IndexProps) => {
   useEffect(() => {
     const fetchStaticData = async () => {
       try {
-        const { data: breakingRes } = await supabase.from("breaking_news").select("id, text, active").eq("active", true).order("created_at", { ascending: false });
-        if (breakingRes) {
-          setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text })));
+        const { data: breakingRes } = await supabase
+          .from("breaking_news")
+          .select("id, text, active")
+          .eq("active", true)
+          .order("created_at", { ascending: false });
+
+        if (breakingRes && breakingRes.length > 0) {
+          setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text, category: "Última Hora" })));
+        } else {
+          // Fallback: buscar as 10 últimas notícias publicadas
+          const { data: latestNews } = await supabase
+            .from("news_articles")
+            .select("id, title, category")
+            .eq("published", true)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          if (latestNews) {
+            setBreakingHeadlines(latestNews.map((n: any) => ({ id: n.id, title: n.title, category: n.category })));
+          }
         }
 
         const { data: tickerSettings } = await supabase.from("system_settings").select("value").eq("key", "ticker").single();
@@ -81,7 +98,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
       try {
         console.log(`Buscando artigos para: ${selectedCategory}`);
 
-        // 1. Artigos de Notícias
+        // Criar as promessas para execução paralela
         let newsQuery = supabase
           .from("news_articles")
           .select("id, title, summary, category, image_url, created_at, author, published")
@@ -92,56 +109,71 @@ const Index = ({ defaultCategory }: IndexProps) => {
           newsQuery = newsQuery.eq("category", selectedCategory);
         }
 
-        const { data: articlesData } = (await withTimeout(newsQuery.limit(40), 15000)) as any;
+        const newsPromise = withTimeout(newsQuery.limit(40), 15000);
 
-        if (articlesData) {
-          setArticles(articlesData.map((a: any) => ({
-            id: a.id, title: a.title, summary: a.summary, category: a.category,
+        const opinionsPromise = (selectedCategory === "Destaque" || selectedCategory === "Opinião")
+          ? withTimeout(
+            supabase.from("opinion_articles")
+              .select("id, title, author, created_at")
+              .order("created_at", { ascending: false })
+              .limit(selectedCategory === "Opinião" ? 40 : 5),
+            15000
+          )
+          : Promise.resolve({ data: [] });
+
+        const videosPromise = (selectedCategory === "Destaque")
+          ? withTimeout(
+            supabase.from("video_news")
+              .select("id, title, description, thumbnail_url, video_url, duration, views, category")
+              .order("created_at", { ascending: false })
+              .limit(6),
+            15000
+          )
+          : Promise.resolve({ data: [] });
+
+        // Executar todas em paralelo
+        const [newsRes, opinionsRes, videosRes] = await Promise.all([
+          newsPromise,
+          opinionsPromise,
+          videosPromise
+        ]) as any[];
+
+        // 1. Processar Notícias
+        if (newsRes.data) {
+          setArticles(newsRes.data.map((a: any) => ({
+            id: a.id,
+            title: a.title,
+            summary: a.summary,
+            category: a.category,
             image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
-            timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
+            timestamp: formatRelativeDate(a.created_at),
+            author: a.author || "Redacção"
           })));
         }
 
-        if (selectedCategory === "Destaque" || selectedCategory === "Opinião") {
-          const { data: opinionsData } = (await withTimeout(
-            supabase.from("opinion_articles").select("id, title, author, created_at").order("created_at", { ascending: false }).limit(selectedCategory === "Opinião" ? 40 : 5),
-            15000
-          )) as any;
-          if (opinionsData) {
-            const mappedOpinions = opinionsData.map((o: any) => ({
-              id: o.id, title: o.title, author: o.author, timestamp: formatRelativeDate(o.created_at)
-            }));
-            setOpinions(mappedOpinions);
-
-            // Se a categoria selecionada for "Opinião", adicionamos estes também à lista principal caso queiramos ver tudo junto
-            if (selectedCategory === "Opinião") {
-              const newsOpinions = (articlesData || []).map((a: any) => ({
-                id: a.id, title: a.title, summary: a.summary, category: a.category,
-                image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
-                timestamp: formatRelativeDate(a.created_at), author: a.author || "Redacção"
-              }));
-
-              // Unificar se desejar, mas por agora o grid de notícias renderiza filteredArticles
-              // Para Opinião, vamos forçar que filteredArticles contenha ambos se necessário, 
-              // ou lidar no JSX. Vamos lidar no JSX para ser mais limpo.
-            }
-          }
+        // 2. Processar Opiniões
+        if (opinionsRes.data) {
+          const mappedOpinions = opinionsRes.data.map((o: any) => ({
+            id: o.id,
+            title: o.title,
+            author: o.author,
+            timestamp: formatRelativeDate(o.created_at)
+          }));
+          setOpinions(mappedOpinions);
         }
 
-        // 3. Vídeos (Apenas para Destaque)
-        if (selectedCategory === "Destaque") {
-          const { data: videosData } = (await withTimeout(
-            supabase.from("video_news").select("id, title, description, thumbnail_url, video_url, duration, views, category").order("created_at", { ascending: false }).limit(6),
-            15000
-          )) as any;
-          if (videosData) {
-            setVideos(videosData.map((v: any) => ({
-              id: v.id, title: v.title, description: v.description || "",
-              thumbnail: v.thumbnail_url || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
-              duration: v.duration || "0:00", views: String(v.views || 0), category: v.category || "Geral",
-              video_url: v.video_url
-            })));
-          }
+        // 3. Processar Vídeos
+        if (videosRes.data) {
+          setVideos(videosRes.data.map((v: any) => ({
+            id: v.id,
+            title: v.title,
+            description: v.description || "",
+            thumbnail: v.thumbnail_url || "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80",
+            duration: v.duration || "0:00",
+            views: String(v.views || 0),
+            category: v.category || "Geral",
+            video_url: v.video_url
+          })));
         }
 
       } catch (err) {

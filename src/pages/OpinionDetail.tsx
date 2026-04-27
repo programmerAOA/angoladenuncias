@@ -8,12 +8,15 @@ import { ArrowLeft, Quote, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 
 const OpinionDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [opinion, setOpinion] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [breakingHeadlines, setBreakingHeadlines] = useState<{ id: string; title: string }[]>([]);
+    const [tickerSpeed, setTickerSpeed] = useState(30);
 
     const handleShare = async () => {
         if (!opinion) return;
@@ -60,15 +63,55 @@ const OpinionDetail = () => {
         };
 
         if (id) fetchOpinion();
+
+        const fetchStaticData = async () => {
+            try {
+                const { data: breakingRes } = await supabase
+                    .from("breaking_news")
+                    .select("id, text, active")
+                    .eq("active", true)
+                    .order("created_at", { ascending: false });
+
+                if (breakingRes && breakingRes.length > 0) {
+                    setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text, category: "Última Hora" })));
+                } else {
+                    const { data: latestNews } = await supabase
+                        .from("news_articles")
+                        .select("id, title, category")
+                        .eq("published", true)
+                        .order("created_at", { ascending: false })
+                        .limit(10);
+
+                    if (latestNews) {
+                        setBreakingHeadlines(latestNews.map((n: any) => ({ id: n.id, title: n.title, category: n.category })));
+                    }
+                }
+
+                const { data: tickerSettings } = await supabase.from("system_settings").select("value").eq("key", "ticker").single();
+                if (tickerSettings?.value && typeof tickerSettings.value === 'object') {
+                    const value = tickerSettings.value as any;
+                    if (value.speed) setTickerSpeed(Number(value.speed));
+                }
+            } catch (err) {
+                console.error("Erro ao carregar dados estáticos:", err);
+            }
+        };
+        fetchStaticData();
     }, [id, navigate]);
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col items-center justify-center">
+            <div className="min-h-screen bg-background flex flex-col">
                 <Header />
+                <BreakingNewsTicker
+                    headlines={breakingHeadlines}
+                    speed={tickerSpeed}
+                    onHeadlineClick={(id) => navigate(`/article/${id}`)}
+                />
                 <div className="flex-1 flex flex-col items-center justify-center w-full">
                     <LoadingSpinner fullScreen />
                 </div>
+                <Footer />
             </div>
         );
     }
@@ -78,6 +121,11 @@ const OpinionDetail = () => {
     return (
         <div className="min-h-screen bg-background">
             <Header />
+            <BreakingNewsTicker
+                headlines={breakingHeadlines}
+                speed={tickerSpeed}
+                onHeadlineClick={(id) => navigate(`/article/${id}`)}
+            />
 
             <main className="container py-8 max-w-3xl">
                 <button

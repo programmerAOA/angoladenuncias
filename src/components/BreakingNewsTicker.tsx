@@ -1,63 +1,83 @@
+import { useState, useEffect, useRef } from "react";
 import { Zap } from "lucide-react";
 
 interface BreakingNewsItem {
   id: string;
   title: string;
+  category?: string;
 }
 
 interface BreakingNewsTickerProps {
   headlines?: BreakingNewsItem[];
-  speed?: number; // Speed in seconds
+  speed?: number;
   onHeadlineClick?: (id: string) => void;
 }
+
+const FADE_DURATION = 400;
 
 const BreakingNewsTicker = ({
   headlines = [],
   speed = 30,
   onHeadlineClick
 }: BreakingNewsTickerProps) => {
-  const displayHeadlines = headlines.length > 0 ? headlines : [
-    { id: "", title: "A carregar notícias de última hora..." },
-  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const activeIndexRef = useRef(0);
+
+  useEffect(() => {
+    if (headlines.length === 0) return;
+
+    const displayMs = Math.max(3000, (speed * 1000) / headlines.length);
+
+    const timer = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => {
+        const next = (activeIndexRef.current + 1) % headlines.length;
+        activeIndexRef.current = next;
+        setActiveIndex(next);
+        setVisible(true);
+      }, FADE_DURATION);
+    }, displayMs + FADE_DURATION);
+
+    return () => clearInterval(timer);
+  }, [headlines, speed]);
+
+  if (!headlines || headlines.length === 0) return null;
+
+  const current = headlines[activeIndex];
+  const label = current?.category || "Última Hora";
 
   return (
-    <div className="bg-primary text-primary-foreground overflow-hidden pause-on-hover">
-      <div className="container flex items-center">
-        <div className="flex items-center gap-2 py-2 pr-4 flex-shrink-0 font-semibold text-xs uppercase tracking-wider bg-primary">
-          <Zap className="w-3.5 h-3.5" />
-          <span>Última Hora</span>
-        </div>
-        <div className="overflow-hidden relative flex-1">
-          <div
-            className="flex w-max animate-scroll whitespace-nowrap gap-12 py-2"
-            style={{
-              animationDuration: `${speed}s`,
-              animationName: 'scroll',
-              animationIterationCount: 'infinite',
-              animationTimingFunction: 'linear'
-            }}
-          >
-            {[...displayHeadlines, ...displayHeadlines].map((h, i) => (
-              <span
-                key={i}
-                className="text-sm font-medium cursor-pointer hover:underline pr-4"
-                onClick={() => h.id && onHeadlineClick?.(h.id)}
-              >
-                {h.title}
-              </span>
-            ))}
-          </div>
-        </div>
+    <div className="border-b border-border bg-background">
+      <div className="container flex items-center gap-3 py-2.5">
+
+        {/* Badge de categoria */}
+        <span className="inline-flex items-center gap-1.5 bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-sm flex-shrink-0"
+          style={{
+            transition: `opacity ${FADE_DURATION}ms ease`,
+            opacity: visible ? 1 : 0,
+          }}
+        >
+          <Zap className="w-3 h-3" />
+          {label}
+        </span>
+
+        {/* Divisor */}
+        <div className="w-px h-4 bg-border flex-shrink-0" />
+
+        {/* Headline */}
+        <p
+          className="text-sm font-semibold text-foreground cursor-pointer hover:text-primary transition-colors truncate"
+          style={{
+            transition: `opacity ${FADE_DURATION}ms ease, transform ${FADE_DURATION}ms ease`,
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(5px)",
+          }}
+          onClick={() => current?.id && onHeadlineClick?.(current.id)}
+        >
+          {current?.title}
+        </p>
       </div>
-      <style>{`
-        @keyframes scroll {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .pause-on-hover:hover .animate-scroll {
-          animation-play-state: paused;
-        }
-      `}</style>
     </div>
   );
 };
