@@ -66,7 +66,17 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
   };
 
   const handleCategoryClick = (category: string) => {
-    onCategoryChange?.(category);
+    if (onCategoryChange) {
+      onCategoryChange(category);
+    } else {
+      // Se não houver onCategoryChange (páginas internas como detalhe de artigo), 
+      // navegamos para a rota de categoria correspondente
+      if (category === "Destaque") {
+        navigate("/");
+      } else {
+        navigate(`/category/${encodeURIComponent(category)}`);
+      }
+    }
     setMenuOpen(false);
   };
 
