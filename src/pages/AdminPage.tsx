@@ -668,7 +668,7 @@ const AdminPage = () => {
         image_url: currentImageUrl,
         is_hero: articleForm.is_hero,
         is_breaking: articleForm.is_breaking,
-        published: !isScheduled,
+        published: true,
         scheduled_at: isScheduled ? new Date(articleForm.scheduled_at).toISOString() : null
       };
 
@@ -812,7 +812,7 @@ const AdminPage = () => {
         avatar_url: currentAvatarUrl,
         excerpt: opinionForm.excerpt,
         content: opinionForm.content,
-        published: !isScheduled,
+        published: true,
         scheduled_at: isScheduled ? new Date(opinionForm.scheduled_at).toISOString() : null
       };
 
@@ -1625,7 +1625,7 @@ const AdminPage = () => {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{article.author}</td>
                         <td className="px-4 py-3">
-                          {article.scheduled_at && !article.published ? (
+                          {article.scheduled_at && article.published && new Date(article.scheduled_at) > new Date() ? (
                             <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 flex items-center gap-1 w-fit">
                               <Clock className="w-3 h-3" />
                               {new Date(article.scheduled_at).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
@@ -2472,7 +2472,7 @@ const AdminPage = () => {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{op.author}</td>
                         <td className="px-4 py-3">
-                          {op.scheduled_at && !op.published ? (
+                          {op.scheduled_at && op.published && new Date(op.scheduled_at) > new Date() ? (
                             <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 flex items-center gap-1 w-fit">
                               <Clock className="w-3 h-3" />
                               {new Date(op.scheduled_at).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
