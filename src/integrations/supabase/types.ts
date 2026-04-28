@@ -261,6 +261,7 @@ export type Database = {
           is_breaking: boolean | null
           is_hero: boolean | null
           published: boolean | null
+          scheduled_at: string | null
           summary: string | null
           title: string
           updated_at: string | null
@@ -276,6 +277,7 @@ export type Database = {
           is_breaking?: boolean | null
           is_hero?: boolean | null
           published?: boolean | null
+          scheduled_at?: string | null
           summary?: string | null
           title: string
           updated_at?: string | null
@@ -291,6 +293,7 @@ export type Database = {
           is_breaking?: boolean | null
           is_hero?: boolean | null
           published?: boolean | null
+          scheduled_at?: string | null
           summary?: string | null
           title?: string
           updated_at?: string | null
@@ -340,6 +343,7 @@ export type Database = {
           excerpt: string | null
           id: string
           published: boolean | null
+          scheduled_at: string | null
           title: string
           updated_at: string | null
           views: number | null
@@ -352,6 +356,7 @@ export type Database = {
           excerpt?: string | null
           id?: string
           published?: boolean | null
+          scheduled_at?: string | null
           title: string
           updated_at?: string | null
           views?: number | null
@@ -364,6 +369,7 @@ export type Database = {
           excerpt?: string | null
           id?: string
           published?: boolean | null
+          scheduled_at?: string | null
           title?: string
           updated_at?: string | null
           views?: number | null

@@ -75,10 +75,12 @@ const OpinionDetail = () => {
                 if (breakingRes && breakingRes.length > 0) {
                     setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text, category: "Última Hora" })));
                 } else {
+                    const now = new Date().toISOString();
                     const { data: latestNews } = await supabase
                         .from("news_articles")
                         .select("id, title, category")
                         .eq("published", true)
+                        .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
                         .order("created_at", { ascending: false })
                         .limit(10);
 

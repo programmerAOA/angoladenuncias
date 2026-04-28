@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw, Lock,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
-  ExternalLink
+  ExternalLink, Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -26,6 +26,7 @@ interface Article {
   is_hero?: boolean | null;
   is_breaking?: boolean | null;
   published: boolean | null;
+  scheduled_at?: string | null;
   views: number | null;
   created_at: string;
 }
@@ -58,6 +59,7 @@ interface Opinion {
   excerpt?: string;
   avatar_url?: string;
   published: boolean | null;
+  scheduled_at?: string | null;
   created_at: string;
 }
 
@@ -186,7 +188,7 @@ const AdminPage = () => {
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
 
   // Article form
-  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false });
+  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "" });
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [showArticleForm, setShowArticleForm] = useState(false);
@@ -198,7 +200,7 @@ const AdminPage = () => {
   const [showVideoForm, setShowVideoForm] = useState(false);
 
   // Opinion form
-  const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "" });
+  const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "", scheduled_at: "" });
   const [opinionAvatarFile, setOpinionAvatarFile] = useState<File | null>(null);
   const [editingOpinion, setEditingOpinion] = useState<string | null>(null);
   const [showOpinionForm, setShowOpinionForm] = useState(false);
@@ -653,6 +655,9 @@ const AdminPage = () => {
         return;
       }
 
+      // Scheduling logic
+      const isScheduled = articleForm.scheduled_at && new Date(articleForm.scheduled_at) > new Date();
+
       // Filter payload to only include valid columns
       const payload = {
         title: articleForm.title,
@@ -663,12 +668,13 @@ const AdminPage = () => {
         image_url: currentImageUrl,
         is_hero: articleForm.is_hero,
         is_breaking: articleForm.is_breaking,
-        published: true
+        published: !isScheduled,
+        scheduled_at: isScheduled ? new Date(articleForm.scheduled_at).toISOString() : null
       };
 
       console.log("[SaveArticle] Sending payload to DB...", payload);
       console.log("[SaveArticle] Payload size (chars):", JSON.stringify(payload).length);
-      toast.info("A gravar artigo...");
+      toast.info(isScheduled ? "A agendar artigo..." : "A gravar artigo...");
 
       const startTime = Date.now();
       let result;
@@ -692,13 +698,17 @@ const AdminPage = () => {
         toast.error("A notícia não foi guardada. Verifique as suas permissões.");
       } else {
         console.log("[SaveArticle] Success! Operation completed in", duration, "ms");
-        toast.success("Artigo guardado com sucesso!");
+        if (isScheduled) {
+          toast.success("Artigo agendado com sucesso para " + new Date(articleForm.scheduled_at).toLocaleString('pt-PT') + "!");
+        } else {
+          toast.success("Artigo guardado com sucesso!");
+        }
 
         // Clear form and close
         setShowArticleForm(false);
         setEditingArticle(null);
         setArticleImageFile(null);
-        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false });
+        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "" });
 
         // Reload data
         loadData("articles");
@@ -793,17 +803,21 @@ const AdminPage = () => {
         console.log("[SaveOpinion] Avatar upload success:", currentAvatarUrl);
       }
 
+      // Scheduling logic for opinions
+      const isScheduled = opinionForm.scheduled_at && new Date(opinionForm.scheduled_at) > new Date();
+
       const payload = {
         title: opinionForm.title,
         author: opinionForm.author,
         avatar_url: currentAvatarUrl,
         excerpt: opinionForm.excerpt,
         content: opinionForm.content,
-        published: true
+        published: !isScheduled,
+        scheduled_at: isScheduled ? new Date(opinionForm.scheduled_at).toISOString() : null
       };
 
       console.log("[SaveOpinion] Sending to DB...", payload);
-      toast.info("A gravar opinião...");
+      toast.info(isScheduled ? "A agendar opinião..." : "A gravar opinião...");
 
       const queryBuilder = editingOpinion
         ? supabase.from("opinion_articles").update(payload).eq("id", editingOpinion).select()
@@ -819,11 +833,15 @@ const AdminPage = () => {
       } else if (!result.data || result.data.length === 0) {
         toast.error("A opinião não foi guardada. Verifique as suas permissões.");
       } else {
-        toast.success("Opinião guardada com sucesso!");
+        if (isScheduled) {
+          toast.success("Opinião agendada para " + new Date(opinionForm.scheduled_at).toLocaleString('pt-PT') + "!");
+        } else {
+          toast.success("Opinião guardada com sucesso!");
+        }
         setShowOpinionForm(false);
         setEditingOpinion(null);
         setOpinionAvatarFile(null);
-        setOpinionForm({ title: "", author: "", avatar_url: "", excerpt: "", content: "" });
+        setOpinionForm({ title: "", author: "", avatar_url: "", excerpt: "", content: "", scheduled_at: "" });
         loadData("opinions");
       }
     } catch (err: any) {
@@ -1214,7 +1232,8 @@ const AdminPage = () => {
       author: "Redacção / IA",
       image_url: "",
       is_hero: false,
-      is_breaking: false
+      is_breaking: false,
+      scheduled_at: ""
     });
     setActiveTab("articles");
     setShowArticleForm(true);
@@ -1546,6 +1565,23 @@ const AdminPage = () => {
                         Última hora
                       </label>
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Agendar Publicação (opcional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={articleForm.scheduled_at}
+                        min={new Date().toISOString().slice(0, 16)}
+                        onChange={e => setArticleForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      />
+                      {articleForm.scheduled_at && new Date(articleForm.scheduled_at) > new Date() && (
+                        <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> O artigo ficará oculto até {new Date(articleForm.scheduled_at).toLocaleString('pt-PT')}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
                     <button
@@ -1553,8 +1589,10 @@ const AdminPage = () => {
                       disabled={savingArticle}
                       className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
-                      <Check className="w-4 h-4" />
-                      {savingArticle ? "A guardar..." : "Guardar"}
+                      {articleForm.scheduled_at && new Date(articleForm.scheduled_at) > new Date()
+                        ? <><Clock className="w-4 h-4" />{savingArticle ? "A agendar..." : "Agendar"}</>
+                        : <><Check className="w-4 h-4" />{savingArticle ? "A guardar..." : "Publicar"}</>
+                      }
                     </button>
                     <button onClick={() => setShowArticleForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
                       <X className="w-4 h-4" />
@@ -1587,9 +1625,16 @@ const AdminPage = () => {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground hidden lg:table-cell">{article.author}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 ${article.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                            {article.published ? "Publicado" : "Rascunho"}
-                          </span>
+                          {article.scheduled_at && !article.published ? (
+                            <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 flex items-center gap-1 w-fit">
+                              <Clock className="w-3 h-3" />
+                              {new Date(article.scheduled_at).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          ) : (
+                            <span className={`text-xs px-2 py-0.5 ${article.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                              {article.published ? "Publicado" : "Rascunho"}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
@@ -1611,7 +1656,10 @@ const AdminPage = () => {
                                   author: article.author || "Redacção",
                                   image_url: article.image_url || "",
                                   is_hero: !!article.is_hero,
-                                  is_breaking: !!article.is_breaking
+                                  is_breaking: !!article.is_breaking,
+                                  scheduled_at: article.scheduled_at
+                                    ? new Date(article.scheduled_at).toISOString().slice(0, 16)
+                                    : ""
                                 });
                                 setShowArticleForm(true);
                               }}
@@ -2369,14 +2417,33 @@ const AdminPage = () => {
                       />
                     </div>
                   </div>
+                  <div className="mt-4">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                      <Clock className="w-3 h-3" /> Agendar Publicação (opcional)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={opinionForm.scheduled_at}
+                      min={new Date().toISOString().slice(0, 16)}
+                      onChange={e => setOpinionForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                    {opinionForm.scheduled_at && new Date(opinionForm.scheduled_at) > new Date() && (
+                      <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> A opinião ficará oculta até {new Date(opinionForm.scheduled_at).toLocaleString('pt-PT')}
+                      </p>
+                    )}
+                  </div>
                   <div className="flex items-center gap-3 mt-4">
                     <button
                       onClick={saveOpinion}
                       disabled={savingOpinion}
                       className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
-                      <Check className="w-4 h-4" />
-                      {savingOpinion ? "A guardar..." : "Guardar"}
+                      {opinionForm.scheduled_at && new Date(opinionForm.scheduled_at) > new Date()
+                        ? <><Clock className="w-4 h-4" />{savingOpinion ? "A agendar..." : "Agendar"}</>
+                        : <><Check className="w-4 h-4" />{savingOpinion ? "A guardar..." : "Publicar"}</>
+                      }
                     </button>
                     <button onClick={() => setShowOpinionForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
                       <X className="w-4 h-4" />
@@ -2405,9 +2472,16 @@ const AdminPage = () => {
                         </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{op.author}</td>
                         <td className="px-4 py-3">
-                          <span className={`text-xs px-2 py-0.5 ${op.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                            {op.published ? "Publicado" : "Rascunho"}
-                          </span>
+                          {op.scheduled_at && !op.published ? (
+                            <span className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-400 flex items-center gap-1 w-fit">
+                              <Clock className="w-3 h-3" />
+                              {new Date(op.scheduled_at).toLocaleString('pt-PT', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          ) : (
+                            <span className={`text-xs px-2 py-0.5 ${op.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                              {op.published ? "Publicado" : "Rascunho"}
+                            </span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
@@ -2426,7 +2500,10 @@ const AdminPage = () => {
                                   author: op.author,
                                   content: op.content || "",
                                   excerpt: op.excerpt || "",
-                                  avatar_url: op.avatar_url || ""
+                                  avatar_url: op.avatar_url || "",
+                                  scheduled_at: op.scheduled_at
+                                    ? new Date(op.scheduled_at).toISOString().slice(0, 16)
+                                    : ""
                                 });
                                 setShowOpinionForm(true);
                               }}

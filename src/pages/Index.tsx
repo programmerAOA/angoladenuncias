@@ -67,10 +67,12 @@ const Index = ({ defaultCategory }: IndexProps) => {
           setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text, category: "Última Hora" })));
         } else {
           // Fallback: buscar as 10 últimas notícias publicadas
+          const now = new Date().toISOString();
           const { data: latestNews } = await supabase
             .from("news_articles")
             .select("id, title, category")
             .eq("published", true)
+            .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
             .order("created_at", { ascending: false })
             .limit(10);
 
@@ -99,10 +101,12 @@ const Index = ({ defaultCategory }: IndexProps) => {
         console.log(`Buscando artigos para: ${selectedCategory}`);
 
         // Criar as promessas para execução paralela
+        const now = new Date().toISOString();
         let newsQuery = supabase
           .from("news_articles")
           .select("id, title, summary, category, image_url, created_at, author, published")
           .eq("published", true)
+          .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
           .order("created_at", { ascending: false });
 
         if (selectedCategory !== "Destaque") {
@@ -115,6 +119,8 @@ const Index = ({ defaultCategory }: IndexProps) => {
           ? withTimeout(
             supabase.from("opinion_articles")
               .select("id, title, author, created_at")
+              .eq("published", true)
+              .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
               .order("created_at", { ascending: false })
               .limit(selectedCategory === "Opinião" ? 40 : 5),
             15000

@@ -16,9 +16,12 @@ const OpinionsCarousel = () => {
 
     useEffect(() => {
         const fetchOpinions = async () => {
+            const now = new Date().toISOString();
             const { data, error } = await supabase
                 .from("opinion_articles")
                 .select("id, author, avatar_url, title")
+                .eq("published", true)
+                .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
                 .order("created_at", { ascending: false })
                 .limit(10);
 
