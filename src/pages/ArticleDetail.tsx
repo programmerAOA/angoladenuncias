@@ -50,7 +50,7 @@ const ArticleDetail = () => {
             setLoading(true);
             try {
                 const { data, error } = await withTimeout(
-                    supabase.from("news_articles").select("id, title, summary, content, category, image_url, created_at, author").eq("id", id).single()
+                    supabase.from("news_articles").select("id, title, summary, content, category, image_url, created_at, author, scheduled_at").eq("id", id).single()
                 ) as any;
 
                 if (error) throw error;
@@ -130,7 +130,7 @@ const ArticleDetail = () => {
                 author={article.author}
                 image={article.image_url}
                 type="article"
-                publishedDate={article.created_at}
+                publishedDate={article.scheduled_at || article.created_at}
                 category={article.category}
             />
             <Header />
@@ -164,7 +164,7 @@ const ArticleDetail = () => {
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                             <Calendar className="w-4 h-4" />
-                            <span className="text-sm">{formatRelativeDate(article.created_at)}</span>
+                            <span className="text-sm">{formatRelativeDate(article.scheduled_at || article.created_at)}</span>
                         </div>
                         <button
                             onClick={handleShare}

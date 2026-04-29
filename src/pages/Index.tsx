@@ -104,7 +104,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
         const now = new Date().toISOString();
         let newsQuery = supabase
           .from("news_articles")
-          .select("id, title, summary, category, image_url, created_at, author, published")
+          .select("id, title, summary, category, image_url, created_at, author, published, scheduled_at")
           .eq("published", true)
           .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
           .order("created_at", { ascending: false });
@@ -118,7 +118,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
         const opinionsPromise = (selectedCategory === "Destaque" || selectedCategory === "Opinião")
           ? withTimeout(
             supabase.from("opinion_articles")
-              .select("id, title, author, created_at")
+              .select("id, title, author, created_at, scheduled_at")
               .eq("published", true)
               .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
               .order("created_at", { ascending: false })
@@ -152,7 +152,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
             summary: a.summary,
             category: a.category,
             image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
-            timestamp: formatRelativeDate(a.created_at),
+            timestamp: formatRelativeDate(a.scheduled_at || a.created_at),
             author: a.author || "Redacção"
           })));
         }
@@ -163,7 +163,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
             id: o.id,
             title: o.title,
             author: o.author,
-            timestamp: formatRelativeDate(o.created_at)
+            timestamp: formatRelativeDate(o.scheduled_at || o.created_at)
           }));
           setOpinions(mappedOpinions);
         }

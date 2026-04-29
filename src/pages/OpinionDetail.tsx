@@ -48,7 +48,7 @@ const OpinionDetail = () => {
             setLoading(true);
             try {
                 const { data, error } = await withTimeout(
-                    supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at").eq("id", id).single()
+                    supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at, scheduled_at").eq("id", id).single()
                 ) as any;
 
                 if (error) throw error;
@@ -155,7 +155,7 @@ const OpinionDetail = () => {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-lg font-bold text-primary">{opinion.author}</span>
-                                <span className="text-sm text-muted-foreground">{formatRelativeDate(opinion.created_at)}</span>
+                                <span className="text-sm text-muted-foreground">{formatRelativeDate(opinion.scheduled_at || opinion.created_at)}</span>
                             </div>
                         </div>
                     </header>
