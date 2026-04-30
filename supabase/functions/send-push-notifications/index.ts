@@ -84,19 +84,28 @@ serve(async (req) => {
 
         // Send notifications to OneSignal
         for (const notif of notifications) {
+            const payloadStr = JSON.stringify(notif);
             const res = await fetch("https://onesignal.com/api/v1/notifications", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json; charset=utf-8",
                     "Authorization": `Basic ${onesignalRestApiKey}`
                 },
-                body: JSON.stringify(notif)
+                body: payloadStr
+            });
+
+            const responseText = await res.text();
+
+            // Log to database for debugging
+            await adminAuthClient.from('push_notification_logs').insert({
+                status: res.ok ? 'success' : 'error: ' + res.status,
+                response_body: responseText,
+                payload: JSON.parse(payloadStr)
             });
 
             if (!res.ok) {
-                const errText = await res.text();
-                errorDetails += errText + " | ";
-                console.error("OneSignal Error:", errText);
+                errorDetails += responseText + " | ";
+                console.error("OneSignal Error:", responseText);
             } else {
                 sentCount++;
             }
