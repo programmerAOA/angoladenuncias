@@ -1192,6 +1192,7 @@ const AdminPage = () => {
         body: {
           content: aiWorkspace.sourceContent,
           title: aiWorkspace.sourceTitle,
+          line: aiWorkspace.editorialLine,
           url: aiWorkspace.sourceUrl
         }
       });
@@ -2949,10 +2950,24 @@ const AdminPage = () => {
                     </div>
                     <div className="flex-1 overflow-auto p-4 space-y-6">
                       <div>
-                        {/* Editorial line selection removed as per user request */}
-                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-6">
+                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-4">
                           <p className="text-[10px] font-bold uppercase text-primary mb-1">Modelo Editorial Ativo</p>
                           <p className="text-xs text-muted-foreground">O sistema irá reestruturar a notícia automaticamente seguindo o novo padrão "Sem Filtros".</p>
+                        </div>
+
+                        <div className="mb-6">
+                          <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                            Linha Editorial / Contexto Adicional
+                          </label>
+                          <textarea
+                            value={aiWorkspace.editorialLine}
+                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, editorialLine: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[60px] resize-none"
+                            placeholder="Ex: Reforçar o foco na tecnologia japonesa e nos impactos económicos reais..."
+                          />
+                          <p className="text-[9px] text-muted-foreground mt-1 italic">
+                            Dê orientações específicas de tom ou ângulo que deseja para este conteúdo.
+                          </p>
                         </div>
                       </div>
 
