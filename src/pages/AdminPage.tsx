@@ -29,6 +29,7 @@ interface Article {
   scheduled_at?: string | null;
   views: number | null;
   created_at: string;
+  seo_keywords?: string;
 }
 
 interface VideoItem {
@@ -61,6 +62,7 @@ interface Opinion {
   published: boolean | null;
   scheduled_at?: string | null;
   created_at: string;
+  seo_keywords?: string;
 }
 
 interface UserRole {
@@ -188,7 +190,7 @@ const AdminPage = () => {
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
 
   // Article form
-  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "" });
+  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [showArticleForm, setShowArticleForm] = useState(false);
@@ -200,7 +202,7 @@ const AdminPage = () => {
   const [showVideoForm, setShowVideoForm] = useState(false);
 
   // Opinion form
-  const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "", scheduled_at: "" });
+  const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "", scheduled_at: "", seo_keywords: "" });
   const [opinionAvatarFile, setOpinionAvatarFile] = useState<File | null>(null);
   const [editingOpinion, setEditingOpinion] = useState<string | null>(null);
   const [showOpinionForm, setShowOpinionForm] = useState(false);
@@ -234,7 +236,8 @@ const AdminPage = () => {
     relevancia_para_angola: "",
     factos: "",
     contexto: "",
-    leitura_critica: ""
+    leitura_critica: "",
+    seo_keywords: ""
   });
   const [isAdapting, setIsAdapting] = useState(false);
 
@@ -669,7 +672,8 @@ const AdminPage = () => {
         is_hero: articleForm.is_hero,
         is_breaking: articleForm.is_breaking,
         published: true,
-        scheduled_at: isScheduled ? new Date(articleForm.scheduled_at).toISOString() : null
+        scheduled_at: isScheduled ? new Date(articleForm.scheduled_at).toISOString() : null,
+        seo_keywords: articleForm.seo_keywords
       };
 
       console.log("[SaveArticle] Sending payload to DB...", payload);
@@ -708,7 +712,7 @@ const AdminPage = () => {
         setShowArticleForm(false);
         setEditingArticle(null);
         setArticleImageFile(null);
-        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "" });
+        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
 
         // Reload data
         loadData("articles");
@@ -813,7 +817,8 @@ const AdminPage = () => {
         excerpt: opinionForm.excerpt,
         content: opinionForm.content,
         published: true,
-        scheduled_at: isScheduled ? new Date(opinionForm.scheduled_at).toISOString() : null
+        scheduled_at: isScheduled ? new Date(opinionForm.scheduled_at).toISOString() : null,
+        seo_keywords: opinionForm.seo_keywords
       };
 
       console.log("[SaveOpinion] Sending to DB...", payload);
@@ -841,7 +846,7 @@ const AdminPage = () => {
         setShowOpinionForm(false);
         setEditingOpinion(null);
         setOpinionAvatarFile(null);
-        setOpinionForm({ title: "", author: "", avatar_url: "", excerpt: "", content: "", scheduled_at: "" });
+        setOpinionForm({ title: "", author: "", avatar_url: "", excerpt: "", content: "", scheduled_at: "", seo_keywords: "" });
         loadData("opinions");
       }
     } catch (err: any) {
@@ -1203,7 +1208,8 @@ const AdminPage = () => {
         category: data.categoria || data.category || aiWorkspace.category,
         factos: data.factos || "",
         contexto: data.contexto || "",
-        leitura_critica: data.leitura_critica || ""
+        leitura_critica: data.leitura_critica || "",
+        seo_keywords: data.seo_keywords || ""
       });
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
@@ -1233,7 +1239,8 @@ const AdminPage = () => {
       image_url: "",
       is_hero: false,
       is_breaking: false,
-      scheduled_at: ""
+      scheduled_at: "",
+      seo_keywords: aiWorkspace.seo_keywords
     });
     setActiveTab("articles");
     setShowArticleForm(true);
@@ -1513,6 +1520,15 @@ const AdminPage = () => {
                       />
                     </div>
                     <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Palavras-chave SEO (separadas por vírgula)</label>
+                      <input
+                        value={articleForm.seo_keywords}
+                        onChange={e => setArticleForm(f => ({ ...f, seo_keywords: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        placeholder="angola, noticia, política, ..."
+                      />
+                    </div>
+                    <div className="md:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Imagem do Artigo</label>
                       <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
@@ -1659,7 +1675,8 @@ const AdminPage = () => {
                                   is_breaking: !!article.is_breaking,
                                   scheduled_at: article.scheduled_at
                                     ? new Date(article.scheduled_at).toISOString().slice(0, 16)
-                                    : ""
+                                    : "",
+                                  seo_keywords: article.seo_keywords || ""
                                 });
                                 setShowArticleForm(true);
                               }}
@@ -2399,6 +2416,15 @@ const AdminPage = () => {
                       />
                     </div>
                     <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Palavras-chave SEO (separadas por vírgula)</label>
+                      <input
+                        value={opinionForm.seo_keywords}
+                        onChange={e => setOpinionForm(f => ({ ...f, seo_keywords: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        placeholder="angola, opinião, debate, ..."
+                      />
+                    </div>
+                    <div className="md:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Excerto (Opcional)</label>
                       <textarea
                         value={opinionForm.excerpt}
@@ -2503,7 +2529,8 @@ const AdminPage = () => {
                                   avatar_url: op.avatar_url || "",
                                   scheduled_at: op.scheduled_at
                                     ? new Date(op.scheduled_at).toISOString().slice(0, 16)
-                                    : ""
+                                    : "",
+                                  seo_keywords: op.seo_keywords || ""
                                 });
                                 setShowOpinionForm(true);
                               }}
@@ -2532,599 +2559,549 @@ const AdminPage = () => {
                 </table>
               </div>
             </div>
-          )}
+          )
+          }
           {/* Digital Editions */}
-          {activeTab === "digital-editions" && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-muted-foreground">{digitalEditions.length} edições digitais no total</p>
-                <button
-                  onClick={() => {
-                    setEditingDigital(null);
-                    setDigitalForm({
-                      title: "",
-                      description: "",
-                      edition_date: format(new Date(), "yyyy-MM-dd"),
-                      price_aoa: 0,
-                      price_usd: 0,
-                      is_free: false,
-                      cover_url: "",
-                      pdf_url: ""
-                    });
-                    setShowDigitalForm(true);
-                  }}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
-                >
-                  <Plus className="w-4 h-4" />
-                  Nova edição digital
-                </button>
-              </div>
-
-              {showDigitalForm && (
-                <div className="bg-card border border-border p-6 mb-6">
-                  <h3 className="font-heading font-semibold text-foreground mb-4">
-                    {editingDigital ? "Editar edição digital" : "Nova edição digital"}
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título *</label>
-                      <input
-                        value={digitalForm.title}
-                        onChange={e => setDigitalForm(f => ({ ...f, title: e.target.value }))}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                        placeholder="Edição nº X - JJ/MM/AAAA"
-                      />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Descrição</label>
-                      <textarea
-                        value={digitalForm.description}
-                        onChange={e => setDigitalForm(f => ({ ...f, description: e.target.value }))}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
-                        rows={2}
-                        placeholder="Breve descrição da edição"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Data da Edição *</label>
-                      <input
-                        type="date"
-                        value={digitalForm.edition_date}
-                        onChange={e => setDigitalForm(f => ({ ...f, edition_date: e.target.value }))}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                      />
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-5">
-                        <input
-                          type="checkbox"
-                          checked={digitalForm.is_free}
-                          onChange={e => setDigitalForm(f => ({ ...f, is_free: e.target.checked }))}
-                          className="accent-primary"
-                        />
-                        Edição Gratuita
-                      </label>
-                    </div>
-                    {!digitalForm.is_free && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Preço (AOA)</label>
-                          <input
-                            type="number"
-                            value={digitalForm.price_aoa}
-                            onChange={e => setDigitalForm(f => ({ ...f, price_aoa: Number(e.target.value) }))}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Preço (USD)</label>
-                          <input
-                            type="number"
-                            value={digitalForm.price_usd}
-                            onChange={e => setDigitalForm(f => ({ ...f, price_usd: Number(e.target.value) }))}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                          />
-                        </div>
-                      </>
-                    )}
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Capa da Edição (JPG/PNG) *</label>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={e => setDigitalCoverFile(e.target.files?.[0] || null)}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            value={digitalForm.cover_url}
-                            onChange={e => setDigitalForm(f => ({ ...f, cover_url: e.target.value }))}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-3 text-sm focus:outline-none focus:border-primary"
-                            placeholder="Ou URL da capa..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ficheiro PDF *</label>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            accept="application/pdf"
-                            onChange={e => setDigitalPdfFile(e.target.files?.[0] || null)}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            value={digitalForm.pdf_url}
-                            onChange={e => setDigitalForm(f => ({ ...f, pdf_url: e.target.value }))}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                            placeholder="Ou nome do ficheiro no storage..."
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 mt-6">
-                    <button
-                      onClick={saveDigitalEdition}
-                      disabled={savingDigital}
-                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-                    >
-                      <Check className="w-4 h-4" />
-                      {savingDigital ? "A guardar..." : "Guardar Edição"}
-                    </button>
-                    <button onClick={() => setShowDigitalForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
-                      <X className="w-4 h-4" />
-                      Cancelar
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="bg-card border border-border overflow-hidden">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border bg-secondary/30">
-                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edição</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Data</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estado</th>
-                      <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {digitalEditions.map(edition => (
-                      <tr key={edition.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-10 border border-border bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
-                              {edition.cover_url ? (
-                                <img src={edition.cover_url} alt="" className="w-full h-full object-cover" />
-                              ) : (
-                                <FileText className="w-4 h-4 text-muted-foreground opacity-30" />
-                              )}
-                            </div>
-                            <span className="text-sm font-medium text-foreground">{edition.title}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-muted-foreground">
-                          {format(new Date(edition.edition_date), "dd/MM/yyyy")}
-                        </td>
-                        <td className="px-4 py-3 text-xs font-mono">
-                          {edition.is_free ? (
-                            <span className="text-primary font-bold">GRÁTIS</span>
-                          ) : (
-                            <span>{edition.price_aoa} Kz / ${edition.price_usd}</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${edition.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                            {edition.published ? "Publicado" : "Rascunho"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-end gap-2">
-                            <button
-                              onClick={() => togglePublished("digital_editions", edition.id, edition.published)}
-                              className="text-muted-foreground hover:text-foreground transition-colors"
-                              title={edition.published ? "Despublicar" : "Publicar"}
-                            >
-                              {edition.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                            </button>
-                            <button
-                              onClick={() => {
-                                setEditingDigital(edition.id);
-                                setDigitalForm({
-                                  title: edition.title,
-                                  description: edition.description || "",
-                                  edition_date: edition.edition_date,
-                                  price_aoa: edition.price_aoa || 0,
-                                  price_usd: edition.price_usd || 0,
-                                  is_free: !!edition.is_free,
-                                  cover_url: edition.cover_url || "",
-                                  pdf_url: edition.pdf_url || ""
-                                });
-                                setShowDigitalForm(true);
-                              }}
-                              className="text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => deleteRecord("digital_editions", edition.id)}
-                              className="text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {digitalEditions.length === 0 && (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                          Sem edições digitais.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* AI Discovery & News OSINT */}
-          {activeTab === "ai-discovery" && (
-            <div className="space-y-6">
-              <div className="bg-card border border-border p-6">
-                <h3 className="font-heading text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  <SearchIcon className="w-5 h-5 text-primary" />
-                  Pesquisa Inteligente de Notícias (OSINT)
-                </h3>
-                <div className="flex gap-2">
-                  <input
-                    value={discoveryQuery}
-                    onChange={(e) => setDiscoveryQuery(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleDiscoverNews()}
-                    placeholder="Pesquise por temas ou fontes (ex: 'Economia Angola' ou 'Notícias de Luanda')..."
-                    className="flex-1 bg-secondary border border-border text-foreground px-4 py-2 text-sm focus:outline-none focus:border-primary"
-                  />
+          {
+            activeTab === "digital-editions" && (
+              <div>
+                <div className="flex items-center justify-between mb-6">
+                  <p className="text-sm text-muted-foreground">{digitalEditions.length} edições digitais no total</p>
                   <button
-                    onClick={() => handleDiscoverNews()}
-                    disabled={isDiscovering}
-                    className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                    onClick={() => {
+                      setEditingDigital(null);
+                      setDigitalForm({
+                        title: "",
+                        description: "",
+                        edition_date: format(new Date(), "yyyy-MM-dd"),
+                        price_aoa: 0,
+                        price_usd: 0,
+                        is_free: false,
+                        cover_url: "",
+                        pdf_url: ""
+                      });
+                      setShowDigitalForm(true);
+                    }}
+                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
                   >
-                    {isDiscovering ? <RefreshCw className="w-4 h-4 animate-spin" /> : <SearchIcon className="w-4 h-4" />}
-                    Pesquisar
+                    <Plus className="w-4 h-4" />
+                    Nova edição digital
                   </button>
                 </div>
-                <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
-                    <div className="flex flex-wrap gap-2">
-                      {["Tudo", "Angola", "Luanda", "Política Angola", "Economia Angola", "Energia & Petróleo", "Sociedade Angolana", "Negócios Angola", "Relações Internacionais", "Cuanza"].map(f => (
-                        <button
-                          key={f}
-                          onClick={() => {
-                            setDiscoveryFilter(f);
-                            handleDiscoverNews(f);
-                          }}
-                          className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
-                            }`}
-                        >
-                          {f}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 md:ml-auto">
-                    <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Período:</span>
-                    <select
-                      value={discoveryTime}
-                      onChange={(e) => setDiscoveryTime(e.target.value)}
-                      className="bg-secondary border border-border text-xs font-semibold text-foreground px-3 py-1 focus:outline-none focus:border-primary cursor-pointer"
-                    >
-                      <option value="">Qualquer período</option>
-                      <option value="qdr:h1">Última hora</option>
-                      <option value="qdr:d1">Últimas 24h</option>
-                      <option value="qdr:d2">Últimas 48h</option>
-                      <option value="qdr:w1">Última semana</option>
-                      <option value="qdr:m1">Último mês</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
 
-              {/* Workspace for AI Adaptation */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Discovery Results */}
-                <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
-                  <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <Globe className="w-3.5 h-3.5" />
-                      Resultados da Descoberta
-                    </h4>
-                    <span className="text-[10px] text-muted-foreground">{discoveryResults.length} resultados encontrados</span>
-                  </div>
-                  <div className="flex-1 overflow-auto p-4 space-y-4">
-                    {discoveryResults.map((item, idx) => (
-                      <div key={idx} className="bg-secondary/20 border border-border p-4 rounded hover:border-primary/30 transition-all group">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center gap-2">
-                            {item.url ? (
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:underline flex items-center gap-1"
-                              >
-                                {item.source || "Fonte Externa"}
-                                <ExternalLink className="w-2 h-2" />
-                              </a>
-                            ) : (
-                              <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
-                            )}
-                            {item.isTranslated && (
-                              <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 border border-blue-500/20 rounded-sm font-bold flex items-center gap-1">
-                                <Sparkles className="w-2 h-2" /> TRADUZIDO
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-muted-foreground italic">{item.date}</span>
-                        </div>
-                        <h5 className="text-sm font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.title}</h5>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{item.snippet}</p>
-                        <button
-                          onClick={() => handleAdaptToEditorial(item)}
-                          className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 transition-all py-1.5 text-xs font-bold uppercase tracking-wider"
-                        >
-                          <Wand2 className="w-3.5 h-3.5" />
-                          Adaptar para o Modelo Sem Filtros
-                        </button>
-                      </div>
-                    ))}
-                    {!isDiscovering && discoveryResults.length === 0 && (
-                      <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                        <Globe className="w-8 h-8 text-muted/30 mb-2" />
-                        <p className="text-sm text-muted-foreground">Utilize o campo de pesquisa acima para descobrir notícias recentes de diversas fontes.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* AI Adaptation Workspace */}
-                <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
-                  <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                      <Sparkles className="w-3.5 h-3.5 text-primary" />
-                      Espaço de Trabalho IA
-                    </h4>
-                    {aiWorkspace.sourceTitle && (
-                      <button
-                        onClick={() => setAiWorkspace({ ...aiWorkspace, sourceTitle: "", sourceContent: "", adaptedContent: "", adaptedTitle: "", adaptedSummary: "" })}
-                        className="text-[10px] font-bold uppercase text-destructive hover:underline"
-                      >
-                        Limpar
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex-1 overflow-auto p-4 space-y-6">
-                    <div>
-                      {/* Editorial line selection removed as per user request */}
-                      <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-6">
-                        <p className="text-[10px] font-bold uppercase text-primary mb-1">Modelo Editorial Ativo</p>
-                        <p className="text-xs text-muted-foreground">O sistema irá reestruturar a notícia automaticamente seguindo o novo padrão "Sem Filtros".</p>
-                      </div>
-                    </div>
-
-                    {/* Source Preview */}
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Título da Fonte (Opcional)</label>
+                {showDigitalForm && (
+                  <div className="bg-card border border-border p-6 mb-6">
+                    <h3 className="font-heading font-semibold text-foreground mb-4">
+                      {editingDigital ? "Editar edição digital" : "Nova edição digital"}
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título *</label>
                         <input
-                          value={aiWorkspace.sourceTitle}
-                          onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceTitle: e.target.value })}
-                          className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-xs focus:outline-none focus:border-primary"
-                          placeholder="Título da notícia original..."
+                          value={digitalForm.title}
+                          onChange={e => setDigitalForm(f => ({ ...f, title: e.target.value }))}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                          placeholder="Edição nº X - JJ/MM/AAAA"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Descrição</label>
+                        <textarea
+                          value={digitalForm.description}
+                          onChange={e => setDigitalForm(f => ({ ...f, description: e.target.value }))}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
+                          rows={2}
+                          placeholder="Breve descrição da edição"
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Conteúdo da Fonte (Cole aqui)</label>
-                        <textarea
-                          value={aiWorkspace.sourceContent}
-                          onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceContent: e.target.value })}
-                          className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-[11px] focus:outline-none focus:border-primary min-h-[120px] resize-none"
-                          placeholder="Cole o texto da notícia original aqui..."
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Data da Edição *</label>
+                        <input
+                          type="date"
+                          value={digitalForm.edition_date}
+                          onChange={e => setDigitalForm(f => ({ ...f, edition_date: e.target.value }))}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
                         />
                       </div>
-                    </div>
-
-                    <button
-                      onClick={handleGenerateAI}
-                      disabled={isAdapting || !aiWorkspace.sourceContent}
-                      className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
-                    >
-                      {isAdapting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bot className="w-5 h-5" />}
-                      {isAdapting ? "A Reestruturar Notícia..." : "Gerar com IA / Reestruturar"}
-                    </button>
-
-                    {/* AI Result */}
-                    {aiWorkspace.adaptedContent && (
-                      <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                        <div className="border-t border-border pt-4">
-                          <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Resultado da IA (Revisar)</label>
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-5">
                           <input
-                            value={aiWorkspace.adaptedTitle}
-                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedTitle: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-bold mb-2 focus:outline-none focus:border-primary"
-                            placeholder="Título adaptado..."
+                            type="checkbox"
+                            checked={digitalForm.is_free}
+                            onChange={e => setDigitalForm(f => ({ ...f, is_free: e.target.checked }))}
+                            className="accent-primary"
                           />
-                          <textarea
-                            value={aiWorkspace.adaptedContent}
-                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedContent: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[200px]"
-                            placeholder="Conteúdo reestruturado..."
-                          />
-
-                          <div className="mt-4">
-                            <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 text-right">Preview do Post Completo</label>
-                            <div
-                              className="w-full bg-secondary/30 border border-border p-4 rounded text-sm text-foreground prose prose-invert max-w-none min-h-[300px] overflow-auto text-justify"
-                              dangerouslySetInnerHTML={{ __html: aiWorkspace.adaptedContent }}
+                          Edição Gratuita
+                        </label>
+                      </div>
+                      {!digitalForm.is_free && (
+                        <>
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Preço (AOA)</label>
+                            <input
+                              type="number"
+                              value={digitalForm.price_aoa}
+                              onChange={e => setDigitalForm(f => ({ ...f, price_aoa: Number(e.target.value) }))}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
                             />
-                            <p className="text-[10px] text-muted-foreground mt-2 italic">* O conteúdo acima já inclui a análise crítica final de acordo com o modelo "Sem Filtros".</p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Preço (USD)</label>
+                            <input
+                              type="number"
+                              value={digitalForm.price_usd}
+                              onChange={e => setDigitalForm(f => ({ ...f, price_usd: Number(e.target.value) }))}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            />
+                          </div>
+                        </>
+                      )}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Capa da Edição (JPG/PNG) *</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={e => setDigitalCoverFile(e.target.files?.[0] || null)}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              value={digitalForm.cover_url}
+                              onChange={e => setDigitalForm(f => ({ ...f, cover_url: e.target.value }))}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-3 text-sm focus:outline-none focus:border-primary"
+                              placeholder="Ou URL da capa..."
+                            />
                           </div>
                         </div>
-                        <button
-                          onClick={handleFinalizeAIArticle}
-                          className="w-full bg-green-600 text-white py-2.5 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
-                        >
-                          <Check className="w-4 h-4" />
-                          Encaminhar para Publicação
-                        </button>
                       </div>
-                    )}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ficheiro PDF *</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="application/pdf"
+                              onChange={e => setDigitalPdfFile(e.target.files?.[0] || null)}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              value={digitalForm.pdf_url}
+                              onChange={e => setDigitalForm(f => ({ ...f, pdf_url: e.target.value }))}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                              placeholder="Ou nome do ficheiro no storage..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 mt-6">
+                      <button
+                        onClick={saveDigitalEdition}
+                        disabled={savingDigital}
+                        className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                      >
+                        <Check className="w-4 h-4" />
+                        {savingDigital ? "A guardar..." : "Guardar Edição"}
+                      </button>
+                      <button onClick={() => setShowDigitalForm(false)} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-sm hover:bg-muted transition-colors">
+                        <X className="w-4 h-4" />
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
+                )}
+
+                <div className="bg-card border border-border overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border bg-secondary/30">
+                        <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edição</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Data</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Estado</th>
+                        <th className="text-right px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {digitalEditions.map(edition => (
+                        <tr key={edition.id} className="border-b border-border hover:bg-secondary/50 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-10 border border-border bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                {edition.cover_url ? (
+                                  <img src={edition.cover_url} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                  <FileText className="w-4 h-4 text-muted-foreground opacity-30" />
+                                )}
+                              </div>
+                              <span className="text-sm font-medium text-foreground">{edition.title}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">
+                            {format(new Date(edition.edition_date), "dd/MM/yyyy")}
+                          </td>
+                          <td className="px-4 py-3 text-xs font-mono">
+                            {edition.is_free ? (
+                              <span className="text-primary font-bold">GRÁTIS</span>
+                            ) : (
+                              <span>{edition.price_aoa} Kz / ${edition.price_usd}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${edition.published ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                              {edition.published ? "Publicado" : "Rascunho"}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => togglePublished("digital_editions", edition.id, edition.published)}
+                                className="text-muted-foreground hover:text-foreground transition-colors"
+                                title={edition.published ? "Despublicar" : "Publicar"}
+                              >
+                                {edition.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingDigital(edition.id);
+                                  setDigitalForm({
+                                    title: edition.title,
+                                    description: edition.description || "",
+                                    edition_date: edition.edition_date,
+                                    price_aoa: edition.price_aoa || 0,
+                                    price_usd: edition.price_usd || 0,
+                                    is_free: !!edition.is_free,
+                                    cover_url: edition.cover_url || "",
+                                    pdf_url: edition.pdf_url || ""
+                                  });
+                                  setShowDigitalForm(true);
+                                }}
+                                className="text-muted-foreground hover:text-foreground transition-colors"
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => deleteRecord("digital_editions", edition.id)}
+                                className="text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {digitalEditions.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="px-4 py-8 text-center text-sm text-muted-foreground">
+                            Sem edições digitais.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            </div>
-          )}
+            )
+          }
 
-          {/* Ads management */}
-          {activeTab === "ads" && (
-            <div>
-              <div className="bg-card border border-border p-6 mb-8">
-                <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-primary" />
-                  Validação do Site (AdSense)
-                </h3>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="md:col-span-1">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Método de Validação</label>
+          {/* AI Discovery & News OSINT */}
+          {
+            activeTab === "ai-discovery" && (
+              <div className="space-y-6">
+                <div className="bg-card border border-border p-6">
+                  <h3 className="font-heading text-lg font-bold text-foreground mb-4 flex items-center gap-2">
+                    <SearchIcon className="w-5 h-5 text-primary" />
+                    Pesquisa Inteligente de Notícias (OSINT)
+                  </h3>
+                  <div className="flex gap-2">
+                    <input
+                      value={discoveryQuery}
+                      onChange={(e) => setDiscoveryQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleDiscoverNews()}
+                      placeholder="Pesquise por temas ou fontes (ex: 'Economia Angola' ou 'Notícias de Luanda')..."
+                      className="flex-1 bg-secondary border border-border text-foreground px-4 py-2 text-sm focus:outline-none focus:border-primary"
+                    />
+                    <button
+                      onClick={() => handleDiscoverNews()}
+                      disabled={isDiscovering}
+                      className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isDiscovering ? <RefreshCw className="w-4 h-4 animate-spin" /> : <SearchIcon className="w-4 h-4" />}
+                      Pesquisar
+                    </button>
+                  </div>
+                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
+                      <div className="flex flex-wrap gap-2">
+                        {["Tudo", "Angola", "Luanda", "Política Angola", "Economia Angola", "Energia & Petróleo", "Sociedade Angolana", "Negócios Angola", "Relações Internacionais", "Cuanza"].map(f => (
+                          <button
+                            key={f}
+                            onClick={() => {
+                              setDiscoveryFilter(f);
+                              handleDiscoverNews(f);
+                            }}
+                            className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
+                              }`}
+                          >
+                            {f}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 md:ml-auto">
+                      <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Período:</span>
                       <select
-                        value={validationMethod}
-                        onChange={e => setValidationMethod(e.target.value as any)}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-9"
+                        value={discoveryTime}
+                        onChange={(e) => setDiscoveryTime(e.target.value)}
+                        className="bg-secondary border border-border text-xs font-semibold text-foreground px-3 py-1 focus:outline-none focus:border-primary cursor-pointer"
                       >
-                        <option value="adsense">Fragmento do código do AdSense</option>
-                        <option value="ads.txt">Fragmento do ficheiro ads.txt</option>
-                        <option value="metatag">Metatag</option>
+                        <option value="">Qualquer período</option>
+                        <option value="qdr:h1">Última hora</option>
+                        <option value="qdr:d1">Últimas 24h</option>
+                        <option value="qdr:d2">Últimas 48h</option>
+                        <option value="qdr:w1">Última semana</option>
+                        <option value="qdr:m1">Último mês</option>
                       </select>
                     </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Conteúdo / Fragmento</label>
-                      <textarea
-                        value={validationContent}
-                        onChange={e => setValidationContent(e.target.value)}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[80px] font-mono"
-                        placeholder="Cole aqui o código ou conteúdo..."
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      onClick={saveValidationSettings}
-                      disabled={savingValidation}
-                      className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-9"
-                    >
-                      {savingValidation ? "A guardar..." : "Salvar Validação"}
-                    </button>
                   </div>
                 </div>
-              </div>
 
-              <div className="bg-card border border-border p-6 mb-8">
-                <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 text-primary" />
-                  Configuração de Exibição
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 items-end gap-6">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Secção a Configurar</label>
-                    <select
-                      value={selectedSettingsSlot}
-                      onChange={e => {
-                        setSelectedSettingsSlot(e.target.value);
-                        // Trigger a reload of settings for this slot
-                        loadData("ads");
-                      }}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-10"
-                    >
-                      <option value="banner_top">Banner Topo</option>
-                      <option value="banner_bottom">Banner Final</option>
-                      <option value="sidebar_carousel">Carrossel Lateral</option>
-                      <option value="sidebar_video">Vídeo Vertical</option>
-                      <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
-                    </select>
-                  </div>
-
-                  <div className="md:col-span-1">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade (segundos)</label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="range"
-                        min="3"
-                        max="20"
-                        step="1"
-                        value={adCarouselSpeed}
-                        onChange={e => setAdCarouselSpeed(Number(e.target.value))}
-                        className="flex-1 accent-primary"
-                      />
-                      <span className="text-sm font-mono font-bold text-primary w-12 text-center">{adCarouselSpeed}s</span>
+                {/* Workspace for AI Adaptation */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Discovery Results */}
+                  <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
+                    <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Globe className="w-3.5 h-3.5" />
+                        Resultados da Descoberta
+                      </h4>
+                      <span className="text-[10px] text-muted-foreground">{discoveryResults.length} resultados encontrados</span>
+                    </div>
+                    <div className="flex-1 overflow-auto p-4 space-y-4">
+                      {discoveryResults.map((item, idx) => (
+                        <div key={idx} className="bg-secondary/20 border border-border p-4 rounded hover:border-primary/30 transition-all group">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              {item.url ? (
+                                <a
+                                  href={item.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:underline flex items-center gap-1"
+                                >
+                                  {item.source || "Fonte Externa"}
+                                  <ExternalLink className="w-2 h-2" />
+                                </a>
+                              ) : (
+                                <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
+                              )}
+                              {item.isTranslated && (
+                                <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 border border-blue-500/20 rounded-sm font-bold flex items-center gap-1">
+                                  <Sparkles className="w-2 h-2" /> TRADUZIDO
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-muted-foreground italic">{item.date}</span>
+                          </div>
+                          <h5 className="text-sm font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.title}</h5>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{item.snippet}</p>
+                          <button
+                            onClick={() => handleAdaptToEditorial(item)}
+                            className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 transition-all py-1.5 text-xs font-bold uppercase tracking-wider"
+                          >
+                            <Wand2 className="w-3.5 h-3.5" />
+                            Adaptar para o Modelo Sem Filtros
+                          </button>
+                        </div>
+                      ))}
+                      {!isDiscovering && discoveryResults.length === 0 && (
+                        <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                          <Globe className="w-8 h-8 text-muted/30 mb-2" />
+                          <p className="text-sm text-muted-foreground">Utilize o campo de pesquisa acima para descobrir notícias recentes de diversas fontes.</p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="md:col-span-1">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Tipo de Transição</label>
-                    <select
-                      value={adCarouselTransition}
-                      onChange={e => setAdCarouselTransition(e.target.value as "fade" | "slide")}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-10"
-                    >
-                      <option value="fade">Desvanecer (Fade)</option>
-                      <option value="slide">Deslizar (Slide)</option>
-                    </select>
-                  </div>
+                  {/* AI Adaptation Workspace */}
+                  <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
+                    <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 text-primary" />
+                        Espaço de Trabalho IA
+                      </h4>
+                      {aiWorkspace.sourceTitle && (
+                        <button
+                          onClick={() => setAiWorkspace({ ...aiWorkspace, sourceTitle: "", sourceContent: "", adaptedContent: "", adaptedTitle: "", adaptedSummary: "" })}
+                          className="text-[10px] font-bold uppercase text-destructive hover:underline"
+                        >
+                          Limpar
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex-1 overflow-auto p-4 space-y-6">
+                      <div>
+                        {/* Editorial line selection removed as per user request */}
+                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-6">
+                          <p className="text-[10px] font-bold uppercase text-primary mb-1">Modelo Editorial Ativo</p>
+                          <p className="text-xs text-muted-foreground">O sistema irá reestruturar a notícia automaticamente seguindo o novo padrão "Sem Filtros".</p>
+                        </div>
+                      </div>
 
-                  <div className="flex justify-end">
-                    <button
-                      onClick={saveAdCarouselSettings}
-                      disabled={savingSettings}
-                      className="w-full bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-10"
-                    >
-                      {savingSettings ? "A guardar..." : "Salvar Configuração"}
-                    </button>
+                      {/* Source Preview */}
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Título da Fonte (Opcional)</label>
+                          <input
+                            value={aiWorkspace.sourceTitle}
+                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceTitle: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-xs focus:outline-none focus:border-primary"
+                            placeholder="Título da notícia original..."
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Conteúdo da Fonte (Cole aqui)</label>
+                          <textarea
+                            value={aiWorkspace.sourceContent}
+                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceContent: e.target.value })}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-[11px] focus:outline-none focus:border-primary min-h-[120px] resize-none"
+                            placeholder="Cole o texto da notícia original aqui..."
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleGenerateAI}
+                        disabled={isAdapting || !aiWorkspace.sourceContent}
+                        className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
+                      >
+                        {isAdapting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bot className="w-5 h-5" />}
+                        {isAdapting ? "A Reestruturar Notícia..." : "Gerar com IA / Reestruturar"}
+                      </button>
+
+                      {/* AI Result */}
+                      {aiWorkspace.adaptedContent && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                          <div className="border-t border-border pt-4">
+                            <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Resultado da IA (Revisar)</label>
+                            <input
+                              value={aiWorkspace.adaptedTitle}
+                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedTitle: e.target.value })}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-bold mb-2 focus:outline-none focus:border-primary"
+                              placeholder="Título adaptado..."
+                            />
+                            <textarea
+                              value={aiWorkspace.adaptedContent}
+                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedContent: e.target.value })}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[200px]"
+                              placeholder="Conteúdo reestruturado..."
+                            />
+
+                            <div className="mt-4">
+                              <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Palavras-chave SEO Sugeridas</label>
+                              <textarea
+                                value={aiWorkspace.seo_keywords}
+                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, seo_keywords: e.target.value })}
+                                className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
+                                placeholder="Palavras-chave sugeridas pela IA..."
+                              />
+                            </div>
+
+                            <div className="mt-4">
+                              <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 text-right">Preview do Post Completo</label>
+                              <div
+                                className="w-full bg-secondary/30 border border-border p-4 rounded text-sm text-foreground prose prose-invert max-w-none min-h-[300px] overflow-auto text-justify"
+                                dangerouslySetInnerHTML={{ __html: aiWorkspace.adaptedContent }}
+                              />
+                              <p className="text-[10px] text-muted-foreground mt-2 italic">* O conteúdo acima já inclui a análise crítica final de acordo com o modelo "Sem Filtros".</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={handleFinalizeAIArticle}
+                            className="w-full bg-green-600 text-white py-2.5 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
+                          >
+                            <Check className="w-4 h-4" />
+                            Encaminhar para Publicação
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-3">Define quanto tempo cada anúncio permanece visível e como ele alterna para o próximo.</p>
               </div>
+            )
+          }
 
-              <div className="flex items-center justify-between mb-6">
-                <p className="text-sm text-muted-foreground">Gerir espaços publicitários do site</p>
-                <button onClick={() => { setShowAdForm(true); setEditingAd(null); setAdForm({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 }); }} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">
-                  <Plus className="w-4 h-4" /> Novo Anúncio
-                </button>
-              </div>
-
-              {showAdForm && (
-                <div className="bg-card border border-border p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-heading font-semibold text-foreground">{editingAd ? "Editar Anúncio" : "Novo Anúncio"}</h3>
-                    <button onClick={() => setShowAdForm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
+          {/* Ads management */}
+          {
+            activeTab === "ads" && (
+              <div>
+                <div className="bg-card border border-border p-6 mb-8">
+                  <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    Validação do Site (AdSense)
+                  </h3>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-1">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Método de Validação</label>
+                        <select
+                          value={validationMethod}
+                          onChange={e => setValidationMethod(e.target.value as any)}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-9"
+                        >
+                          <option value="adsense">Fragmento do código do AdSense</option>
+                          <option value="ads.txt">Fragmento do ficheiro ads.txt</option>
+                          <option value="metatag">Metatag</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Conteúdo / Fragmento</label>
+                        <textarea
+                          value={validationContent}
+                          onChange={e => setValidationContent(e.target.value)}
+                          className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[80px] font-mono"
+                          placeholder="Cole aqui o código ou conteúdo..."
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={saveValidationSettings}
+                        disabled={savingValidation}
+                        className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-9"
+                      >
+                        {savingValidation ? "A guardar..." : "Salvar Validação"}
+                      </button>
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                </div>
+
+                <div className="bg-card border border-border p-6 mb-8">
+                  <h3 className="font-heading font-semibold text-foreground mb-4 flex items-center gap-2">
+                    <RefreshCw className="w-4 h-4 text-primary" />
+                    Configuração de Exibição
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 items-end gap-6">
                     <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Posição</label>
-                      <select value={adForm.slot} onChange={e => setAdForm({ ...adForm, slot: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Secção a Configurar</label>
+                      <select
+                        value={selectedSettingsSlot}
+                        onChange={e => {
+                          setSelectedSettingsSlot(e.target.value);
+                          // Trigger a reload of settings for this slot
+                          loadData("ads");
+                        }}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-10"
+                      >
                         <option value="banner_top">Banner Topo</option>
                         <option value="banner_bottom">Banner Final</option>
                         <option value="sidebar_carousel">Carrossel Lateral</option>
@@ -3132,372 +3109,443 @@ const AdminPage = () => {
                         <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título</label>
-                      <input value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="Nome do anúncio" />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Imagem do Anúncio</label>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={e => setAdImageFile(e.target.files?.[0] || null)}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            value={adForm.image_url}
-                            onChange={e => setAdForm({ ...adForm, image_url: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                            placeholder="Ou URL da imagem..."
-                          />
-                        </div>
+
+                    <div className="md:col-span-1">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Velocidade (segundos)</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          min="3"
+                          max="20"
+                          step="1"
+                          value={adCarouselSpeed}
+                          onChange={e => setAdCarouselSpeed(Number(e.target.value))}
+                          className="flex-1 accent-primary"
+                        />
+                        <span className="text-sm font-mono font-bold text-primary w-12 text-center">{adCarouselSpeed}s</span>
                       </div>
                     </div>
 
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Vídeo do Anúncio (Vertical 9:16 recomendado)</label>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                          <input
-                            type="file"
-                            accept="video/*"
-                            onChange={e => setAdVideoFile(e.target.files?.[0] || null)}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <input
-                            value={adForm.video_url}
-                            onChange={e => setAdForm({ ...adForm, video_url: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                            placeholder="Ou URL do vídeo..."
-                          />
-                        </div>
-                      </div>
+                    <div className="md:col-span-1">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Tipo de Transição</label>
+                      <select
+                        value={adCarouselTransition}
+                        onChange={e => setAdCarouselTransition(e.target.value as "fade" | "slide")}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-sm focus:outline-none focus:border-primary h-10"
+                      >
+                        <option value="fade">Desvanecer (Fade)</option>
+                        <option value="slide">Deslizar (Slide)</option>
+                      </select>
                     </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Link de Destino</label>
-                      <input value={adForm.link_url} onChange={e => setAdForm({ ...adForm, link_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://..." />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ordem</label>
-                      <input type="number" value={adForm.display_order} onChange={e => setAdForm({ ...adForm, display_order: Number(e.target.value) })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" />
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={saveAdCarouselSettings}
+                        disabled={savingSettings}
+                        className="w-full bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50 h-10"
+                      >
+                        {savingSettings ? "A guardar..." : "Salvar Configuração"}
+                      </button>
                     </div>
                   </div>
-                  <button
-                    onClick={async () => {
-                      if (!adForm.title) { toast.error("Título obrigatório"); return; }
-                      setSavingAd(true);
-                      try {
-                        let currentImgUrl = adForm.image_url;
-                        let currentVidUrl = adForm.video_url;
+                  <p className="text-[10px] text-muted-foreground mt-3">Define quanto tempo cada anúncio permanece visível e como ele alterna para o próximo.</p>
+                </div>
 
-                        if (adImageFile) {
-                          toast.info("A carregar imagem...");
-                          currentImgUrl = await uploadFile(adImageFile);
-                        }
-
-                        if (adVideoFile) {
-                          toast.info("A carregar vídeo...");
-                          currentVidUrl = await uploadFile(adVideoFile);
-                        }
-
-                        const payload = {
-                          ...adForm,
-                          image_url: currentImgUrl,
-                          video_url: currentVidUrl,
-                          active: true
-                        };
-
-                        const { error } = editingAd
-                          ? await supabase.from("advertisements").update(payload).eq("id", editingAd)
-                          : await supabase.from("advertisements").insert(payload);
-
-                        if (error) {
-                          toast.error("Erro: " + error.message);
-                        } else {
-                          toast.success(editingAd ? "Anúncio actualizado!" : "Anúncio criado!");
-                          setShowAdForm(false);
-                          setAdImageFile(null);
-                          setAdVideoFile(null);
-                          loadData("ads");
-                        }
-                      } catch (err: any) {
-                        toast.error("Erro: " + err.message);
-                      } finally {
-                        setSavingAd(false);
-                      }
-                    }}
-                    disabled={savingAd}
-                    className="mt-4 bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
-                  >
-                    {savingAd ? "A guardar..." : (editingAd ? "Actualizar" : "Criar Anúncio")}
+                <div className="flex items-center justify-between mb-6">
+                  <p className="text-sm text-muted-foreground">Gerir espaços publicitários do site</p>
+                  <button onClick={() => { setShowAdForm(true); setEditingAd(null); setAdForm({ slot: "banner_top", title: "", image_url: "", video_url: "", link_url: "", display_order: 0 }); }} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90">
+                    <Plus className="w-4 h-4" /> Novo Anúncio
                   </button>
                 </div>
-              )}
 
-              {/* Ads list grouped by slot */}
-              {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar"].map(slot => {
-                const slotAds = advertisements.filter(a => a.slot === slot);
-                const labels: Record<string, string> = {
-                  banner_top: "Banner Topo",
-                  banner_bottom: "Banner Final",
-                  sidebar_carousel: "Carrossel Lateral",
-                  sidebar_video: "Vídeo Vertical",
-                  video_section_sidebar: "Destaque Vídeos (Lateral)"
-                };
-                return (
-                  <div key={slot} className="mb-8">
-                    <h3 className="text-sm font-heading font-bold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-                      <Megaphone className="w-3.5 h-3.5 text-primary" />
-                      {labels[slot]}
-                      <span className="text-xs font-normal text-muted-foreground">({slotAds.length})</span>
-                    </h3>
-                    {slotAds.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic">Nenhum anúncio nesta posição.</p>
-                    ) : (
-                      <div className="bg-card border border-border overflow-hidden">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="border-b border-border bg-secondary/50">
-                              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Título</th>
-                              <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado</th>
-                              <th className="px-4 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ações</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {slotAds.map(ad => (
-                              <tr key={ad.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
-                                <td className="px-4 py-3">
-                                  <span className="text-sm font-medium text-foreground">{ad.title}</span>
-                                  {ad.image_url && <img src={ad.image_url} alt="" className="mt-1 h-8 rounded-sm opacity-60" />}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className={`text-xs px-2 py-0.5 ${ad.active ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
-                                    {ad.active ? "Ativo" : "Inativo"}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <button onClick={async () => { await supabase.from("advertisements").update({ active: !ad.active }).eq("id", ad.id); toast.success("Estado alterado"); loadData("ads"); }} className="text-muted-foreground hover:text-foreground" title={ad.active ? "Desativar" : "Ativar"}>
-                                      {ad.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </button>
-                                    <button onClick={() => { setEditingAd(ad.id); setAdForm({ slot: ad.slot, title: ad.title, image_url: ad.image_url || "", video_url: ad.video_url || "", link_url: ad.link_url || "", display_order: ad.display_order || 0 }); setShowAdForm(true); }} className="text-muted-foreground hover:text-foreground">
-                                      <Pencil className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={async () => { if (confirm("Eliminar anúncio?")) { await supabase.from("advertisements").delete().eq("id", ad.id); toast.success("Anúncio eliminado"); loadData("ads"); } }} className="text-muted-foreground hover:text-destructive">
-                                      <Trash2 className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                {showAdForm && (
+                  <div className="bg-card border border-border p-6 mb-8 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-heading font-semibold text-foreground">{editingAd ? "Editar Anúncio" : "Novo Anúncio"}</h3>
+                      <button onClick={() => setShowAdForm(false)}><X className="w-4 h-4 text-muted-foreground" /></button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Posição</label>
+                        <select value={adForm.slot} onChange={e => setAdForm({ ...adForm, slot: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm">
+                          <option value="banner_top">Banner Topo</option>
+                          <option value="banner_bottom">Banner Final</option>
+                          <option value="sidebar_carousel">Carrossel Lateral</option>
+                          <option value="sidebar_video">Vídeo Vertical</option>
+                          <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
+                        </select>
                       </div>
-                    )}
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Título</label>
+                        <input value={adForm.title} onChange={e => setAdForm({ ...adForm, title: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="Nome do anúncio" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Imagem do Anúncio</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={e => setAdImageFile(e.target.files?.[0] || null)}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              value={adForm.image_url}
+                              onChange={e => setAdForm({ ...adForm, image_url: e.target.value })}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                              placeholder="Ou URL da imagem..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Vídeo do Anúncio (Vertical 9:16 recomendado)</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={e => setAdVideoFile(e.target.files?.[0] || null)}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <input
+                              value={adForm.video_url}
+                              onChange={e => setAdForm({ ...adForm, video_url: e.target.value })}
+                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                              placeholder="Ou URL do vídeo..."
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Link de Destino</label>
+                        <input value={adForm.link_url} onChange={e => setAdForm({ ...adForm, link_url: e.target.value })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" placeholder="https://..." />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Ordem</label>
+                        <input type="number" value={adForm.display_order} onChange={e => setAdForm({ ...adForm, display_order: Number(e.target.value) })} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm" />
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!adForm.title) { toast.error("Título obrigatório"); return; }
+                        setSavingAd(true);
+                        try {
+                          let currentImgUrl = adForm.image_url;
+                          let currentVidUrl = adForm.video_url;
+
+                          if (adImageFile) {
+                            toast.info("A carregar imagem...");
+                            currentImgUrl = await uploadFile(adImageFile);
+                          }
+
+                          if (adVideoFile) {
+                            toast.info("A carregar vídeo...");
+                            currentVidUrl = await uploadFile(adVideoFile);
+                          }
+
+                          const payload = {
+                            ...adForm,
+                            image_url: currentImgUrl,
+                            video_url: currentVidUrl,
+                            active: true
+                          };
+
+                          const { error } = editingAd
+                            ? await supabase.from("advertisements").update(payload).eq("id", editingAd)
+                            : await supabase.from("advertisements").insert(payload);
+
+                          if (error) {
+                            toast.error("Erro: " + error.message);
+                          } else {
+                            toast.success(editingAd ? "Anúncio actualizado!" : "Anúncio criado!");
+                            setShowAdForm(false);
+                            setAdImageFile(null);
+                            setAdVideoFile(null);
+                            loadData("ads");
+                          }
+                        } catch (err: any) {
+                          toast.error("Erro: " + err.message);
+                        } finally {
+                          setSavingAd(false);
+                        }
+                      }}
+                      disabled={savingAd}
+                      className="mt-4 bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+                    >
+                      {savingAd ? "A guardar..." : (editingAd ? "Actualizar" : "Criar Anúncio")}
+                    </button>
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+
+                {/* Ads list grouped by slot */}
+                {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar"].map(slot => {
+                  const slotAds = advertisements.filter(a => a.slot === slot);
+                  const labels: Record<string, string> = {
+                    banner_top: "Banner Topo",
+                    banner_bottom: "Banner Final",
+                    sidebar_carousel: "Carrossel Lateral",
+                    sidebar_video: "Vídeo Vertical",
+                    video_section_sidebar: "Destaque Vídeos (Lateral)"
+                  };
+                  return (
+                    <div key={slot} className="mb-8">
+                      <h3 className="text-sm font-heading font-bold text-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Megaphone className="w-3.5 h-3.5 text-primary" />
+                        {labels[slot]}
+                        <span className="text-xs font-normal text-muted-foreground">({slotAds.length})</span>
+                      </h3>
+                      {slotAds.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">Nenhum anúncio nesta posição.</p>
+                      ) : (
+                        <div className="bg-card border border-border overflow-hidden">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-border bg-secondary/50">
+                                <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Título</th>
+                                <th className="px-4 py-2 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Estado</th>
+                                <th className="px-4 py-2 text-right text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Ações</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {slotAds.map(ad => (
+                                <tr key={ad.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
+                                  <td className="px-4 py-3">
+                                    <span className="text-sm font-medium text-foreground">{ad.title}</span>
+                                    {ad.image_url && <img src={ad.image_url} alt="" className="mt-1 h-8 rounded-sm opacity-60" />}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`text-xs px-2 py-0.5 ${ad.active ? "bg-green-500/20 text-green-400" : "bg-muted text-muted-foreground"}`}>
+                                      {ad.active ? "Ativo" : "Inativo"}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button onClick={async () => { await supabase.from("advertisements").update({ active: !ad.active }).eq("id", ad.id); toast.success("Estado alterado"); loadData("ads"); }} className="text-muted-foreground hover:text-foreground" title={ad.active ? "Desativar" : "Ativar"}>
+                                        {ad.active ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                      </button>
+                                      <button onClick={() => { setEditingAd(ad.id); setAdForm({ slot: ad.slot, title: ad.title, image_url: ad.image_url || "", video_url: ad.video_url || "", link_url: ad.link_url || "", display_order: ad.display_order || 0 }); setShowAdForm(true); }} className="text-muted-foreground hover:text-foreground">
+                                        <Pencil className="w-4 h-4" />
+                                      </button>
+                                      <button onClick={async () => { if (confirm("Eliminar anúncio?")) { await supabase.from("advertisements").delete().eq("id", ad.id); toast.success("Anúncio eliminado"); loadData("ads"); } }} className="text-muted-foreground hover:text-destructive">
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          }
 
           {/* Newsletter Panel */}
-          {activeTab === "newsletter" && (
-            <div className="space-y-6">
-              <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
-                <h3 className="font-heading font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-primary" />
-                  Enviar Nova Newsletter
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Assunto do E-mail *</label>
-                    <input
-                      value={newsletterForm.subject}
-                      onChange={e => setNewsletterForm({ ...newsletterForm, subject: e.target.value })}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
-                      placeholder="Ex: Notícias da Semana - Portal Sem Filtros"
-                    />
+          {
+            activeTab === "newsletter" && (
+              <div className="space-y-6">
+                <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                  <h3 className="font-heading font-bold text-foreground mb-4 flex items-center gap-2">
+                    <Mail className="w-5 h-5 text-primary" />
+                    Enviar Nova Newsletter
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Assunto do E-mail *</label>
+                      <input
+                        value={newsletterForm.subject}
+                        onChange={e => setNewsletterForm({ ...newsletterForm, subject: e.target.value })}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
+                        placeholder="Ex: Notícias da Semana - Portal Sem Filtros"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Conteúdo (Suporta HTML) *</label>
+                      <textarea
+                        value={newsletterForm.content}
+                        onChange={e => setNewsletterForm({ ...newsletterForm, content: e.target.value })}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-mono focus:outline-none focus:border-primary rounded-md min-h-[300px]"
+                        placeholder="<h1>Olá!</h1><p>Esta é a nossa newsletter...</p>"
+                      />
+                    </div>
+                    <button
+                      onClick={handleSendNewsletter}
+                      disabled={sendingNewsletter}
+                      className="mt-4 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 disabled:opacity-50 transition-opacity rounded-md w-full md:w-auto shadow-lg shadow-primary/20"
+                    >
+                      {sendingNewsletter ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                      {sendingNewsletter ? "A enviar para todos os utilizadores..." : "Enviar Newsletter Agora"}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Conteúdo (Suporta HTML) *</label>
-                    <textarea
-                      value={newsletterForm.content}
-                      onChange={e => setNewsletterForm({ ...newsletterForm, content: e.target.value })}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-mono focus:outline-none focus:border-primary rounded-md min-h-[300px]"
-                      placeholder="<h1>Olá!</h1><p>Esta é a nossa newsletter...</p>"
-                    />
+                </div>
+
+                <div className="bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
+                  <div className="p-4 border-b border-border bg-secondary/30">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Últimos Envios</h4>
                   </div>
-                  <button
-                    onClick={handleSendNewsletter}
-                    disabled={sendingNewsletter}
-                    className="mt-4 flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 disabled:opacity-50 transition-opacity rounded-md w-full md:w-auto shadow-lg shadow-primary/20"
-                  >
-                    {sendingNewsletter ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
-                    {sendingNewsletter ? "A enviar para todos os utilizadores..." : "Enviar Newsletter Agora"}
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl flex flex-col overflow-hidden shadow-sm">
-                <div className="p-4 border-b border-border bg-secondary/30">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Últimos Envios</h4>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-muted/10 border-b border-border">
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Data do Envio</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Assunto</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">Destinatários</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {newsletterLogs.map(log => (
-                        <tr key={log.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
-                          <td className="px-6 py-4 text-xs text-muted-foreground">
-                            {format(new Date(log.created_at), "dd/MM/yyyy • HH:mm")}
-                          </td>
-                          <td className="px-6 py-4 text-sm font-medium text-foreground max-w-xs truncate flex items-center gap-2">
-                            {log.subject}
-                            <button onClick={() => handleCopy(log.subject, "Assunto")} className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0">
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-mono text-center">
-                            {log.recipient_count}
-                          </td>
-                          <td className="px-6 py-4">
-                            {log.status === "success" ? (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-green-500/10 text-green-400 font-bold uppercase">Enviado</span>
-                            ) : (
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-bold uppercase" title={log.error_details || "Erro desconhecido"}>Falhou</span>
-                            )}
-                          </td>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-muted/10 border-b border-border">
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Data do Envio</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Assunto</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-center">Destinatários</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Estado</th>
                         </tr>
-                      ))}
-                      {newsletterLogs.length === 0 && !dataLoading && (
-                        <tr>
-                          <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
-                            Nenhuma newsletter enviada ainda.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Authorized Services */}
-          {activeTab === "authorized-services" && (
-            <div className="space-y-6">
-              <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
-                <h3 className="font-heading font-bold text-foreground mb-1 flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-primary" />
-                  Autorizar Acesso aos Serviços
-                </h3>
-                <p className="text-xs text-muted-foreground mb-4">Adicione e-mails de utilizadores que terão permissão para aceder à secção "Nossos Serviços".</p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <input
-                    value={newAuthorizedEmail}
-                    onChange={e => setNewAuthorizedEmail(e.target.value)}
-                    className="flex-1 bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
-                    placeholder="E-mail do utilizador (ex: usuario@email.com)"
-                    onKeyDown={e => e.key === "Enter" && saveAuthorizedEmail()}
-                  />
-                  <button
-                    onClick={saveAuthorizedEmail}
-                    disabled={savingAuthorizedEmail}
-                    className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2 text-sm font-bold hover:opacity-90 transition-opacity rounded-md disabled:opacity-50"
-                  >
-                    {savingAuthorizedEmail ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                    Autorizar E-mail
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
-                <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
-                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">E-mails Autorizados ({authorizedEmails.length})</h4>
-                  <button
-                    onClick={() => loadData("authorized-services")}
-                    className="text-[10px] text-primary hover:underline font-bold uppercase"
-                  >
-                    Atualizar Lista
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead>
-                      <tr className="bg-muted/30 border-b border-border">
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">E-mail</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Data de Autorização</th>
-                        <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {authorizedEmails.map((item) => (
-                        <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-foreground">{item.email}</span>
-                              <button onClick={() => handleCopy(item.email, "E-mail")} className="text-muted-foreground hover:text-primary transition-colors">
+                      </thead>
+                      <tbody>
+                        {newsletterLogs.map(log => (
+                          <tr key={log.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                            <td className="px-6 py-4 text-xs text-muted-foreground">
+                              {format(new Date(log.created_at), "dd/MM/yyyy • HH:mm")}
+                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-foreground max-w-xs truncate flex items-center gap-2">
+                              {log.subject}
+                              <button onClick={() => handleCopy(log.subject, "Assunto")} className="text-muted-foreground hover:text-primary transition-colors flex-shrink-0">
                                 <Copy className="w-3 h-3" />
                               </button>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-xs text-muted-foreground">
-                            {format(new Date(item.created_at), "dd/MM/yyyy • HH:mm")}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <button
-                              onClick={async () => {
-                                if (confirm(`Tem a certeza que deseja revogar o acesso de ${item.email}?`)) {
-                                  setDataLoading(true);
-                                  try {
-                                    const { error } = await supabase.from("authorized_services_emails").delete().eq("id", item.id);
-                                    if (error) throw error;
-                                    toast.success("Acesso revogado com sucesso!");
-                                    await loadData("authorized-services");
-                                  } catch (err: any) {
-                                    toast.error("Erro ao revogar acesso: " + err.message);
-                                  } finally {
-                                    setDataLoading(false);
-                                  }
-                                }
-                              }}
-                              className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
-                              title="Revogar acesso"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                      {authorizedEmails.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="px-6 py-12 text-center text-sm text-muted-foreground">
-                            Nenhum e-mail autorizado ainda.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                            </td>
+                            <td className="px-6 py-4 text-sm font-mono text-center">
+                              {log.recipient_count}
+                            </td>
+                            <td className="px-6 py-4">
+                              {log.status === "success" ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-green-500/10 text-green-400 font-bold uppercase">Enviado</span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-bold uppercase" title={log.error_details || "Erro desconhecido"}>Falhou</span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                        {newsletterLogs.length === 0 && !dataLoading && (
+                          <tr>
+                            <td colSpan={4} className="px-6 py-8 text-center text-sm text-muted-foreground">
+                              Nenhuma newsletter enviada ainda.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+            )
+          }
+
+          {/* Authorized Services */}
+          {
+            activeTab === "authorized-services" && (
+              <div className="space-y-6">
+                <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                  <h3 className="font-heading font-bold text-foreground mb-1 flex items-center gap-2">
+                    <Lock className="w-5 h-5 text-primary" />
+                    Autorizar Acesso aos Serviços
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">Adicione e-mails de utilizadores que terão permissão para aceder à secção "Nossos Serviços".</p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <input
+                      value={newAuthorizedEmail}
+                      onChange={e => setNewAuthorizedEmail(e.target.value)}
+                      className="flex-1 bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary rounded-md"
+                      placeholder="E-mail do utilizador (ex: usuario@email.com)"
+                      onKeyDown={e => e.key === "Enter" && saveAuthorizedEmail()}
+                    />
+                    <button
+                      onClick={saveAuthorizedEmail}
+                      disabled={savingAuthorizedEmail}
+                      className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-6 py-2 text-sm font-bold hover:opacity-90 transition-opacity rounded-md disabled:opacity-50"
+                    >
+                      {savingAuthorizedEmail ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                      Autorizar E-mail
+                    </button>
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+                  <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">E-mails Autorizados ({authorizedEmails.length})</h4>
+                    <button
+                      onClick={() => loadData("authorized-services")}
+                      className="text-[10px] text-primary hover:underline font-bold uppercase"
+                    >
+                      Atualizar Lista
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="bg-muted/30 border-b border-border">
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">E-mail</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Data de Autorização</th>
+                          <th className="px-6 py-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground text-right">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {authorizedEmails.map((item) => (
+                          <tr key={item.id} className="border-b border-border last:border-0 hover:bg-secondary/20 transition-colors">
+                            <td className="px-6 py-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-foreground">{item.email}</span>
+                                <button onClick={() => handleCopy(item.email, "E-mail")} className="text-muted-foreground hover:text-primary transition-colors">
+                                  <Copy className="w-3 h-3" />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-muted-foreground">
+                              {format(new Date(item.created_at), "dd/MM/yyyy • HH:mm")}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`Tem a certeza que deseja revogar o acesso de ${item.email}?`)) {
+                                    setDataLoading(true);
+                                    try {
+                                      const { error } = await supabase.from("authorized_services_emails").delete().eq("id", item.id);
+                                      if (error) throw error;
+                                      toast.success("Acesso revogado com sucesso!");
+                                      await loadData("authorized-services");
+                                    } catch (err: any) {
+                                      toast.error("Erro ao revogar acesso: " + err.message);
+                                    } finally {
+                                      setDataLoading(false);
+                                    }
+                                  }
+                                }}
+                                className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-all"
+                                title="Revogar acesso"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {authorizedEmails.length === 0 && (
+                          <tr>
+                            <td colSpan={3} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                              Nenhum e-mail autorizado ainda.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </div >
+      </main >
+    </div >
   );
 };
 

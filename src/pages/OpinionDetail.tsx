@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
+import { SEOMetadata } from "@/components/SEOMetadata";
 
 const OpinionDetail = () => {
     const { id } = useParams();
@@ -48,7 +49,7 @@ const OpinionDetail = () => {
             setLoading(true);
             try {
                 const { data, error } = await withTimeout(
-                    supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at, scheduled_at").eq("id", id).single()
+                    supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords").eq("id", id).single()
                 ) as any;
 
                 if (error) throw error;
@@ -122,6 +123,16 @@ const OpinionDetail = () => {
 
     return (
         <div className="min-h-screen bg-background">
+            <SEOMetadata
+                title={`${opinion.title} | Opinião - Sem Filtros`}
+                description={`Opinião de ${opinion.author}: ${opinion.title}`}
+                author={opinion.author}
+                image={opinion.avatar_url}
+                type="article"
+                publishedDate={opinion.scheduled_at || opinion.created_at}
+                category="Opinião"
+                keywords={opinion.seo_keywords ? opinion.seo_keywords.split(',').map((k: string) => k.trim()) : []}
+            />
             <Header />
             <BreakingNewsTicker
                 headlines={breakingHeadlines}

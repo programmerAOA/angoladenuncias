@@ -48,7 +48,8 @@ Deno.serve(async (req) => {
         "leitura_critica": "A análise real do impacto, sem rodeios",
         "impacto": "Impacto imediato na vida das pessoas",
         "relevancia_para_angola": "Porquê isto importa para o público angolano",
-        "categoria": "Política, Economia, Sociedade, Tecnologia, Mundo ou Desporto"
+        "categoria": "Política, Economia, Sociedade, Tecnologia, Mundo ou Desporto",
+        "seo_keywords": "5-8 palavras-chave separadas por vírgula para SEO"
       }
 
       DADOS PARA PROCESSAMENTO:

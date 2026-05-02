@@ -50,7 +50,7 @@ const ArticleDetail = () => {
             setLoading(true);
             try {
                 const { data, error } = await withTimeout(
-                    supabase.from("news_articles").select("id, title, summary, content, category, image_url, created_at, author, scheduled_at").eq("id", id).single()
+                    supabase.from("news_articles").select("id, title, summary, content, category, image_url, created_at, author, scheduled_at, seo_keywords").eq("id", id).single()
                 ) as any;
 
                 if (error) throw error;
@@ -132,6 +132,7 @@ const ArticleDetail = () => {
                 type="article"
                 publishedDate={article.scheduled_at || article.created_at}
                 category={article.category}
+                keywords={article.seo_keywords ? article.seo_keywords.split(',').map((k: string) => k.trim()) : []}
             />
             <Header />
             <BreakingNewsTicker
