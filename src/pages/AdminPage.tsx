@@ -1168,7 +1168,7 @@ const AdminPage = () => {
   };
 
   const handleAdaptToEditorial = (item: any) => {
-    setAiWorkspace({
+    const newData = {
       ...aiWorkspace,
       sourceTitle: item.title,
       sourceContent: item.content || item.snippet,
@@ -1177,36 +1177,42 @@ const AdminPage = () => {
       adaptedTitle: "",
       adaptedSummary: "",
       category: item.category || "Geral"
-    });
-    toast.info("Notícia enviada para o espaço de trabalho IA.");
+    };
+
+    setAiWorkspace(newData);
+    toast.info("Iniciando reestruturação automática via IA...");
+
+    // Aciona a automação imediatamente
+    handleGenerateAI(newData);
   };
 
-  const handleGenerateAI = async () => {
-    if (!aiWorkspace.sourceContent) return;
+  const handleGenerateAI = async (customData?: any) => {
+    const dataToUse = customData || aiWorkspace;
+    if (!dataToUse.sourceContent && !dataToUse.sourceUrl) return;
     setIsAdapting(true);
-    console.log("AI: Generating rewrite with line:", aiWorkspace.editorialLine);
+    console.log("AI: Generating rewrite with line:", dataToUse.editorialLine);
 
     try {
       // Chamada à Edge Function 'ai-rewrite'
       const { data, error } = await supabase.functions.invoke('ai-rewrite', {
         body: {
-          content: aiWorkspace.sourceContent,
-          title: aiWorkspace.sourceTitle,
-          line: aiWorkspace.editorialLine,
-          url: aiWorkspace.sourceUrl
+          content: dataToUse.sourceContent,
+          title: dataToUse.sourceTitle,
+          line: dataToUse.editorialLine,
+          url: dataToUse.sourceUrl
         }
       });
 
       if (error) throw error;
 
       setAiWorkspace({
-        ...aiWorkspace,
+        ...dataToUse,
         adaptedTitle: data.titulo || data.title,
         adaptedContent: data.full_content_html || data.content,
         adaptedSummary: data.resumo || data.summary,
         impacto: data.impacto || "",
         relevancia_para_angola: data.relevancia_para_angola || "",
-        category: data.categoria || data.category || aiWorkspace.category,
+        category: data.categoria || data.category || dataToUse.category,
         factos: data.factos || "",
         contexto: data.contexto || "",
         leitura_critica: data.leitura_critica || "",
@@ -1215,14 +1221,14 @@ const AdminPage = () => {
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
       console.error("AI Error:", err);
-      toast.warning("A IA não está disponível. Verifique se a OPENAI_API_KEY está configurada no Supabase.");
+      toast.warning("A IA não está disponível. Verifique se a GEMINI_API_KEY está configurada no Supabase.");
       // Fallback: usar o conteúdo original como base para edição manual
       await new Promise(r => setTimeout(r, 500));
       setAiWorkspace({
-        ...aiWorkspace,
-        adaptedTitle: aiWorkspace.sourceTitle,
-        adaptedContent: aiWorkspace.sourceContent,
-        adaptedSummary: aiWorkspace.sourceContent.substring(0, 200) + (aiWorkspace.sourceContent.length > 200 ? "..." : "")
+        ...dataToUse,
+        adaptedTitle: dataToUse.sourceTitle,
+        adaptedContent: dataToUse.sourceContent,
+        adaptedSummary: dataToUse.sourceContent.substring(0, 200) + (dataToUse.sourceContent.length > 200 ? "..." : "")
       });
     } finally {
       setIsAdapting(false);

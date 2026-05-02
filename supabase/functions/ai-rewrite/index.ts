@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const { content, title, line } = await req.json();
+        const { content, title, line, url: sourceUrl } = await req.json();
 
         // Check for Gemini Key
         const apiKey = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_STUDIO_API_KEY");
@@ -23,8 +23,43 @@ Deno.serve(async (req) => {
             );
         }
 
+        let finalContent = content || "";
+
+        // Se tiver URL e o conteúdo estiver vazio ou parecer ser apenas um snippet (curto), tentamos buscar a notícia completa
+        if (sourceUrl && (finalContent.length < 500 || finalContent.includes("[+"))) {
+            console.log("AI-Rewrite: Fetching full content from URL:", sourceUrl);
+            try {
+                const scrapeResponse = await fetch(sourceUrl, {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36'
+                    }
+                });
+
+                if (scrapeResponse.ok) {
+                    const html = await scrapeResponse.text();
+                    // Limpeza básica para remover scripts e estilos antes de enviar para a IA
+                    const cleanHtml = html
+                        .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
+                        .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "")
+                        .replace(/<footer\b[^>]*>([\s\S]*?)<\/footer>/gim, "")
+                        .replace(/<nav\b[^>]*>([\s\S]*?)<\/nav>/gim, "")
+                        .replace(/<[^>]+>/g, " ")
+                        .replace(/\s+/g, " ")
+                        .trim();
+
+                    if (cleanHtml.length > finalContent.length) {
+                        finalContent = cleanHtml.substring(0, 30000); // Captura até 30k caracteres
+                        console.log("AI-Rewrite: Successfully scraped content length:", finalContent.length);
+                    }
+                }
+            } catch (scrapeError) {
+                console.error("AI-Rewrite: Scraping failed:", scrapeError);
+                // Mantém o conteúdo original (snippet) se falhar
+            }
+        }
+
         // Clean content from common truncation markers
-        let cleanContent = (content || '').replace(/\[\+\d+\s+chars\]/gi, '').replace(/\[\d+\s+chars\]/gi, '').trim();
+        let cleanContent = finalContent.replace(/\[\+\d+\s+chars\]/gi, '').replace(/\[\d+\s+chars\]/gi, '').trim();
 
         const prompt = `
       Você é um jornalista sénior e editor-chefe do portal "Sem Filtros" em Angola. 
