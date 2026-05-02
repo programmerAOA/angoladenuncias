@@ -31,26 +31,31 @@ Deno.serve(async (req) => {
       Sua missão é reescrever a notícia abaixo seguindo RIGOROSAMENTE a nossa linha editorial.
 
       DIRETRIZES SEM FILTROS:
-      - Linguagem directa, clara e sem suavizações artificiais.
-      - Análise crítica, contextual e responsável.
-      - ZERO neutralidade falsa: se os factos apontam uma direcção, não finja neutralidade.
-      - Evite repetição editorial e discursos oficiais reciclados.
-      - Separação explícita entre FACTO, CONTEXTO e LEITURA CRÍTICA.
-      - Prioridade à informação útil, ignorando conveniência política ou narrativas dominantes.
+      1. TÍTULO (DESTAQUE): Deve ser extremamente chamativo, directo e optimizado para SEO. Evite títulos institucionais. Ex: "Angola aproxima-se do Japão para acelerar reformas" em vez de "Encontro entre delegações de Angola e Japão".
+      2. RESUMO: Um resumo "punchy" e impactante de 2 frases que prenda o leitor.
+      3. CONTEÚDO: Redesenhe a notícia totalmente. Não faça apenas um resumo. Use um tom de voz audaz, claro e sem filtros, sem perder o foco nos factos reais.
+      4. ANÁLISE: TODA notícia DEVE terminar com uma secção entitulada "Análise – Angola Sem Filtros". Esta secção deve oferecer uma visão crítica, contextual e honesta sobre o impacto real do acontecimento para os angolanos.
 
       ESTRUTURA DE RETORNO (JSON):
       {
-        "titulo": "Título directo e impactante",
-        "resumo": "Resumo executivo de 2 frases (sem filtros)",
-        "full_content_html": "Notícia completa em HTML (<p>), integrando factos, contexto e análise",
-        "factos": "Os factos brutos da notícia",
-        "contexto": "O porquê disto estar a acontecer e o histórico necessário",
-        "leitura_critica": "A análise real do impacto, sem rodeios",
-        "impacto": "Impacto imediato na vida das pessoas",
-        "relevancia_para_angola": "Porquê isto importa para o público angolano",
+        "titulo": "Título SEO chamativo",
+        "resumo": "Resumo impactante",
+        "full_content_html": "Notícia completa em HTML (<p>), terminando OBRIGATORIAMENTE com a <br/><strong>Análise – Angola Sem Filtros</strong><br/>[Análise crítica aqui]",
+        "factos": "Os factos brutos",
+        "contexto": "Histórico e contexto",
+        "leitura_critica": "A análise crítica (mesmo texto que vai no final do HTML)",
+        "impacto": "Impacto na vida das pessoas",
+        "relevancia_para_angola": "Porquê isto importa",
         "categoria": "Política, Economia, Sociedade, Tecnologia, Mundo ou Desporto",
-        "seo_keywords": "5-8 palavras-chave separadas por vírgula para SEO"
+        "seo_keywords": "5-8 palavras-chave"
       }
+
+      EXEMPLO DE ESTILO (Siga este padrão de tom e estrutura):
+      Fonte: "Angola e Japão reforçam cooperação no petróleo..."
+      Resultado:
+      Título: "Angola aproxima-se do Japão para acelerar reformas e reduzir dependência do petróleo"
+      Resumo: "Angola quer transformar o Japão num parceiro estratégico central para impulsionar reformas económicas e acelerar a diversificação."
+      Análise Sem Filtro: "Angola volta a apostar numa narrativa já conhecida... O desafio está na capacidade interna de execução..."
 
       DADOS PARA PROCESSAMENTO:
       LINHA EDITORIAL ADICIONAL: "${line}"
