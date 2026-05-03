@@ -13,7 +13,7 @@ Deno.serve(async (req: Request) => {
     try {
         const { query, filter, max } = await req.json();
         const gnewsApiKey = Deno.env.get('GNEWS_API_KEY');
-        const geminiApiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_AI_STUDIO_API_KEY');
+        const geminiApiKey = Deno.env.get('GEMINI_API_KEY') || Deno.env.get('GOOGLE_AI_STUDIO_API_KEY') || "AIzaSyCNTcRuSzZuYn8lbBKsRvl0o3gDxjjqgOs";
         const theNewsApiKey = Deno.env.get('THE_NEWS_API_KEY') || "api_live_vrjtCF3M166VTMXrNjdXE0szDq2MdDnXUYIBNhdz7EZEMOBE2Abj3AKLwf";
 
         const maxResults = max || 10;

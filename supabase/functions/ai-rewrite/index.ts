@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
         const { content, title, line, url: sourceUrl } = await req.json();
 
         // Check for Gemini Key
-        const apiKey = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_STUDIO_API_KEY");
+        const apiKey = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_STUDIO_API_KEY") || "AIzaSyCNTcRuSzZuYn8lbBKsRvl0o3gDxjjqgOs";
         if (!apiKey) {
             console.error("Missing GEMINI_API_KEY");
             return new Response(
