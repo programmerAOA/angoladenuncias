@@ -10,6 +10,19 @@
             ]
         }
     ],
+    "redirects": [
+        {
+            "source": "/:path*",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "semfiltros.com"
+                }
+            ],
+            "destination": "https://www.semfiltros.com/:path*",
+            "permanent": true
+        }
+    ],
     "rewrites": [
         {
             "source": "/sitemap.xml",

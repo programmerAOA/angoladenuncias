@@ -266,6 +266,7 @@ export type Database = {
           title: string
           updated_at: string | null
           views: number | null
+          seo_keywords: string | null
         }
         Insert: {
           author?: string | null
@@ -282,6 +283,7 @@ export type Database = {
           title: string
           updated_at?: string | null
           views?: number | null
+          seo_keywords?: string | null
         }
         Update: {
           author?: string | null
@@ -298,6 +300,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           views?: number | null
+          seo_keywords?: string | null
         }
         Relationships: []
       }
@@ -347,6 +350,7 @@ export type Database = {
           title: string
           updated_at: string | null
           views: number | null
+          seo_keywords: string | null
         }
         Insert: {
           author: string
@@ -360,6 +364,7 @@ export type Database = {
           title: string
           updated_at?: string | null
           views?: number | null
+          seo_keywords?: string | null
         }
         Update: {
           author?: string
@@ -373,6 +378,7 @@ export type Database = {
           title?: string
           updated_at?: string | null
           views?: number | null
+          seo_keywords?: string | null
         }
         Relationships: []
       }

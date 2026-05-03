@@ -55,12 +55,11 @@ function buildOgHtml({ title, description, image, url, type = 'article' }) {
     <meta name="twitter:description" content="${safeDesc}" />
     <meta name="twitter:image" content="${safeImage}" />
 
-    <!-- Redirect real users to the SPA -->
-    <meta http-equiv="refresh" content="0;url=${safeUrl}" />
+    <link rel="canonical" href="${safeUrl}" />
     <link rel="icon" type="image/png" href="/logo.png" />
 </head>
 <body>
-    <p>A redirecionar para <a href="${safeUrl}">${safeTitle}</a>...</p>
+    <p>A carregar <a href="${safeUrl}">${safeTitle}</a>...</p>
 </body>
 </html>`;
 }
