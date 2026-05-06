@@ -24,7 +24,7 @@ const BOT_USER_AGENTS = [
 ];
 
 export const config = {
-    matcher: ['/article/:path*', '/opinion/:path*'],
+    matcher: ['/(.*)'],
 };
 
 export default function middleware(request) {

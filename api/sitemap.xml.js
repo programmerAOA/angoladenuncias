@@ -54,9 +54,12 @@ export default async function handler(req) {
         // Static Pages
         ['/videos', '/opinioes', '/edicao-digital'].forEach(p => addUrl(p, '0.8', 'daily'));
 
+        // Function to create category slug matching the frontend getCategorySlug
+        const getCategorySlug = (cat) => cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
         // Categories
         ['Política', 'Economia', 'Sociedade', 'Internacional'].forEach(cat =>
-            addUrl(`/category/${encodeURIComponent(cat)}`, '0.6', 'daily')
+            addUrl(`/${getCategorySlug(cat)}`, '0.6', 'daily')
         );
 
         // Articles

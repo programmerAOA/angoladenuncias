@@ -15,6 +15,19 @@ const DEFAULT_KEYWORDS = [
     "notícias em tempo real angola"
 ].join(", ");
 
+const VALID_CATEGORIES = {
+    'sociedade': 'Sociedade',
+    'politica': 'Política',
+    'economia': 'Economia',
+    'mundo': 'Mundo',
+    'desporto': 'Desporto',
+    'cultura': 'Cultura',
+    'tecnologia': 'Tecnologia',
+    'saude': 'Saúde',
+    'opinioes': 'Opinião',
+    'internacional': 'Internacional'
+};
+
 function escapeHtml(str) {
     if (!str) return '';
     return str
@@ -104,8 +117,9 @@ export default async function handler(req) {
     // Parse the path to determine content type and ID
     const articleMatch = path.match(/^\/article\/([a-f0-9-]+)$/i);
     const opinionMatch = path.match(/^\/opinion\/([a-f0-9-]+)$/i);
+    const categoryMatch = path.match(/^\/([a-z0-9-]+)$/i);
 
-    if (!articleMatch && !opinionMatch) {
+    if (!articleMatch && !opinionMatch && !(categoryMatch && VALID_CATEGORIES[categoryMatch[1].toLowerCase()])) {
         // Fallback: return generic OG tags
         return new Response(buildOgHtml({
             title: SITE_NAME,
@@ -119,6 +133,19 @@ export default async function handler(req) {
     }
 
     try {
+        if (categoryMatch && !articleMatch && !opinionMatch) {
+            const slug = categoryMatch[1].toLowerCase();
+            if (VALID_CATEGORIES[slug]) {
+                return new Response(buildOgHtml({
+                    title: `Notícias sobre ${VALID_CATEGORIES[slug]} - ${SITE_NAME}`,
+                    description: `Acompanhe as últimas notícias e reportagens de ${VALID_CATEGORIES[slug]} no ${SITE_NAME}. Jornalismo de investigação independente e atualizações em tempo real.`,
+                    url: `${SITE_URL}/${slug}`,
+                    type: 'website',
+                }), {
+                    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+                });
+            }
+        }
         if (articleMatch) {
             const id = articleMatch[1];
             const data = await fetchFromSupabase(

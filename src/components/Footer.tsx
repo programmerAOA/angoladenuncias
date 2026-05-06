@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Facebook, Twitter, Linkedin, Globe } from "lucide-react";
+import { getCategorySlug } from "@/constants/categories";
 
 const footerSections = [
-  { title: "Secções", links: ["Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia"] },
+  { title: "Secções", links: ["Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Sociedade"] },
   { title: "Opinião", links: ["Editoriais", "Colunistas", "Cartas dos Leitores", "Debates"] },
   { title: "Multimédia", links: ["Vídeos", "Podcasts", "Fotogalerias", "Infografias"] },
 ];
@@ -25,9 +26,9 @@ const Footer = () => {
                     <button
                       onClick={() => {
                         if (section.title === "Secções") {
-                          navigate("/", { state: { category: link } });
+                          navigate(`/${getCategorySlug(link)}`);
                         } else if (section.title === "Opinião") {
-                          navigate("/", { state: { category: "Opinião" } });
+                          navigate("/opinioes");
                         } else if (section.title === "Multimédia") {
                           if (link === "Vídeos") navigate("/videos");
                           else navigate("/videos");

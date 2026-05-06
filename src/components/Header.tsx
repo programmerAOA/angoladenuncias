@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Search, Menu, X, User, LogOut, Shield, Loader2, Facebook, Twitter, Linkedin, Globe, Newspaper, ShoppingBag } from "lucide-react";
-import { categories } from "@/constants/categories";
+import { categories, getCategorySlug } from "@/constants/categories";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
@@ -74,8 +74,10 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
       // navegamos para a rota de categoria correspondente
       if (category === "Destaque") {
         navigate("/");
+      } else if (category === "Opinião") {
+        navigate("/opinioes");
       } else {
-        navigate(`/category/${encodeURIComponent(category)}`);
+        navigate(`/${getCategorySlug(category)}`);
       }
     }
     setMenuOpen(false);

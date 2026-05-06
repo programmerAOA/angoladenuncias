@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { categories, getCategorySlug } from "@/constants/categories";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
@@ -36,6 +37,16 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/category/:id" element={<Index />} />
+                {categories.map((cat) => {
+                  if (cat === "Destaque" || cat === "Opinião") return null;
+                  return (
+                    <Route
+                      key={cat}
+                      path={`/${getCategorySlug(cat)}`}
+                      element={<Index defaultCategory={cat} />}
+                    />
+                  );
+                })}
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/article/:id" element={<ArticleDetail />} />
