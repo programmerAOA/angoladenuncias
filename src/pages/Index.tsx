@@ -221,7 +221,6 @@ const Index = ({ defaultCategory }: IndexProps) => {
       />
       <Header
         selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
         onSearch={setSearchQuery}
       />
       <BreakingNewsTicker
