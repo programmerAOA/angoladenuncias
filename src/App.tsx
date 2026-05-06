@@ -35,7 +35,7 @@ const App = () => (
           <AuthProvider>
             <SecurityLayer>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Index defaultCategory="Destaque" />} />
                 <Route path="/category/:id" element={<Index />} />
                 {categories.map((cat) => {
                   if (cat === "Destaque" || cat === "Opinião") return null;
