@@ -15,7 +15,7 @@ import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { NewsArticle } from "@/components/NewsCard";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
-import { categories } from "@/constants/categories";
+import { categories, getCategorySlug } from "@/constants/categories";
 
 interface IndexProps {
   defaultCategory?: string;
@@ -149,9 +149,11 @@ const Index = ({ defaultCategory }: IndexProps) => {
         if (newsRes.data) {
           setArticles(newsRes.data.map((a: any) => ({
             id: a.id,
+            slug: a.slug,
             title: a.title,
             summary: a.summary,
             category: a.category,
+            categorySlug: getCategorySlug(a.category),
             image: a.image_url || "https://images.unsplash.com/photo-1585829365234-781fcd04c8ef?w=800&q=80",
             timestamp: formatRelativeDate(a.scheduled_at || a.created_at),
             author: a.author || "Redacção"
@@ -162,6 +164,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
         if (opinionsRes.data) {
           const mappedOpinions = opinionsRes.data.map((o: any) => ({
             id: o.id,
+            slug: o.slug,
             title: o.title,
             author: o.author,
             timestamp: formatRelativeDate(o.scheduled_at || o.created_at)
@@ -227,7 +230,11 @@ const Index = ({ defaultCategory }: IndexProps) => {
       <BreakingNewsTicker
         headlines={breakingHeadlines}
         speed={tickerSpeed}
-        onHeadlineClick={(id) => navigate(`/article/${id}`)}
+        onHeadlineClick={(id) => {
+          // If we have access to the full article list, we should try to find the slug
+          // But for ticker, we keep simple ID which will be redirected by middleware or handled by ArticleDetail
+          navigate(`/article/${id}`);
+        }}
       />
       <AdBanner slot="banner_top" />
 
@@ -254,7 +261,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
                 {filteredArticles.map((article, i) => (
                   <article
                     key={article.id}
-                    onClick={() => navigate(`/article/${article.id}`)}
+                    onClick={() => navigate(`/${article.categorySlug || 'geral'}/${article.slug || article.id}`)}
                     className="group cursor-pointer animate-fade-in"
                     style={{ animationDelay: `${i * 80}ms` }}
                   >
@@ -290,7 +297,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
                 {selectedCategory === "Opinião" && opinions.map((opinion, i) => (
                   <article
                     key={opinion.id}
-                    onClick={() => navigate(`/opinion/${opinion.id}`)}
+                    onClick={() => navigate(`/opiniao/${opinion.slug || opinion.id}`)}
                     className="group cursor-pointer animate-fade-in bg-secondary/30 p-4 border-l-4 border-primary"
                     style={{ animationDelay: `${(filteredArticles.length + i) * 80}ms` }}
                   >

@@ -6,9 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Article {
   id: string;
+  slug?: string;
   title: string;
   summary: string;
   category: string;
+  categorySlug?: string;
   image: string;
   timestamp: string;
   author: string;
@@ -71,7 +73,13 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
         >
           <div
             className="cursor-pointer"
-            onClick={() => navigate(`/article/${article.id}`)}
+            onClick={() => {
+              if (article.slug && article.categorySlug) {
+                navigate(`/${article.categorySlug}/${article.slug}`);
+              } else {
+                navigate(`/article/${article.id}`);
+              }
+            }}
           >
             <div className="overflow-hidden relative">
               <img

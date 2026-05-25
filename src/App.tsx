@@ -51,6 +51,8 @@ const App = () => (
                 <Route path="/admin" element={<AdminPage />} />
                 <Route path="/article/:id" element={<ArticleDetail />} />
                 <Route path="/opinion/:id" element={<OpinionDetail />} />
+                <Route path="/:category/:slug" element={<ArticleDetail />} />
+                <Route path="/opiniao/:slug" element={<OpinionDetail />} />
                 <Route path="/opinioes" element={<Index defaultCategory="Opinião" />} />
                 <Route path="/edicao-digital" element={<DigitalEditions />} />
                 <Route path="/publicidade" element={<AdvertisingPage />} />

@@ -39,3 +39,15 @@ export const getYoutubeId = (url: string) => {
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
 };
+
+export function toSlug(text: string) {
+  return text
+    .toString()
+    .normalize('NFD') // separate accents from characters
+    .replace(/[\u0300-\u036f]/g, '') // remove accents
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-') // spaces to hyphens
+    .replace(/[^\w-]+/g, '') // remove special chars
+    .replace(/--+/g, '-'); // remove double hyphens
+}

@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 
 export interface NewsArticle {
   id: string;
+  slug?: string;
   title: string;
   summary: string;
   category: string;
+  categorySlug?: string;
   image: string;
   timestamp: string;
   author: string;
@@ -19,7 +21,11 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
   const navigate = useNavigate();
 
   const handleNavigate = () => {
-    navigate(`/article/${article.id}`);
+    if (article.slug && article.categorySlug) {
+      navigate(`/${article.categorySlug}/${article.slug}`);
+    } else {
+      navigate(`/article/${article.id}`);
+    }
   };
 
   if (variant === "compact") {

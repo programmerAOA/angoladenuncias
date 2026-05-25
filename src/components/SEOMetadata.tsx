@@ -61,6 +61,7 @@ export const SEOMetadata = ({
         updateMeta("twitter:image", image);
         updateMeta("twitter:card", "summary_large_image");
         updateMeta("keywords", allKeywords.join(", "));
+        updateMeta("robots", "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
 
         // Canonical Link
         let canonical = document.querySelector('link[rel="canonical"]');

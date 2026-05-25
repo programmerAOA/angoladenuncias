@@ -38,11 +38,73 @@ function escapeHtml(str) {
         .replace(/'/g, '&#039;');
 }
 
-function buildOgHtml({ title, description, image, url, type = 'article' }) {
+function buildOgHtml({ title, description, image, url, type = 'article', category, author, publishedDate, keywords }) {
     const safeTitle = escapeHtml(title || SITE_NAME);
     const safeDesc = escapeHtml(description || 'Sem Filtros - O seu portal de notícias de confiança sem filtros.');
     const safeImage = image || DEFAULT_IMAGE;
     const safeUrl = url || SITE_URL;
+    const safeKeywords = keywords || DEFAULT_KEYWORDS;
+
+    // Structured Data (JSON-LD)
+    const jsonLd = {
+        "@context": "https://schema.org",
+        "@graph": [
+            {
+                "@type": "Organization",
+                "@id": `${SITE_URL}/#organization`,
+                "name": SITE_NAME,
+                "url": SITE_URL,
+                "logo": {
+                    "@type": "ImageObject",
+                    "url": DEFAULT_IMAGE
+                }
+            },
+            {
+                "@type": "WebSite",
+                "@id": `${SITE_URL}/#website`,
+                "url": SITE_URL,
+                "name": SITE_NAME,
+                "publisher": { "@id": `${SITE_URL}/#organization` }
+            }
+        ]
+    };
+
+    if (type === 'article') {
+        jsonLd["@graph"].push({
+            "@type": "NewsArticle",
+            "headline": safeTitle,
+            "description": safeDesc,
+            "image": [safeImage],
+            "datePublished": publishedDate || new Date().toISOString(),
+            "author": {
+                "@type": "Person",
+                "name": author || SITE_NAME
+            },
+            "publisher": { "@id": `${SITE_URL}/#organization` },
+            "mainEntityOfPage": {
+                "@type": "WebPage",
+                "@id": safeUrl
+            }
+        });
+
+        jsonLd["@graph"].push({
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {
+                    "@type": "ListItem",
+                    "position": 1,
+                    "name": "Home",
+                    "item": SITE_URL
+                },
+                {
+                    "@type": "ListItem",
+                    "position": 2,
+                    "name": category || "Notícias",
+                    "item": safeUrl
+                }
+            ]
+        });
+    }
 
     return `<!DOCTYPE html>
 <html lang="pt-AO">
@@ -51,7 +113,8 @@ function buildOgHtml({ title, description, image, url, type = 'article' }) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>${safeTitle} | ${SITE_NAME}</title>
     <meta name="description" content="${safeDesc}" />
-    <meta name="keywords" content="${DEFAULT_KEYWORDS}" />
+    <meta name="keywords" content="${safeKeywords}" />
+    <meta name="robots" content="index, follow" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="${type}" />
@@ -70,6 +133,10 @@ function buildOgHtml({ title, description, image, url, type = 'article' }) {
 
     <link rel="canonical" href="${safeUrl}" />
     <link rel="icon" type="image/png" href="/logo.png" />
+    
+    <script type="application/ld+json">
+        ${JSON.stringify(jsonLd)}
+    </script>
 </head>
 <body>
     <p>A carregar <a href="${safeUrl}">${safeTitle}</a>...</p>
@@ -77,16 +144,16 @@ function buildOgHtml({ title, description, image, url, type = 'article' }) {
 </html>`;
 }
 
-async function fetchFromSupabase(table, id, selectFields) {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+async function fetchFromSupabase(table, filterField, filterValue, selectFields) {
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
         console.error('Missing Supabase environment variables');
         return null;
     }
 
-    const url = `${supabaseUrl}/rest/v1/${table}?id=eq.${id}&select=${selectFields}`;
+    const url = `${supabaseUrl}/rest/v1/${table}?${filterField}=eq.${filterValue}&select=${selectFields}`;
 
     try {
         const response = await fetch(url, {
@@ -114,26 +181,18 @@ export default async function handler(req) {
     const url = new URL(req.url);
     const path = url.searchParams.get('path') || '';
 
-    // Parse the path to determine content type and ID
-    const articleMatch = path.match(/^\/article\/([a-f0-9-]+)$/i);
-    const opinionMatch = path.match(/^\/opinion\/([a-f0-9-]+)$/i);
+    // Legacy Redirects Check (Middleware should handle this, but as fallback)
+    const legacyArticleMatch = path.match(/^\/article\/([a-f0-9-]+)$/i);
+    const legacyOpinionMatch = path.match(/^\/opinion\/([a-f0-9-]+)$/i);
+
+    // New Slug-based paths
+    const articleSlugMatch = path.match(/^\/([a-z0-9-]+)\/([a-z0-9-]+)$/i);
+    const opinionSlugMatch = path.match(/^\/opiniao\/([a-z0-9-]+)$/i);
     const categoryMatch = path.match(/^\/([a-z0-9-]+)$/i);
 
-    if (!articleMatch && !opinionMatch && !(categoryMatch && VALID_CATEGORIES[categoryMatch[1].toLowerCase()])) {
-        // Fallback: return generic OG tags
-        return new Response(buildOgHtml({
-            title: SITE_NAME,
-            description: 'Sem Filtros - O seu portal de notícias de confiança sem filtros.',
-            image: DEFAULT_IMAGE,
-            url: SITE_URL,
-            type: 'website',
-        }), {
-            headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        });
-    }
-
     try {
-        if (categoryMatch && !articleMatch && !opinionMatch) {
+        // 1. Category Pages
+        if (categoryMatch && !legacyArticleMatch && !legacyOpinionMatch && !articleSlugMatch && !opinionSlugMatch) {
             const slug = categoryMatch[1].toLowerCase();
             if (VALID_CATEGORIES[slug]) {
                 return new Response(buildOgHtml({
@@ -146,66 +205,77 @@ export default async function handler(req) {
                 });
             }
         }
-        if (articleMatch) {
-            const id = articleMatch[1];
+
+        // 2. News Articles (UUID or Slug)
+        if (legacyArticleMatch || articleSlugMatch) {
+            const filterField = legacyArticleMatch ? 'id' : 'slug';
+            const filterValue = legacyArticleMatch ? legacyArticleMatch[1] : articleSlugMatch[2];
+
             const data = await fetchFromSupabase(
                 'news_articles',
-                id,
-                'title,summary,image_url,author'
+                filterField,
+                filterValue,
+                'title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
             );
 
-            if (!data) {
+            if (data) {
+                const categorySlug = data.category ? data.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'geral';
                 return new Response(buildOgHtml({
-                    title: 'Artigo não encontrado',
-                    url: `${SITE_URL}/article/${id}`,
+                    title: data.title,
+                    description: data.summary || `Artigo por ${data.author} - ${SITE_NAME}`,
+                    image: data.image_url,
+                    url: legacyArticleMatch ? `${SITE_URL}/article/${filterValue}` : `${SITE_URL}/${categorySlug}/${data.slug}`,
+                    type: 'article',
+                    author: data.author,
+                    category: data.category,
+                    publishedDate: data.scheduled_at || data.created_at,
+                    keywords: data.seo_keywords
                 }), {
                     headers: { 'Content-Type': 'text/html; charset=utf-8' },
                 });
             }
-
-            return new Response(buildOgHtml({
-                title: data.title,
-                description: data.summary || `Artigo por ${data.author} - ${SITE_NAME}`,
-                image: data.image_url || DEFAULT_IMAGE,
-                url: `${SITE_URL}/article/${id}`,
-            }), {
-                headers: { 'Content-Type': 'text/html; charset=utf-8' },
-            });
         }
 
-        if (opinionMatch) {
-            const id = opinionMatch[1];
+        // 3. Opinion Articles (UUID or Slug)
+        if (legacyOpinionMatch || opinionSlugMatch) {
+            const filterField = legacyOpinionMatch ? 'id' : 'slug';
+            const filterValue = legacyOpinionMatch ? legacyOpinionMatch[1] : opinionSlugMatch[1];
+
             const data = await fetchFromSupabase(
                 'opinion_articles',
-                id,
-                'title,author,excerpt,avatar_url'
+                filterField,
+                filterValue,
+                'title,author,excerpt,avatar_url,created_at,scheduled_at,seo_keywords'
             );
 
-            if (!data) {
+            if (data) {
                 return new Response(buildOgHtml({
-                    title: 'Opinião não encontrada',
-                    url: `${SITE_URL}/opinion/${id}`,
+                    title: `"${data.title}" — ${data.author}`,
+                    description: data.excerpt || `Opinião de ${data.author} - ${SITE_NAME}`,
+                    image: data.avatar_url,
+                    url: legacyOpinionMatch ? `${SITE_URL}/opinion/${filterValue}` : `${SITE_URL}/opiniao/${data.slug}`,
+                    type: 'article',
+                    author: data.author,
+                    category: 'Opinião',
+                    publishedDate: data.scheduled_at || data.created_at,
+                    keywords: data.seo_keywords
                 }), {
                     headers: { 'Content-Type': 'text/html; charset=utf-8' },
                 });
             }
-
-            return new Response(buildOgHtml({
-                title: `"${data.title}" — ${data.author}`,
-                description: data.excerpt || `Opinião de ${data.author} - ${SITE_NAME}`,
-                image: data.avatar_url || DEFAULT_IMAGE,
-                url: `${SITE_URL}/opinion/${id}`,
-            }), {
-                headers: { 'Content-Type': 'text/html; charset=utf-8' },
-            });
         }
     } catch (err) {
         console.error('OG Meta error:', err);
-        return new Response(buildOgHtml({
-            title: SITE_NAME,
-            url: SITE_URL,
-        }), {
-            headers: { 'Content-Type': 'text/html; charset=utf-8' },
-        });
     }
+
+    // Default Fallback
+    return new Response(buildOgHtml({
+        title: SITE_NAME,
+        description: 'Sem Filtros - O seu portal de notícias de confiança sem filtros.',
+        image: DEFAULT_IMAGE,
+        url: SITE_URL,
+        type: 'website',
+    }), {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
 }

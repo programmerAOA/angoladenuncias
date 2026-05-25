@@ -4,27 +4,19 @@ import NewsCard from "./NewsCard";
 import AdCarousel from "./AdCarousel";
 import AdVerticalVideo from "./AdVerticalVideo";
 import { MessageSquare } from "lucide-react";
-
-interface Article {
-  id: string;
-  title: string;
-  summary: string;
-  category: string;
-  image: string;
-  timestamp: string;
-  author: string;
-}
+import { NewsArticle } from "./NewsCard";
 
 interface Opinion {
   id: string;
+  slug?: string;
   title: string;
   author: string;
   timestamp: string;
 }
 
 interface NewsGridProps {
-  topArticles?: Article[];
-  latestArticles?: Article[];
+  topArticles?: NewsArticle[];
+  latestArticles?: NewsArticle[];
   opinionArticles?: Opinion[];
 }
 
@@ -100,7 +92,7 @@ const NewsGrid = ({
             {opinionArticles.map((article, i) => (
               <article
                 key={article.id}
-                onClick={() => navigate(`/opinion/${article.id}`)}
+                onClick={() => navigate(`/opiniao/${article.slug || article.id}`)}
                 className="py-4 border-b border-border last:border-0 group cursor-pointer"
               >
                 <h4 className="news-headline news-headline-hover text-base">

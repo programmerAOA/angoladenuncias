@@ -13,7 +13,7 @@ import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 import { SEOMetadata } from "@/components/SEOMetadata";
 
 const OpinionDetail = () => {
-    const { id } = useParams();
+    const { id, slug } = useParams();
     const navigate = useNavigate();
     const [opinion, setOpinion] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -49,9 +49,15 @@ const OpinionDetail = () => {
         const fetchOpinion = async () => {
             setLoading(true);
             try {
-                const { data, error } = await withTimeout(
-                    supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords").eq("id", id).single()
-                ) as any;
+                let query = supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords");
+
+                if (id) {
+                    query = query.eq("id", id);
+                } else if (slug) {
+                    query = query.eq("slug", slug);
+                }
+
+                const { data, error } = await withTimeout((query as any).single()) as any;
 
                 if (error) throw error;
                 setOpinion(data);
@@ -64,7 +70,7 @@ const OpinionDetail = () => {
             }
         };
 
-        if (id) fetchOpinion();
+        if (id || slug) fetchOpinion();
 
         const fetchStaticData = async () => {
             try {
@@ -194,7 +200,7 @@ const OpinionDetail = () => {
                 </article>
 
 
-                <CommentsSection articleId={id!} />
+                <CommentsSection articleId={opinion.id} />
             </main>
 
             <Footer />

@@ -16,8 +16,8 @@ function escapeXml(str) {
 }
 
 async function fetchFromSupabase(table, selectFields, filter = '') {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://qsjhkhiohpfslfkpjoeb.supabase.co';
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_-cH7Xx0cAUTgGeK7KLFP4w_a2TLTf9x';
+    const supabaseUrl = process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
     const url = `${supabaseUrl}/rest/v1/${table}?select=${selectFields}${filter}&order=created_at.desc&limit=100`;
 
@@ -35,24 +35,28 @@ async function fetchFromSupabase(table, selectFields, filter = '') {
         return Array.isArray(data) ? data : [];
     } catch (err) {
         console.error(`[News Sitemap] Fetch failed:`, err);
-        throw err;
+        return [];
     }
 }
 
 export default async function handler(req) {
     try {
-        // Only fetch articles from last 48 hours
+        // Only fetch articles from last 48 hours for Google News
         const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
-        const articles = await fetchFromSupabase('news_articles', 'id,created_at,title', `&published=eq.true&created_at=gt.${fortyEightHoursAgo}`);
+        const articles = await fetchFromSupabase('news_articles', 'slug,category,created_at,title', `&published=eq.true&created_at=gt.${fortyEightHoursAgo}`);
 
         const now = new Date().toISOString();
         let urls = '';
 
+        const getCategorySlug = (cat) => cat ? cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'geral';
+
         articles.forEach(art => {
+            if (!art.slug) return;
+            const catSlug = getCategorySlug(art.category);
             const date = art.created_at || now;
             urls += `
   <url>
-    <loc>${SITE_URL}/article/${art.id}</loc>
+    <loc>${SITE_URL}/${catSlug}/${art.slug}</loc>
     <news:news>
       <news:publication>
         <news:name>${escapeXml(SITE_NAME)}</news:name>

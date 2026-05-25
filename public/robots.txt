@@ -1,4 +1,14 @@
 User-agent: *
 Allow: /
 
+# Sitemap locations
 Sitemap: https://www.semfiltros.com/sitemap.xml
+Sitemap: https://www.semfiltros.com/sitemap-news.xml
+
+# Restricted areas
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+Disallow: /tmp/
