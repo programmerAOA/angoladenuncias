@@ -9,8 +9,7 @@ declare global {
 const AdSense = () => {
     useEffect(() => {
         try {
-            // Verifica se a tag adsbygoogle está disponível e se o anúncio ainda não foi carregado
-            if (typeof window !== 'undefined' && window.adsbygoogle) {
+            if (typeof window !== 'undefined') {
                 (window.adsbygoogle = window.adsbygoogle || []).push({});
             }
         } catch (e) {
