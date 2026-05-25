@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
-import AdSense from "@/components/AdSense";
+
 import { SEOMetadata } from "@/components/SEOMetadata";
 
 const OpinionDetail = () => {
@@ -193,7 +193,7 @@ const OpinionDetail = () => {
                     </div>
                 </article>
 
-                <AdSense />
+
                 <CommentsSection articleId={id!} />
             </main>
 

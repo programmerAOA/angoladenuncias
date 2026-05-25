@@ -8,7 +8,7 @@ import VideoSection, { VideoItem } from "@/components/VideoSection";
 import Footer from "@/components/Footer";
 import RadioPlayer from "@/components/RadioPlayer";
 import AdBanner from "@/components/AdBanner";
-import AdSense from "@/components/AdSense";
+
 import { SEOMetadata } from "@/components/SEOMetadata";
 import { supabase } from "@/integrations/supabase/client";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
@@ -230,7 +230,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
         onHeadlineClick={(id) => navigate(`/article/${id}`)}
       />
       <AdBanner slot="banner_top" />
-      <AdSense />
+
       <main>
         <h1 className="sr-only">Sem Filtros Notícias e Investigação</h1>
         {loading ? (
@@ -343,7 +343,6 @@ const Index = ({ defaultCategory }: IndexProps) => {
           </>
         )}
       </main>
-      <AdSense />
       <AdBanner slot="banner_bottom" />
       <Footer />
       <RadioPlayer />
