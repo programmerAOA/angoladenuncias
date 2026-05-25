@@ -49,10 +49,6 @@ const App = () => (
                 })}
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminPage />} />
-                <Route path="/article/:id" element={<ArticleDetail />} />
-                <Route path="/opinion/:id" element={<OpinionDetail />} />
-                <Route path="/:category/:slug" element={<ArticleDetail />} />
-                <Route path="/opiniao/:slug" element={<OpinionDetail />} />
                 <Route path="/opinioes" element={<Index defaultCategory="Opinião" />} />
                 <Route path="/edicao-digital" element={<DigitalEditions />} />
                 <Route path="/publicidade" element={<AdvertisingPage />} />
@@ -60,6 +56,10 @@ const App = () => (
                 <Route path="/servicos" element={<ServicesPage />} />
                 <Route path="/termos" element={<TermsPage />} />
                 <Route path="/privacidade" element={<PrivacyPage />} />
+                <Route path="/article/:id" element={<ArticleDetail />} />
+                <Route path="/opinion/:id" element={<OpinionDetail />} />
+                <Route path="/:category/:slug" element={<ArticleDetail />} />
+                <Route path="/opiniao/:slug" element={<OpinionDetail />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <CookieConsent />
