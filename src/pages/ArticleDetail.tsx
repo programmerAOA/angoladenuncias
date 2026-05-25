@@ -157,7 +157,13 @@ const ArticleDetail = () => {
             <BreakingNewsTicker
                 headlines={breakingHeadlines}
                 speed={tickerSpeed}
-                onHeadlineClick={(id) => navigate(`/article/${id}`)}
+                onHeadlineClick={(item) => {
+                    if (item.slug && item.categorySlug) {
+                        navigate(`/${item.categorySlug}/${item.slug}`);
+                    } else {
+                        navigate(`/article/${item.id}`);
+                    }
+                }}
             />
 
             <main className="container py-8 max-w-4xl">
