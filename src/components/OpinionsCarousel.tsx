@@ -5,6 +5,7 @@ import { User } from "lucide-react";
 
 interface OpinionHighlight {
     id: string;
+    slug?: string;
     author: string;
     avatar_url: string | null;
     title: string;
@@ -19,14 +20,14 @@ const OpinionsCarousel = () => {
             const now = new Date().toISOString();
             const { data, error } = await supabase
                 .from("opinion_articles")
-                .select("id, author, avatar_url, title")
+                .select("id, slug, author, avatar_url, title")
                 .eq("published", true)
                 .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
                 .order("created_at", { ascending: false })
                 .limit(10);
 
             if (data) {
-                setOpinions(data);
+                setOpinions(data as any[]);
             }
         };
         fetchOpinions();
@@ -44,7 +45,7 @@ const OpinionsCarousel = () => {
                 {opinions.map((op) => (
                     <div
                         key={op.id}
-                        onClick={() => navigate(`/opinion/${op.id}`)}
+                        onClick={() => navigate(`/opiniao/${op.slug || op.id}`)}
                         className="flex items-center gap-2 sm:gap-2.5 cursor-pointer group/item transition-all duration-300 hover:bg-primary/5 px-2 py-1 rounded-full border border-transparent hover:border-primary/10 shrink-0"
                     >
                         <div className="relative">
