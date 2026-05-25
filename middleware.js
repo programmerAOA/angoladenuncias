@@ -85,20 +85,3 @@ export default async function middleware(request) {
     // For normal users, continue to the SPA (return undefined = no-op)
     return undefined;
 }
-
-// Check if the request is from a known crawler/bot
-const isBot = BOT_USER_AGENTS.some(bot => userAgent.includes(bot));
-
-if (isBot) {
-    // Rewrite to the OG meta API function, passing the original path
-    const rewriteUrl = new URL('/api/og-meta', request.url);
-    rewriteUrl.searchParams.set('path', url.pathname);
-
-    return fetch(rewriteUrl.toString(), {
-        headers: request.headers,
-    });
-}
-
-// For normal users, continue to the SPA (return undefined = no-op)
-return undefined;
-}
