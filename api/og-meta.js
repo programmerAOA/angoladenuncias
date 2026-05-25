@@ -215,16 +215,22 @@ export default async function handler(req) {
                 'news_articles',
                 filterField,
                 filterValue,
-                'title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
+                'slug,title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
             );
 
             if (data) {
-                const categorySlug = data.category ? data.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'geral';
+                const categorySlug = data.category
+                    ? data.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')
+                    : 'geral';
+                // ALWAYS use the canonical slug URL, even if accessed via UUID
+                const canonicalUrl = data.slug
+                    ? `${SITE_URL}/${categorySlug}/${data.slug}`
+                    : `${SITE_URL}/article/${filterValue}`;
                 return new Response(buildOgHtml({
                     title: data.title,
                     description: data.summary || `Artigo por ${data.author} - ${SITE_NAME}`,
                     image: data.image_url,
-                    url: legacyArticleMatch ? `${SITE_URL}/article/${filterValue}` : `${SITE_URL}/${categorySlug}/${data.slug}`,
+                    url: canonicalUrl,
                     type: 'article',
                     author: data.author,
                     category: data.category,

@@ -49,7 +49,7 @@ const OpinionDetail = () => {
         const fetchOpinion = async () => {
             setLoading(true);
             try {
-                let query = supabase.from("opinion_articles").select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords");
+                let query = supabase.from("opinion_articles").select("id, slug, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords");
 
                 if (id) {
                     query = query.eq("id", id);
@@ -112,7 +112,7 @@ const OpinionDetail = () => {
             }
         };
         fetchStaticData();
-    }, [id, navigate]);
+    }, [id, slug, navigate]);
 
     if (loading) {
         return (
@@ -149,6 +149,9 @@ const OpinionDetail = () => {
                 type="article"
                 publishedDate={opinion.scheduled_at || opinion.created_at}
                 category="Opinião"
+                url={opinion.slug
+                    ? `https://www.semfiltros.com/opiniao/${opinion.slug}`
+                    : `https://www.semfiltros.com${window.location.pathname}`}
                 keywords={opinion.seo_keywords ? opinion.seo_keywords.split(',').map((k: string) => k.trim()) : []}
             />
             <Header />

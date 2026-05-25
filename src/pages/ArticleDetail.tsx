@@ -50,7 +50,7 @@ const ArticleDetail = () => {
         const fetchArticle = async () => {
             setLoading(true);
             try {
-                let query = supabase.from("news_articles").select("id, title, summary, content, category, image_url, created_at, author, scheduled_at, seo_keywords");
+                let query = supabase.from("news_articles").select("id, slug, title, summary, content, category, image_url, created_at, author, scheduled_at, seo_keywords");
 
                 if (id) {
                     query = query.eq("id", id);
@@ -63,9 +63,12 @@ const ArticleDetail = () => {
                 if (error) throw error;
                 setArticle(data);
 
-                // Canonicalize URL if visited via ID
+                // Canonicalize: if visited via legacy /article/UUID, redirect to slug URL
                 if (id && data.slug && data.category) {
-                    const catSlug = data.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    const catSlug = data.category.toLowerCase()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .replace(/\s+/g, '-');
                     navigate(`/${catSlug}/${data.slug}`, { replace: true });
                 }
             } catch (err: any) {
@@ -114,7 +117,7 @@ const ArticleDetail = () => {
             }
         };
         fetchStaticData();
-    }, [id, navigate]);
+    }, [id, slug, navigate]);
 
     if (loading) {
         return (
@@ -151,6 +154,9 @@ const ArticleDetail = () => {
                 type="article"
                 publishedDate={article.scheduled_at || article.created_at}
                 category={article.category}
+                url={article.slug && article.category
+                    ? `https://www.semfiltros.com/${article.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}/${article.slug}`
+                    : `https://www.semfiltros.com${window.location.pathname}`}
                 keywords={article.seo_keywords ? article.seo_keywords.split(',').map((k: string) => k.trim()) : []}
             />
             <Header />
