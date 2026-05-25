@@ -18,10 +18,19 @@
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="description" content="Sem Filtros - Portal de Notícias Sem Censura e Investigação em Angola">
   <meta name="author" content="Sem Filtros" />
-  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/logo.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+  <link rel="shortcut icon" href="/logo.png" />
+  <meta name="theme-color" content="#CC0000" />
+  <meta name="msapplication-TileImage" content="/logo.png" />
+  <meta name="msapplication-TileColor" content="#CC0000" />
 
   <meta property="og:type" content="website" />
-  <meta property="og:image" content="https://www.semfiltros.com/logo.png">
+  <meta property="og:image" content="https://www.semfiltros.com/logo.png" />
+  <meta property="og:image:width" content="512" />
+  <meta property="og:image:height" content="512" />
+  <meta property="og:site_name" content="Sem Filtros" />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@SemFiltros" />
@@ -42,6 +51,42 @@
         appId: "8384c1db-26fa-4cde-9ccb-070e605b7dec",
       });
     });
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://www.semfiltros.com/#organization",
+        "name": "Sem Filtros",
+        "url": "https://www.semfiltros.com/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://www.semfiltros.com/logo.png",
+          "width": 512,
+          "height": 512
+        },
+        "sameAs": [
+          "https://twitter.com/SemFiltros",
+          "https://www.youtube.com/@semfiltrostv"
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.semfiltros.com/#website",
+        "url": "https://www.semfiltros.com/",
+        "name": "Sem Filtros",
+        "description": "Portal de Notícias Sem Censura e Investigação em Angola",
+        "publisher": { "@id": "https://www.semfiltros.com/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://www.semfiltros.com/?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    ]
+  }
   </script>
 </head>
 
