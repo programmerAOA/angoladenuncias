@@ -114,7 +114,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
           newsQuery = newsQuery.eq("category", selectedCategory);
         }
 
-        const newsPromise = withTimeout(newsQuery.limit(40), 15000);
+        const newsPromise = withTimeout(newsQuery.limit(60), 15000);
 
         const opinionsPromise = (selectedCategory === "Destaque" || selectedCategory === "Opinião")
           ? withTimeout(
@@ -133,7 +133,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
             supabase.from("video_news")
               .select("id, title, description, thumbnail_url, video_url, duration, views, category")
               .order("created_at", { ascending: false })
-              .limit(6),
+              .limit(16),
             15000
           )
           : Promise.resolve({ data: [] });

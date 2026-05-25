@@ -34,7 +34,7 @@ const NewsGrid = ({
   opinionArticles = []
 }: NewsGridProps) => {
   const navigate = useNavigate();
-  const [visibleCount, setVisibleCount] = useState(6);
+  const [visibleCount, setVisibleCount] = useState(8);
 
   const handleLoadMore = () => {
     setVisibleCount(prev => prev + 6);
