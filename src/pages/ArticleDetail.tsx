@@ -62,6 +62,12 @@ const ArticleDetail = () => {
 
                 if (error) throw error;
                 setArticle(data);
+
+                // Canonicalize URL if visited via ID
+                if (id && data.slug && data.category) {
+                    const catSlug = data.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    navigate(`/${catSlug}/${data.slug}`, { replace: true });
+                }
             } catch (err: any) {
                 console.error("Error fetching article:", err);
                 toast.error("Erro ao carregar o artigo: " + (err.message || "Não encontrado"));
@@ -117,7 +123,13 @@ const ArticleDetail = () => {
                 <BreakingNewsTicker
                     headlines={breakingHeadlines}
                     speed={tickerSpeed}
-                    onHeadlineClick={(id) => navigate(`/article/${id}`)}
+                    onHeadlineClick={(item) => {
+                        if (item.slug && item.categorySlug) {
+                            navigate(`/${item.categorySlug}/${item.slug}`);
+                        } else {
+                            navigate(`/article/${item.id}`);
+                        }
+                    }}
                 />
                 <div className="flex-1 flex flex-col items-center justify-center w-full">
                     <LoadingSpinner fullScreen />

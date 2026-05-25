@@ -61,6 +61,11 @@ const OpinionDetail = () => {
 
                 if (error) throw error;
                 setOpinion(data);
+
+                // Canonicalize URL if visited via ID
+                if (id && data.slug) {
+                    navigate(`/opiniao/${data.slug}`, { replace: true });
+                }
             } catch (err: any) {
                 console.error("Error fetching opinion:", err);
                 toast.error("Erro ao carregar a opinião: " + (err.message || "Não encontrada"));
@@ -116,7 +121,13 @@ const OpinionDetail = () => {
                 <BreakingNewsTicker
                     headlines={breakingHeadlines}
                     speed={tickerSpeed}
-                    onHeadlineClick={(id) => navigate(`/article/${id}`)}
+                    onHeadlineClick={(item) => {
+                        if (item.slug && item.categorySlug) {
+                            navigate(`/${item.categorySlug}/${item.slug}`);
+                        } else {
+                            navigate(`/article/${item.id}`);
+                        }
+                    }}
                 />
                 <div className="flex-1 flex flex-col items-center justify-center w-full">
                     <LoadingSpinner fullScreen />
@@ -144,7 +155,13 @@ const OpinionDetail = () => {
             <BreakingNewsTicker
                 headlines={breakingHeadlines}
                 speed={tickerSpeed}
-                onHeadlineClick={(id) => navigate(`/article/${id}`)}
+                onHeadlineClick={(item) => {
+                    if (item.slug && item.categorySlug) {
+                        navigate(`/${item.categorySlug}/${item.slug}`);
+                    } else {
+                        navigate(`/article/${item.id}`);
+                    }
+                }}
             />
 
             <main className="container py-8 max-w-3xl">

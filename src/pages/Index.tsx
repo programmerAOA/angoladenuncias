@@ -65,20 +65,32 @@ const Index = ({ defaultCategory }: IndexProps) => {
           .order("created_at", { ascending: false });
 
         if (breakingRes && breakingRes.length > 0) {
-          setBreakingHeadlines(breakingRes.map((b: any) => ({ id: b.id, title: b.text, category: "Última Hora" })));
+          setBreakingHeadlines(breakingRes.map((b: any) => ({
+            id: b.id,
+            title: b.text,
+            category: "Última Hora",
+            // Note: breaking_news table might not have slugs, 
+            // but we add fields to stay consistent with the interface
+          })));
         } else {
           // Fallback: buscar as 10 últimas notícias publicadas
           const now = new Date().toISOString();
           const { data: latestNews } = await supabase
             .from("news_articles")
-            .select("id, title, category")
+            .select("id, title, category, slug")
             .eq("published", true)
             .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
             .order("created_at", { ascending: false })
             .limit(10);
 
           if (latestNews) {
-            setBreakingHeadlines(latestNews.map((n: any) => ({ id: n.id, title: n.title, category: n.category })));
+            setBreakingHeadlines(latestNews.map((n: any) => ({
+              id: n.id,
+              title: n.title,
+              category: n.category,
+              slug: n.slug,
+              categorySlug: getCategorySlug(n.category)
+            })));
           }
         }
 
@@ -105,7 +117,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
         const now = new Date().toISOString();
         let newsQuery = supabase
           .from("news_articles")
-          .select("id, title, summary, category, image_url, created_at, author, published, scheduled_at")
+          .select("id, slug, title, summary, category, image_url, created_at, author, published, scheduled_at")
           .eq("published", true)
           .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
           .order("created_at", { ascending: false });
@@ -119,7 +131,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
         const opinionsPromise = (selectedCategory === "Destaque" || selectedCategory === "Opinião")
           ? withTimeout(
             supabase.from("opinion_articles")
-              .select("id, title, author, created_at, scheduled_at")
+              .select("id, slug, title, author, created_at, scheduled_at")
               .eq("published", true)
               .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
               .order("created_at", { ascending: false })
@@ -230,10 +242,12 @@ const Index = ({ defaultCategory }: IndexProps) => {
       <BreakingNewsTicker
         headlines={breakingHeadlines}
         speed={tickerSpeed}
-        onHeadlineClick={(id) => {
-          // If we have access to the full article list, we should try to find the slug
-          // But for ticker, we keep simple ID which will be redirected by middleware or handled by ArticleDetail
-          navigate(`/article/${id}`);
+        onHeadlineClick={(item) => {
+          if (item.slug && item.categorySlug) {
+            navigate(`/${item.categorySlug}/${item.slug}`);
+          } else {
+            navigate(`/article/${item.id}`);
+          }
         }}
       />
       <AdBanner slot="banner_top" />

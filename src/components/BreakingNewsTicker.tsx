@@ -3,6 +3,8 @@ import { Zap } from "lucide-react";
 
 interface BreakingNewsItem {
   id: string;
+  slug?: string;
+  categorySlug?: string;
   title: string;
   category?: string;
 }
@@ -10,7 +12,7 @@ interface BreakingNewsItem {
 interface BreakingNewsTickerProps {
   headlines?: BreakingNewsItem[];
   speed?: number;
-  onHeadlineClick?: (id: string) => void;
+  onHeadlineClick?: (item: BreakingNewsItem) => void;
 }
 
 const FADE_DURATION = 400;
@@ -73,7 +75,7 @@ const BreakingNewsTicker = ({
             opacity: visible ? 1 : 0,
             transform: visible ? "translateY(0)" : "translateY(5px)",
           }}
-          onClick={() => current?.id && onHeadlineClick?.(current.id)}
+          onClick={() => current && onHeadlineClick?.(current)}
         >
           {current?.title}
         </p>
