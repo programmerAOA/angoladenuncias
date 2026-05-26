@@ -49,16 +49,23 @@ const OpinionDetail = () => {
         const fetchOpinion = async () => {
             setLoading(true);
             try {
-                const { data, error } = (await withTimeout(
-                    supabase
-                        .from("opinion_articles")
-                        .select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords")
-                        .eq("id", id)
-                        .single()
-                )) as any;
+                let query = supabase.from("opinion_articles").select("id, slug, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords");
+
+                if (id) {
+                    query = query.eq("id", id);
+                } else if (slug) {
+                    query = query.eq("slug", slug);
+                }
+
+                const { data, error } = (await withTimeout((query as any).single())) as any;
 
                 if (error) throw error;
                 setOpinion(data);
+
+                // Canonicalize URL if visited via ID
+                if (id && data.slug) {
+                    navigate(`/opiniao/${data.slug}`, { replace: true });
+                }
             } catch (err: any) {
                 console.error("Error fetching opinion:", err);
                 toast.error("Erro ao carregar a opinião: " + (err.message || "Não encontrada"));
