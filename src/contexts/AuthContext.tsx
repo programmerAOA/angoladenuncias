@@ -47,7 +47,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error("[Auth] Role check error:", error);
-        // Mesmo com erro, não bloqueamos o resto da inicialização
+        setIsAdmin(false);
+        setIsEditor(false);
         return;
       }
 

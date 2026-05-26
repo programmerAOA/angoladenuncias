@@ -145,7 +145,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   };
 
   return (
-    <section className="bg-secondary border-y border-border py-10">
+    <section id="video-section" className="bg-secondary border-y border-border py-10">
       <div className="container">
         <div className="flex items-center gap-3 mb-6">
           <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                     key={video.id}
                     onClick={() => {
                       setFeaturedVideo(video);
-                      setPlaying(false);
+                      setPlaying(true);
                       window.scrollTo({ top: document.getElementById('video-section')?.offsetTop || 0, behavior: 'smooth' });
                     }}
                     className="group cursor-pointer bg-background/30 p-2 rounded-sm border border-transparent hover:border-primary/20 hover:bg-background/60 transition-all"
@@ -268,7 +268,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                 key={video.id}
                 onClick={() => {
                   setFeaturedVideo(video);
-                  setPlaying(false);
+                  setPlaying(true);
                   window.scrollTo({ top: document.getElementById('video-section')?.offsetTop || 0, behavior: 'smooth' });
                 }}
                 className={`flex gap-3 py-3 border-b border-border last:border-0 text-left group transition-colors hover:bg-background/50 -mx-2 px-2 ${featuredVideo.id === video.id ? "opacity-60" : ""
