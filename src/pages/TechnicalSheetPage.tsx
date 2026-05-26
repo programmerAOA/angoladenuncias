@@ -31,11 +31,11 @@ const TechnicalSheetPage = () => {
                             </div>
                             <div>
                                 <p className="font-bold uppercase text-xs text-primary mb-0">Propriedade</p>
-                                <p className="text-base italic">Portal Sem Filtros</p>
+                                <p className="text-base italic">ByteKwanza</p>
                             </div>
                             <div>
                                 <p className="font-bold uppercase text-xs text-primary mb-0">NIF</p>
-                                <p className="text-base">5000984831</p>
+                                <p className="text-base">5000000000</p>
                             </div>
                         </div>
                     </div>
