@@ -31,12 +31,13 @@ async function fetchFromSupabase(table, selectFields, filter = '') {
 
 export default async function handler(req) {
     try {
+        const now = new Date().toISOString();
         const [articles, opinions] = await Promise.all([
-            fetchFromSupabase('news_articles', 'slug,category,created_at', '&published=eq.true'),
-            fetchFromSupabase('opinion_articles', 'slug,created_at'),
+            fetchFromSupabase('news_articles', 'slug,category,created_at', `&published=eq.true&or=(scheduled_at.is.null,scheduled_at.lte.${now})`),
+            fetchFromSupabase('opinion_articles', 'slug,created_at', `&published=eq.true&or=(scheduled_at.is.null,scheduled_at.lte.${now})`),
         ]);
 
-        const now = new Date().toISOString();
+
         let urls = '';
 
         const addUrl = (path, priority = '0.5', freq = 'weekly', lastmod = now) => {
@@ -52,7 +53,7 @@ export default async function handler(req) {
         addUrl('/', '1.0', 'hourly');
 
         // Static Pages
-        ['/videos', '/opinioes', '/edicao-digital', '/publicidade', '/servicos'].forEach(p => addUrl(p, '0.8', 'daily'));
+        ['/videos', '/opinioes', '/edicao-digital', '/publicidade', '/servicos', '/linha-editorial', '/ficha-tecnica', '/privacidade', '/termos'].forEach(p => addUrl(p, '0.8', 'daily'));
 
         // Function to create category slug
         const getCategorySlug = (cat) => cat ? cat.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : 'geral';

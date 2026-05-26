@@ -1,135 +1,87 @@
 import { useNavigate } from "react-router-dom";
-import { Facebook, Twitter, Linkedin, Globe } from "lucide-react";
-import { getCategorySlug } from "@/constants/categories";
-
-const footerSections = [
-  { title: "Secções", links: ["Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Sociedade"] },
-  { title: "Opinião", links: ["Editoriais", "Colunistas", "Cartas dos Leitores", "Debates"] },
-  { title: "Multimédia", links: ["Vídeos", "Podcasts", "Fotogalerias", "Infografias"] },
-];
+import { Facebook, Instagram, Youtube, Mail, MessageSquare } from "lucide-react";
 
 const Footer = () => {
   const navigate = useNavigate();
+  const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-secondary border-t border-border mt-12">
-      <div className="container py-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {footerSections.map((section) => (
-            <div key={section.title}>
-              <h4 className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">
-                {section.title}
-              </h4>
-              <ul className="space-y-2">
-                {section.links.map((link) => (
-                  <li key={link}>
-                    <button
-                      onClick={() => {
-                        if (section.title === "Secções") {
-                          navigate(`/${getCategorySlug(link)}`);
-                        } else if (section.title === "Opinião") {
-                          navigate("/opinioes");
-                        } else if (section.title === "Multimédia") {
-                          if (link === "Vídeos") navigate("/videos");
-                          else navigate("/videos");
-                        } else {
-                          navigate("/");
-                        }
-                      }}
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors text-left w-full"
-                    >
-                      {link}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+    <footer className="bg-black text-white py-12 px-4 border-t border-white/10">
+      <div className="container max-w-4xl mx-auto flex flex-col items-center">
 
-          {/* Contact Section */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-widest text-foreground mb-4">
-              Contacto
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Email Geral</span>
-                <a
-                  href="mailto:angolasemfiltros@gmail.com"
-                  className="hover:underline transition-all"
-                >
-                  angolasemfiltros@gmail.com
-                </a>
-              </li>
-              <li>
-                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Publicidade</span>
-                <button
-                  onClick={() => navigate("/publicidade")}
-                  className="text-sm text-foreground hover:text-primary transition-colors font-medium text-left bg-primary/5 px-2 py-1 rounded border border-primary/10 w-full"
-                >
-                  Anuncie connosco
-                </button>
-              </li>
-              <li>
-                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">Documentos</span>
-                <div className="flex flex-col gap-1">
-                  <button
-                    onClick={() => navigate("/termos")}
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors text-left"
-                  >
-                    Termos de Uso
-                  </button>
-                  <button
-                    onClick={() => navigate("/privacidade")}
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors text-left"
-                  >
-                    Política de Privacidade
-                  </button>
-                </div>
-              </li>
-              <li>
-                <span className="block text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5 font-bold">WhatsApp</span>
-                <a
-                  href="https://wa.me/244952679780"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-foreground hover:text-primary transition-colors font-medium"
-                >
-                  +244 952 679 780
-                </a>
-              </li>
-            </ul>
-          </div>
+        {/* Social Icons */}
+        <div className="flex items-center gap-4 mb-8">
+          <a
+            href="https://facebook.com/angolasemfiltros"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300 group"
+          >
+            <Facebook className="w-5 h-5 text-white" />
+          </a>
+          <a
+            href="https://instagram.com/angolasemfiltros"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300"
+          >
+            <Instagram className="w-5 h-5 text-white" />
+          </a>
+          <a
+            href="https://youtube.com/@semfiltrostv"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300"
+          >
+            <Youtube className="w-5 h-5 text-white" />
+          </a>
         </div>
 
-        <div className="section-divider my-8" />
+        {/* Main Navigation */}
+        <nav className="flex flex-wrap justify-center gap-x-8 gap-y-4 mb-10">
+          <button
+            onClick={() => navigate("/")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Página Inicial
+          </button>
+          <button
+            onClick={() => navigate("/linha-editorial")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Linha Editorial
+          </button>
+          <button
+            onClick={() => navigate("/ficha-tecnica")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Ficha Técnica e Contactos
+          </button>
+        </nav>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
-            <img src="/logo.png" alt="Sem Filtros" width={120} height={40} loading="lazy" className="h-10 w-auto object-contain" />
-            <span className="font-heading font-black text-xl text-foreground uppercase tracking-tight ml-2 hidden sm:inline">
-              Sem Filtros
-            </span>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            © 2026 Sem Filtros. Todos os direitos reservados.
-          </span>
-          <div className="flex items-center gap-4">
-            <a href="https://facebook.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Facebook">
-              <Facebook className="w-5 h-5" />
-            </a>
-            <a href="https://twitter.com/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="Twitter">
-              <Twitter className="w-5 h-5" />
-            </a>
-            <a href="https://linkedin.com/company/angolasemfiltros" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors" title="LinkedIn">
-              <Linkedin className="w-5 h-5" />
-            </a>
-            <a href="#" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors flex items-center gap-1" title="Ubuntu">
-              <Globe className="w-5 h-5" />
-              <span className="text-xs font-bold uppercase tracking-widest hidden sm:inline">Ubuntu</span>
-            </a>
-          </div>
+        {/* Secondary Links & Contacts */}
+        <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-white/60 text-xs">
+          <a href="mailto:angolasemfiltros@gmail.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
+            <Mail className="w-3.5 h-3.5" />
+            angolasemfiltros@gmail.com
+          </a>
+          <a href="https://wa.me/244952679780" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-white transition-colors">
+            <MessageSquare className="w-3.5 h-3.5" />
+            +244 952 679 780
+          </a>
+          <button onClick={() => navigate("/termos")} className="hover:text-white transition-colors">
+            Termos de Uso
+          </button>
+          <button onClick={() => navigate("/privacidade")} className="hover:text-white transition-colors">
+            Política de Privacidade
+          </button>
         </div>
+
+        {/* Copyright */}
+        <div className="text-center text-white/40 text-[11px] select-none">
+          <p>© {currentYear} Todos os Direitos Reservados. <span className="font-bold text-white/60">Portal A Denúncia.</span></p>
+        </div>
+
       </div>
     </footer>
   );

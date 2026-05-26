@@ -129,8 +129,6 @@ const ArticleDetail = () => {
                     onHeadlineClick={(item) => {
                         if (item.slug && item.categorySlug) {
                             navigate(`/${item.categorySlug}/${item.slug}`);
-                        } else {
-                            navigate(`/article/${item.id}`);
                         }
                     }}
                 />
@@ -166,8 +164,6 @@ const ArticleDetail = () => {
                 onHeadlineClick={(item) => {
                     if (item.slug && item.categorySlug) {
                         navigate(`/${item.categorySlug}/${item.slug}`);
-                    } else {
-                        navigate(`/article/${item.id}`);
                     }
                 }}
             />

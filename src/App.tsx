@@ -17,6 +17,8 @@ import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import VideosPage from "./pages/VideosPage";
 import ServicesPage from "./pages/ServicesPage";
+import EditorialLinePage from "./pages/EditorialLinePage";
+import TechnicalSheetPage from "./pages/TechnicalSheetPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
 import CookieConsent from "@/components/CookieConsent";
@@ -54,6 +56,8 @@ const App = () => (
                 <Route path="/publicidade" element={<AdvertisingPage />} />
                 <Route path="/videos" element={<VideosPage />} />
                 <Route path="/servicos" element={<ServicesPage />} />
+                <Route path="/linha-editorial" element={<EditorialLinePage />} />
+                <Route path="/ficha-tecnica" element={<TechnicalSheetPage />} />
                 <Route path="/termos" element={<TermsPage />} />
                 <Route path="/privacidade" element={<PrivacyPage />} />
                 <Route path="/article/:id" element={<ArticleDetail />} />

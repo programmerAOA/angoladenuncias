@@ -245,8 +245,6 @@ const Index = ({ defaultCategory }: IndexProps) => {
         onHeadlineClick={(item) => {
           if (item.slug && item.categorySlug) {
             navigate(`/${item.categorySlug}/${item.slug}`);
-          } else {
-            navigate(`/article/${item.id}`);
           }
         }}
       />
@@ -275,7 +273,11 @@ const Index = ({ defaultCategory }: IndexProps) => {
                 {filteredArticles.map((article, i) => (
                   <article
                     key={article.id}
-                    onClick={() => navigate(`/${article.categorySlug || 'geral'}/${article.slug || article.id}`)}
+                    onClick={() => {
+                      if (article.slug) {
+                        navigate(`/${article.categorySlug || 'geral'}/${article.slug}`);
+                      }
+                    }}
                     className="group cursor-pointer animate-fade-in"
                     style={{ animationDelay: `${i * 80}ms` }}
                   >
@@ -311,7 +313,11 @@ const Index = ({ defaultCategory }: IndexProps) => {
                 {selectedCategory === "Opinião" && opinions.map((opinion, i) => (
                   <article
                     key={opinion.id}
-                    onClick={() => navigate(`/opiniao/${opinion.slug || opinion.id}`)}
+                    onClick={() => {
+                      if (opinion.slug) {
+                        navigate(`/opiniao/${opinion.slug}`);
+                      }
+                    }}
                     className="group cursor-pointer animate-fade-in bg-secondary/30 p-4 border-l-4 border-primary"
                     style={{ animationDelay: `${(filteredArticles.length + i) * 80}ms` }}
                   >

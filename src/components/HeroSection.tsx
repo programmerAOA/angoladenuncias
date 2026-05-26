@@ -76,8 +76,6 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
             onClick={() => {
               if (article.slug && article.categorySlug) {
                 navigate(`/${article.categorySlug}/${article.slug}`);
-              } else {
-                navigate(`/article/${article.id}`);
               }
             }}
           >

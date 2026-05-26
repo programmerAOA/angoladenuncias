@@ -23,8 +23,6 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
   const handleNavigate = () => {
     if (article.slug && article.categorySlug) {
       navigate(`/${article.categorySlug}/${article.slug}`);
-    } else {
-      navigate(`/article/${article.id}`);
     }
   };
 
