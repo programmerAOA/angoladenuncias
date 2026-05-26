@@ -49,10 +49,13 @@ const OpinionDetail = () => {
         const fetchOpinion = async () => {
             setLoading(true);
             try {
-                const { data, error } = await withTimeout((supabase
-                    .from("opinion_articles")
-                    .select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords")
-                    .eq("id", id) as any).single()) as any;
+                const { data, error } = (await withTimeout(
+                    supabase
+                        .from("opinion_articles")
+                        .select("id, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords")
+                        .eq("id", id)
+                        .single()
+                )) as any;
 
                 if (error) throw error;
                 setOpinion(data);
