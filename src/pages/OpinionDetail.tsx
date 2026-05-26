@@ -124,8 +124,6 @@ const OpinionDetail = () => {
                     onHeadlineClick={(item) => {
                         if (item.slug && item.categorySlug) {
                             navigate(`/${item.categorySlug}/${item.slug}`);
-                        } else {
-                            navigate(`/article/${item.id}`);
                         }
                     }}
                 />
@@ -161,8 +159,6 @@ const OpinionDetail = () => {
                 onHeadlineClick={(item) => {
                     if (item.slug && item.categorySlug) {
                         navigate(`/${item.categorySlug}/${item.slug}`);
-                    } else {
-                        navigate(`/article/${item.id}`);
                     }
                 }}
             />
