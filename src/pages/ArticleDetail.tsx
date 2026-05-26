@@ -50,27 +50,13 @@ const ArticleDetail = () => {
         const fetchArticle = async () => {
             setLoading(true);
             try {
-                let query = supabase.from("news_articles").select("id, slug, title, summary, content, category, image_url, created_at, author, scheduled_at, seo_keywords");
-
-                if (id) {
-                    query = query.eq("id", id);
-                } else if (slug) {
-                    query = query.eq("slug", slug);
-                }
-
-                const { data, error } = await withTimeout((query as any).single()) as any;
+                const { data, error } = await withTimeout((supabase
+                    .from("news_articles")
+                    .select("id, title, summary, content, category, image_url, created_at, author, scheduled_at, seo_keywords")
+                    .eq("id", id) as any).single()) as any;
 
                 if (error) throw error;
                 setArticle(data);
-
-                // Canonicalize: if visited via legacy /article/UUID, redirect to slug URL
-                if (id && data.slug && data.category) {
-                    const catSlug = data.category.toLowerCase()
-                        .normalize('NFD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .replace(/\s+/g, '-');
-                    navigate(`/${catSlug}/${data.slug}`, { replace: true });
-                }
             } catch (err: any) {
                 console.error("Error fetching article:", err);
                 toast.error("Erro ao carregar o artigo: " + (err.message || "Não encontrado"));
@@ -154,9 +140,7 @@ const ArticleDetail = () => {
                 type="article"
                 publishedDate={article.scheduled_at || article.created_at}
                 category={article.category}
-                url={article.slug && article.category
-                    ? `https://www.semfiltros.com/${article.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')}/${article.slug}`
-                    : `https://www.semfiltros.com${window.location.pathname}`}
+                url={`https://www.semfiltros.com/article/${article.id}`}
                 keywords={article.seo_keywords ? article.seo_keywords.split(',').map((k: string) => k.trim()) : []}
             />
             <Header />
