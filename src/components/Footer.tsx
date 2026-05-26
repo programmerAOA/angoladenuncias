@@ -79,7 +79,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="text-center text-white/40 text-[11px] select-none">
-          <p>© {currentYear} Todos os Direitos Reservados. <span className="font-bold text-white/60">Portal A Denúncia.</span></p>
+          <p>© {currentYear} Todos os Direitos Reservados. <span className="font-bold text-white/60">Portal Sem Filtros.</span></p>
         </div>
 
       </div>
