@@ -394,6 +394,12 @@ const AdminPage = () => {
           toast.error("Erro ao carregar dados de visitas: " + visitError.message);
         }
         if (visitData) setSiteVisits(visitData);
+
+        // Also refresh total count for the summary cards
+        const { count, error: countError } = await supabase.from("site_visits").select("*", { count: 'exact', head: true });
+        if (!countError) {
+          setStats(prev => ({ ...prev, totalVisits: count || 0 }));
+        }
       }
 
       if (tab === "users") {
