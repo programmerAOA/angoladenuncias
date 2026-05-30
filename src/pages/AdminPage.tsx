@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw, Lock,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
-  ExternalLink, Clock
+  ExternalLink, Clock, ChevronDown, ChevronUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -156,6 +156,7 @@ const AdminPage = () => {
   const [validationMethod, setValidationMethod] = useState<"adsense" | "ads.txt" | "metatag">("adsense");
   const [validationContent, setValidationContent] = useState("");
   const [savingValidation, setSavingValidation] = useState(false);
+  const [visibleVisitsCount, setVisibleVisitsCount] = useState(10);
 
   // Ads
   const [advertisements, setAdvertisements] = useState<any[]>([]);
@@ -2052,7 +2053,7 @@ const AdminPage = () => {
                       </thead>
                       <tbody>
                         {siteVisits
-                          .slice(0, 20)
+                          .slice(0, visibleVisitsCount)
                           .map((v) => (
                             <tr key={v.id} className="border-b border-border/50 hover:bg-secondary/20">
                               <td className="px-6 py-4">
@@ -2091,6 +2092,27 @@ const AdminPage = () => {
                           ))}
                       </tbody>
                     </table>
+
+                    {siteVisits.length > 0 && (
+                      <div className="p-4 bg-secondary/10 border-t border-border flex justify-center gap-4">
+                        {visibleVisitsCount < siteVisits.length && (
+                          <button
+                            onClick={() => setVisibleVisitsCount(prev => Math.min(prev + 20, siteVisits.length))}
+                            className="text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-2"
+                          >
+                            Ver mais (+20) <ChevronDown className="w-3 h-3" />
+                          </button>
+                        )}
+                        {visibleVisitsCount > 10 && (
+                          <button
+                            onClick={() => setVisibleVisitsCount(10)}
+                            className="text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground flex items-center gap-2"
+                          >
+                            Ver menos <ChevronUp className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
