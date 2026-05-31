@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { categories } from "@/constants/categories";
-import { exportToJSON, exportToWordPressXML } from "@/lib/exportUtils";
+import { exportToJSON, exportToWordPressXML, exportToSQL } from "@/lib/exportUtils";
 
 type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter" | "authorized-services" | "backups";
 
@@ -3679,6 +3679,44 @@ const AdminPage = () => {
                       >
                         <Download className="w-4 h-4" />
                         Gerar XML
+                      </button>
+                    </div>
+
+                    {/* SQL Export */}
+                    <div className="bg-secondary/20 border border-border p-6 rounded-lg text-left group hover:border-primary/50 transition-all md:col-span-2">
+                      <div className="flex items-start justify-between mb-4">
+                        <Database className="w-6 h-6 text-green-500" />
+                        <span className="text-[10px] font-bold uppercase bg-green-500/10 text-green-500 px-2 py-0.5 rounded">Avançado</span>
+                      </div>
+                      <h4 className="font-bold text-foreground mb-2">Base de Dados (SQL)</h4>
+                      <p className="text-xs text-muted-foreground mb-6">
+                        Gera um ficheiro .sql com instruções INSERT compatíveis com PostgreSQL/Supabase. Esta é a representação mais fiel dos dados técnicos da base de dados.
+                      </p>
+                      <button
+                        onClick={async () => {
+                          toast.info("A gerar instruções SQL...");
+                          try {
+                            const [news, videos, opinions, settings] = await Promise.all([
+                              supabase.from("news_articles").select("*"),
+                              supabase.from("video_news").select("*"),
+                              supabase.from("opinion_articles").select("*"),
+                              supabase.from("system_settings").select("*")
+                            ]);
+                            exportToSQL({
+                              news: news.data || [],
+                              videos: videos.data || [],
+                              opinions: opinions.data || [],
+                              settings: settings.data || []
+                            });
+                            toast.success("Backup SQL descarregado!");
+                          } catch (err) {
+                            toast.error("Erro ao gerar SQL.");
+                          }
+                        }}
+                        className="w-full bg-green-600 text-white py-2.5 text-xs font-bold uppercase tracking-wider rounded border border-green-700 hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <HardDriveDownload className="w-4 h-4" />
+                        Baixar SQL (.sql)
                       </button>
                     </div>
                   </div>
