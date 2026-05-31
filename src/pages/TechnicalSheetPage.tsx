@@ -23,7 +23,7 @@ const TechnicalSheetPage = () => {
                         <div className="space-y-4">
                             <div>
                                 <p className="font-bold uppercase text-xs text-primary mb-0">Director Geral</p>
-                                <p className="text-base">Ivan Lima</p>
+                                <p className="text-base">Alexandre Lima</p>
                             </div>
                             <div>
                                 <p className="font-bold uppercase text-xs text-primary mb-0">Redacção</p>

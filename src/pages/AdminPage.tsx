@@ -6,14 +6,15 @@ import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw, Lock,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
-  ExternalLink, Clock, ChevronDown, ChevronUp
+  ExternalLink, Clock, ChevronDown, ChevronUp, Download, Database, HardDriveDownload
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { categories } from "@/constants/categories";
+import { exportToJSON, exportToWordPressXML } from "@/lib/exportUtils";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter" | "authorized-services";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter" | "authorized-services" | "backups";
 
 interface Article {
   id: string;
@@ -1323,7 +1324,8 @@ const AdminPage = () => {
       { id: "ads" as Tab, label: "Publicidade", icon: Megaphone },
       { id: "users" as Tab, label: "Utilizadores", icon: Users },
       { id: "newsletter" as Tab, label: "Newsletter", icon: Mail },
-      { id: "authorized-services" as Tab, label: "Serviços Autorizados", icon: Lock }
+      { id: "authorized-services" as Tab, label: "Serviços Autorizados", icon: Lock },
+      { id: "backups" as Tab, label: "Backups", icon: HardDriveDownload }
     ] : []),
   ].filter(tab => {
     if (isAdmin) return true;
@@ -3587,6 +3589,107 @@ const AdminPage = () => {
                         )}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+
+          {/* Backup & Export Section */}
+          {
+            activeTab === "backups" && (
+              <div className="space-y-6">
+                <div className="bg-card border border-border p-8 rounded-xl shadow-sm text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <HardDriveDownload className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="font-heading text-2xl font-bold text-foreground mb-2">Cópia de Segurança & Exportação</h3>
+                  <p className="text-muted-foreground text-sm mb-10 max-w-lg mx-auto">
+                    Exporte o conteúdo do seu portal para salvaguarda ou migração. Selecione o formato desejado abaixo para iniciar o download.
+                  </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                    {/* JSON Export */}
+                    <div className="bg-secondary/20 border border-border p-6 rounded-lg text-left group hover:border-primary/50 transition-all">
+                      <div className="flex items-start justify-between mb-4">
+                        <Database className="w-6 h-6 text-primary" />
+                        <span className="text-[10px] font-bold uppercase bg-primary/10 text-primary px-2 py-0.5 rounded">Recomendado</span>
+                      </div>
+                      <h4 className="font-bold text-foreground mb-2">Backup Completo (JSON)</h4>
+                      <p className="text-xs text-muted-foreground mb-6">
+                        Descarrega todos os artigos, vídeos, opiniões e configurações do sistema num único ficheiro estruturado.
+                      </p>
+                      <button
+                        onClick={async () => {
+                          toast.info("A preparar backup JSON...");
+                          try {
+                            const [news, videos, opinions, settings] = await Promise.all([
+                              supabase.from("news_articles").select("*"),
+                              supabase.from("video_news").select("*"),
+                              supabase.from("opinion_articles").select("*"),
+                              supabase.from("system_settings").select("*")
+                            ]);
+                            exportToJSON({
+                              news: news.data || [],
+                              videos: videos.data || [],
+                              opinions: opinions.data || [],
+                              settings: settings.data || []
+                            });
+                            toast.success("Backup JSON descarregado!");
+                          } catch (err) {
+                            toast.error("Erro ao gerar backup.");
+                          }
+                        }}
+                        className="w-full bg-primary text-primary-foreground py-2 text-xs font-bold uppercase tracking-wider rounded border border-primary hover:opacity-90 flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Baixar JSON
+                      </button>
+                    </div>
+
+                    {/* WordPress Export */}
+                    <div className="bg-secondary/20 border border-border p-6 rounded-lg text-left group hover:border-primary/50 transition-all">
+                      <div className="flex items-start justify-between mb-4">
+                        <Globe className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <h4 className="font-bold text-foreground mb-2">WordPress (XML/WXR)</h4>
+                      <p className="text-xs text-muted-foreground mb-6">
+                        Formato compatível com a ferramenta de importação do WordPress. Ideal para mover o conteúdo para blogs.
+                      </p>
+                      <button
+                        onClick={async () => {
+                          toast.info("A processar XML para WordPress...");
+                          try {
+                            const [news, opinions] = await Promise.all([
+                              supabase.from("news_articles").select("*"),
+                              supabase.from("opinion_articles").select("*")
+                            ]);
+                            exportToWordPressXML({
+                              news: news.data || [],
+                              videos: [],
+                              opinions: opinions.data || [],
+                              settings: []
+                            });
+                            toast.success("Ficheiro XML gerado!");
+                          } catch (err) {
+                            toast.error("Erro ao gerar XML.");
+                          }
+                        }}
+                        className="w-full bg-white text-black py-2 text-xs font-bold uppercase tracking-wider rounded border border-border hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Gerar XML
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-12 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-md max-w-lg mx-auto text-left">
+                    <p className="text-[10px] text-yellow-500 font-bold uppercase mb-1 flex items-center gap-2">
+                      <Shield className="w-3 h-3" /> Aviso de Segurança
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Os ficheiros de backup contêm os dados públicos e administrativos do portal. Guarde-os num local seguro e não os partilhe com terceiros não autorizados.
+                    </p>
                   </div>
                 </div>
               </div>
