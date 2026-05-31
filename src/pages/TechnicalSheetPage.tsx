@@ -31,7 +31,7 @@ const TechnicalSheetPage = () => {
                             </div>
                             <div>
                                 <p className="font-bold uppercase text-xs text-primary mb-0">Propriedade</p>
-                                <p className="text-base italic">ByteKwanza</p>
+                                <p className="text-base italic">BYTEKWANZA - PRESTAÇÃO DE SERVIÇOS , LDA.</p>
                             </div>
                             <div>
                                 <p className="font-bold uppercase text-xs text-primary mb-0">NIF</p>
