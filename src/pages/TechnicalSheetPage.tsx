@@ -30,7 +30,7 @@ const TechnicalSheetPage = () => {
                                 <p className="text-base shadow-sm">Equipa Sem Filtros</p>
                             </div>
                             <div>
-                                <p className="font-bold uppercase text-xs text-primary mb-0">Propriedade</p>
+                                <p className="font-bold uppercase text-xs text-primary mb-0">Desenvolvido por</p>
                                 <p className="text-base italic">BYTEKWANZA - PRESTAÇÃO DE SERVIÇOS , LDA.</p>
                             </div>
                             <div>
