@@ -1,5 +1,5 @@
 export const categories = [
-    "Destaque", "Sociedade", "Política", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Opinião", "Saúde"
+    "Destaque", "Sociedade", "Crimes", "Política", "Economia", "Internacional", "Desporto", "Cultura", "Tecnologia", "Opinião", "Saúde"
 ];
 
 export const getCategorySlug = (category: string) => {
