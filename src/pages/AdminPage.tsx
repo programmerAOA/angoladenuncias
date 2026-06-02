@@ -248,7 +248,7 @@ const AdminPage = () => {
     if (!loading && user && !isAdmin && !isEditor) navigate("/");
   }, [user, isAdmin, loading, navigate]);
 
-  const allCategories = ["Destaque", "Política", "Sociedade", "Economia", "Mundo", "Desporto", "Cultura", "Tecnologia", "Saúde", "Opinião"];
+  const allCategories = categories;
   const displayedCategories = useMemo(() => {
     return isAdmin || (isEditor && allowedCategories.length === 0)
       ? allCategories
