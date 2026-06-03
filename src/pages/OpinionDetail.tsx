@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
-import { ArrowLeft, Quote, Share2, User } from "lucide-react";
+import { ArrowLeft, Headphones, Quote, Share2, User } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -49,7 +49,7 @@ const OpinionDetail = () => {
         const fetchOpinion = async () => {
             setLoading(true);
             try {
-                let query = supabase.from("opinion_articles").select("id, slug, title, author, content, avatar_url, created_at, scheduled_at, seo_keywords");
+                let query = supabase.from("opinion_articles").select("id, slug, title, author, content, avatar_url, audio_url, created_at, scheduled_at, seo_keywords");
 
                 if (id) {
                     query = query.eq("id", id);
@@ -193,6 +193,18 @@ const OpinionDetail = () => {
                             </div>
                         </div>
                     </header>
+
+                    {opinion.audio_url && (
+                        <div className="w-full mb-10 bg-secondary/30 p-4 rounded-lg border border-border">
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                                <Headphones className="w-3 h-3" /> Ouvir esta opinião
+                            </p>
+                            <audio controls className="w-full h-10 accent-primary">
+                                <source src={opinion.audio_url} type="audio/mpeg" />
+                                Seu navegador não suporta a reprodução de áudio.
+                            </audio>
+                        </div>
+                    )}
 
                     <div className="relative">
                         <Quote className="absolute -top-6 -left-6 w-12 h-12 text-primary/10 -z-10" />

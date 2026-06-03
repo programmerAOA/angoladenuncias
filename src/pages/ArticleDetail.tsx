@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
-import { ArrowLeft, User, Calendar, Share2 } from "lucide-react";
+import { ArrowLeft, User, Calendar, Share2, Headphones } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -50,7 +50,7 @@ const ArticleDetail = () => {
         const fetchArticle = async () => {
             setLoading(true);
             try {
-                let query = supabase.from("news_articles").select("id, slug, title, summary, content, category, image_url, created_at, author, scheduled_at, seo_keywords");
+                let query = supabase.from("news_articles").select("id, slug, title, summary, content, category, image_url, audio_url, created_at, author, scheduled_at, seo_keywords");
 
                 if (id) {
                     query = query.eq("id", id);
@@ -202,6 +202,18 @@ const ArticleDetail = () => {
                             <Share2 className="w-5 h-5" />
                         </button>
                     </div>
+
+                    {article.audio_url && (
+                        <div className="w-full mb-8 bg-secondary/30 p-4 rounded-lg border border-border">
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                                <Headphones className="w-3 h-3" /> Ouvir esta matéria
+                            </p>
+                            <audio controls className="w-full h-10 accent-primary">
+                                <source src={article.audio_url} type="audio/mpeg" />
+                                Seu navegador não suporta a reprodução de áudio.
+                            </audio>
+                        </div>
+                    )}
 
                     {article.image_url && (
                         <div className="mb-8">

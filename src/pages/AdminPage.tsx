@@ -23,6 +23,7 @@ interface Article {
   content?: string;
   category: string;
   image_url?: string;
+  audio_url?: string;
   author: string | null;
   is_hero?: boolean | null;
   is_breaking?: boolean | null;
@@ -60,6 +61,7 @@ interface Opinion {
   content?: string;
   excerpt?: string;
   avatar_url?: string;
+  audio_url?: string;
   published: boolean | null;
   scheduled_at?: string | null;
   created_at: string;
@@ -192,8 +194,9 @@ const AdminPage = () => {
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
 
   // Article form
-  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
+  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", audio_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
+  const [articleAudioFile, setArticleAudioFile] = useState<File | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
   const [showArticleForm, setShowArticleForm] = useState(false);
 
@@ -204,8 +207,9 @@ const AdminPage = () => {
   const [showVideoForm, setShowVideoForm] = useState(false);
 
   // Opinion form
-  const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "", scheduled_at: "", seo_keywords: "" });
+  const [opinionForm, setOpinionForm] = useState({ title: "", author: "", content: "", excerpt: "", avatar_url: "", audio_url: "", scheduled_at: "", seo_keywords: "" });
   const [opinionAvatarFile, setOpinionAvatarFile] = useState<File | null>(null);
+  const [opinionAudioFile, setOpinionAudioFile] = useState<File | null>(null);
   const [editingOpinion, setEditingOpinion] = useState<string | null>(null);
   const [showOpinionForm, setShowOpinionForm] = useState(false);
 
@@ -651,12 +655,20 @@ const AdminPage = () => {
     console.log("[SaveArticle] Starting...", { articleForm, editingArticle });
     try {
       let currentImageUrl = articleForm.image_url;
+      let currentAudioUrl = articleForm.audio_url;
 
       if (articleImageFile) {
         console.log("[SaveArticle] Uploading image...", articleImageFile.name);
         toast.info("A carregar imagem...");
         currentImageUrl = await withTimeout(uploadFile(articleImageFile), 180000);
         console.log("[SaveArticle] Image upload success:", currentImageUrl);
+      }
+
+      if (articleAudioFile) {
+        console.log("[SaveArticle] Uploading audio...", articleAudioFile.name);
+        toast.info("A carregar áudio...");
+        currentAudioUrl = await withTimeout(uploadFile(articleAudioFile), 180000);
+        console.log("[SaveArticle] Audio upload success:", currentAudioUrl);
       }
 
       // Safety check: verify if the category is allowed for this editor
@@ -677,6 +689,7 @@ const AdminPage = () => {
         category: articleForm.category,
         author: articleForm.author,
         image_url: currentImageUrl,
+        audio_url: currentAudioUrl,
         is_hero: articleForm.is_hero,
         is_breaking: articleForm.is_breaking,
         published: true,
@@ -720,7 +733,8 @@ const AdminPage = () => {
         setShowArticleForm(false);
         setEditingArticle(null);
         setArticleImageFile(null);
-        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
+        setArticleAudioFile(null);
+        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", audio_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
 
         // Reload data
         loadData("articles");
@@ -807,12 +821,20 @@ const AdminPage = () => {
     console.log("[SaveOpinion] Starting...", { opinionForm, editingOpinion });
     try {
       let currentAvatarUrl = opinionForm.avatar_url;
+      let currentAudioUrl = opinionForm.audio_url;
 
       if (opinionAvatarFile) {
         console.log("[SaveOpinion] Uploading avatar...", opinionAvatarFile.name);
         toast.info("A carregar avatar...");
         currentAvatarUrl = await uploadFile(opinionAvatarFile);
         console.log("[SaveOpinion] Avatar upload success:", currentAvatarUrl);
+      }
+
+      if (opinionAudioFile) {
+        console.log("[SaveOpinion] Uploading audio...", opinionAudioFile.name);
+        toast.info("A carregar áudio...");
+        currentAudioUrl = await uploadFile(opinionAudioFile);
+        console.log("[SaveOpinion] Audio upload success:", currentAudioUrl);
       }
 
       // Scheduling logic for opinions
@@ -822,6 +844,7 @@ const AdminPage = () => {
         title: opinionForm.title,
         author: opinionForm.author,
         avatar_url: currentAvatarUrl,
+        audio_url: currentAudioUrl,
         excerpt: opinionForm.excerpt,
         content: opinionForm.content,
         published: true,
@@ -854,7 +877,8 @@ const AdminPage = () => {
         setShowOpinionForm(false);
         setEditingOpinion(null);
         setOpinionAvatarFile(null);
-        setOpinionForm({ title: "", author: "", avatar_url: "", excerpt: "", content: "", scheduled_at: "", seo_keywords: "" });
+        setOpinionAudioFile(null);
+        setOpinionForm({ title: "", author: "", avatar_url: "", audio_url: "", excerpt: "", content: "", scheduled_at: "", seo_keywords: "" });
         loadData("opinions");
       }
     } catch (err: any) {
@@ -1252,6 +1276,7 @@ const AdminPage = () => {
       category: aiWorkspace.category,
       author: "Redacção / IA",
       image_url: "",
+      audio_url: "",
       is_hero: false,
       is_breaking: false,
       scheduled_at: "",
@@ -1614,6 +1639,28 @@ const AdminPage = () => {
                         </p>
                       )}
                     </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Áudio da Matéria (Opcional)</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={e => setArticleAudioFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">Selecione um ficheiro de áudio (MP3/WAV)</p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={articleForm.audio_url}
+                            onChange={e => setArticleForm(f => ({ ...f, audio_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou cole o URL do áudio..."
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
                     <button
@@ -1692,7 +1739,8 @@ const AdminPage = () => {
                                   scheduled_at: article.scheduled_at
                                     ? new Date(article.scheduled_at).toISOString().slice(0, 16)
                                     : "",
-                                  seo_keywords: article.seo_keywords || ""
+                                  seo_keywords: article.seo_keywords || "",
+                                  audio_url: article.audio_url || ""
                                 });
                                 setShowArticleForm(true);
                               }}
@@ -2480,22 +2528,46 @@ const AdminPage = () => {
                       />
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> Agendar Publicação (opcional)
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={opinionForm.scheduled_at}
-                      min={new Date().toISOString().slice(0, 16)}
-                      onChange={e => setOpinionForm(f => ({ ...f, scheduled_at: e.target.value }))}
-                      className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    />
-                    {opinionForm.scheduled_at && new Date(opinionForm.scheduled_at) > new Date() && (
-                      <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
-                        <Clock className="w-3 h-3" /> A opinião ficará oculta até {new Date(opinionForm.scheduled_at).toLocaleString('pt-PT')}
-                      </p>
-                    )}
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> Agendar Publicação (opcional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={opinionForm.scheduled_at}
+                        min={new Date().toISOString().slice(0, 16)}
+                        onChange={e => setOpinionForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      />
+                      {opinionForm.scheduled_at && new Date(opinionForm.scheduled_at) > new Date() && (
+                        <p className="text-xs text-amber-400 mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> A opinião ficará oculta até {new Date(opinionForm.scheduled_at).toLocaleString('pt-PT')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Áudio da Opinião (Opcional)</label>
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                          <input
+                            type="file"
+                            accept="audio/*"
+                            onChange={e => setOpinionAudioFile(e.target.files?.[0] || null)}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:uppercase file:cursor-pointer"
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">Selecione um ficheiro de áudio (MP3/WAV)</p>
+                        </div>
+                        <div className="flex-1">
+                          <input
+                            value={opinionForm.audio_url}
+                            onChange={e => setOpinionForm(f => ({ ...f, audio_url: e.target.value }))}
+                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                            placeholder="Ou cole o URL do áudio..."
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <div className="flex items-center gap-3 mt-4">
                     <button
@@ -2567,7 +2639,8 @@ const AdminPage = () => {
                                   scheduled_at: op.scheduled_at
                                     ? new Date(op.scheduled_at).toISOString().slice(0, 16)
                                     : "",
-                                  seo_keywords: op.seo_keywords || ""
+                                  seo_keywords: op.seo_keywords || "",
+                                  audio_url: op.audio_url || ""
                                 });
                                 setShowOpinionForm(true);
                               }}
