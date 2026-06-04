@@ -5,10 +5,7 @@ import { toast } from "sonner";
 // Lista de URLs possíveis para a Rádio Girassol
 // Lista de URLs possíveis para a Rádio
 const RADIOS = [
-    { name: "Rádio Nacional", url: "https://paineldj5.com.br:20087/stream" },
-    { name: "Sem Filtros FM", url: "https://listen.radioking.com/radio/882461/stream/952706" },
-    { name: "MFM", url: "https://centova87.instainternet.com/proxy/mfm?mp=/stream" },
-    { name: "Rádio 5", url: "https://paineldj5.com.br:20088/stream" }
+    { name: "Sem Filtros FM", url: "https://listen.radioking.com/radio/882461/stream/952706" }
 ];
 
 const RadioPlayer = () => {
@@ -172,23 +169,25 @@ const RadioPlayer = () => {
                 )}
             </div>
 
-            {/* Station Selector */}
-            <div className="bg-zinc-800/50 p-2 grid grid-cols-4 gap-1 border-b border-white/5">
-                {RADIOS.map((radio, idx) => (
-                    <button
-                        key={radio.name}
-                        onClick={() => switchRadio(idx)}
-                        className={`py-1.5 px-1 rounded-lg text-[9px] font-bold uppercase tracking-tight transition-all leading-tight text-center flex flex-col items-center justify-center min-h-[40px] ${activeRadioIndex === idx
-                            ? "bg-red-600 text-white shadow-lg shadow-red-600/20"
-                            : "bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
-                            }`}
-                    >
-                        {radio.name.split(' ').map((word, i) => (
-                            <span key={i} className="block">{word}</span>
-                        ))}
-                    </button>
-                ))}
-            </div>
+            {/* Station Selector - Only show if there's more than one station */}
+            {RADIOS.length > 1 && (
+                <div className="bg-zinc-800/50 p-2 grid grid-cols-4 gap-1 border-b border-white/5">
+                    {RADIOS.map((radio, idx) => (
+                        <button
+                            key={radio.name}
+                            onClick={() => switchRadio(idx)}
+                            className={`py-1.5 px-1 rounded-lg text-[9px] font-bold uppercase tracking-tight transition-all leading-tight text-center flex flex-col items-center justify-center min-h-[40px] ${activeRadioIndex === idx
+                                ? "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                                : "bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                                }`}
+                        >
+                            {radio.name.split(' ').map((word, i) => (
+                                <span key={i} className="block">{word}</span>
+                            ))}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Controls */}
             <div className="bg-zinc-900 p-4">
