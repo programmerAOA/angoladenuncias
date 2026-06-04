@@ -61,9 +61,9 @@ const Footer = () => {
 
         {/* Secondary Links & Contacts */}
         <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-white/60 text-xs">
-          <a href="mailto:angolasemfiltros@gmail.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
+          <a href="mailto:redaccao@semfiltros.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
             <Mail className="w-3.5 h-3.5" />
-            angolasemfiltros@gmail.com
+            redaccao@semfiltros.com
           </a>
           <a href="https://wa.me/244952679780" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-white transition-colors">
             <MessageSquare className="w-3.5 h-3.5" />

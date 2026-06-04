@@ -50,8 +50,8 @@ const TechnicalSheetPage = () => {
                             </div>
                             <div>
                                 <p className="font-bold text-sm">E-mail</p>
-                                <a href="mailto:angolasemfiltros@gmail.com" className="text-muted-foreground hover:text-primary transition-colors">
-                                    angolasemfiltros@gmail.com
+                                <a href="mailto:redaccao@semfiltros.com" className="text-muted-foreground hover:text-primary transition-colors">
+                                    redaccao@semfiltros.com
                                 </a>
                             </div>
                         </div>

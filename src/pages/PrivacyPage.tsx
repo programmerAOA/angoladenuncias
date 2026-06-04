@@ -83,7 +83,7 @@ const PrivacyPage = () => {
                         </p>
                         <div className="mt-6">
                             <a
-                                href="mailto:angolasemfiltros@gmail.com"
+                                href="mailto:redaccao@semfiltros.com"
                                 className="inline-block px-6 py-3 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition-colors"
                             >
                                 Solicitar Remoção de Dados
