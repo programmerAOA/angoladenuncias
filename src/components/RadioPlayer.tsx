@@ -16,6 +16,7 @@ const RadioPlayer = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isExpanded, setIsExpanded] = useState(false);
     const [volume, setVolume] = useState(0.7);
+    const [currentTrack, setCurrentTrack] = useState<{ title: string; artist: string | null; cover: string | null } | null>(null);
 
     useEffect(() => {
         const audio = new Audio();
@@ -45,6 +46,32 @@ const RadioPlayer = () => {
             audio.removeEventListener("error", handleError);
         };
     }, [activeRadioIndex]);
+
+    useEffect(() => {
+        const fetchCurrentTrack = async () => {
+            try {
+                const response = await fetch("https://www.radioking.com/widgets/currenttrack.php?radio=882461&format=json");
+                if (response.ok) {
+                    const data = await response.json();
+                    setCurrentTrack({
+                        title: data.title,
+                        artist: data.artist,
+                        cover: data.cover
+                    });
+                }
+            } catch (err) {
+                console.error("Error fetching current track:", err);
+            }
+        };
+
+        if (isPlaying && activeRadioIndex === 0) { // Only for Sem Filtros FM
+            fetchCurrentTrack();
+            const interval = setInterval(fetchCurrentTrack, 30000); // 30s
+            return () => clearInterval(interval);
+        } else {
+            setCurrentTrack(null);
+        }
+    }, [isPlaying, activeRadioIndex]);
 
     const togglePlay = () => {
         const audio = audioRef.current;
@@ -151,10 +178,18 @@ const RadioPlayer = () => {
                         )}
                     </div>
                     <div className="flex-1">
-                        <h3 className="text-white font-bold text-sm tracking-wide leading-tight">{RADIOS[activeRadioIndex].name}</h3>
-                        <p className="text-white/70 text-[10px] uppercase font-bold tracking-tighter mt-0.5">
-                            {isPlaying ? "🔴 AO VIVO" : isLoading ? "A conectar..." : "Sintonizar"}
-                        </p>
+                        <h3 className="text-white font-bold text-[13px] tracking-wide leading-tight line-clamp-1">
+                            {currentTrack?.title || RADIOS[activeRadioIndex].name}
+                        </h3>
+                        {currentTrack?.artist ? (
+                            <p className="text-white/60 text-[10px] line-clamp-1 italic font-medium">
+                                por {currentTrack.artist}
+                            </p>
+                        ) : (
+                            <p className="text-white/70 text-[10px] uppercase font-bold tracking-tighter mt-0.5">
+                                {isPlaying ? "🔴 AO VIVO" : isLoading ? "A conectar..." : "Sintonizar"}
+                            </p>
+                        )}
                     </div>
                 </div>
 
