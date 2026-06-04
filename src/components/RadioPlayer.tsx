@@ -169,27 +169,32 @@ const RadioPlayer = () => {
                     <X className="w-4 h-4" />
                 </button>
                 <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <div className={`w-12 h-12 rounded-full bg-white/15 flex items-center justify-center backdrop-blur-sm ${isPlaying ? "ring-2 ring-white/40 ring-offset-2 ring-offset-transparent" : ""}`}>
-                            <Radio className={`w-6 h-6 text-white ${isPlaying ? "animate-pulse" : ""}`} />
+                    <div className="relative group/cover">
+                        <div className={`w-12 h-12 rounded-full bg-white/15 flex items-center justify-center backdrop-blur-sm overflow-hidden ${isPlaying ? "ring-2 ring-white/40 ring-offset-2 ring-offset-transparent" : ""}`}>
+                            {currentTrack?.cover ? (
+                                <img src={currentTrack.cover} alt="Cover" className="w-full h-full object-cover animate-fade-in" />
+                            ) : (
+                                <Radio className={`w-6 h-6 text-white ${isPlaying ? "animate-pulse" : ""}`} />
+                            )}
                         </div>
                         {isPlaying && (
                             <span className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-red-600 animate-pulse" />
                         )}
                     </div>
-                    <div className="flex-1">
-                        <h3 className="text-white font-bold text-[13px] tracking-wide leading-tight line-clamp-1">
-                            {currentTrack?.title || RADIOS[activeRadioIndex].name}
+                    <div className="flex-1 overflow-hidden">
+                        <h3 className="text-white font-bold text-[11px] uppercase tracking-wider opacity-70 mb-0.5">
+                            {RADIOS[activeRadioIndex].name}
                         </h3>
-                        {currentTrack?.artist ? (
-                            <p className="text-white/60 text-[10px] line-clamp-1 italic font-medium">
-                                por {currentTrack.artist}
-                            </p>
-                        ) : (
-                            <p className="text-white/70 text-[10px] uppercase font-bold tracking-tighter mt-0.5">
-                                {isPlaying ? "🔴 AO VIVO" : isLoading ? "A conectar..." : "Sintonizar"}
-                            </p>
-                        )}
+                        <div className="flex flex-col">
+                            <h4 className="text-white font-black text-[14px] tracking-tight leading-tight line-clamp-1">
+                                {currentTrack?.title || (isPlaying ? "Emissão em directo" : "Sintonizar")}
+                            </h4>
+                            {currentTrack?.artist && (
+                                <p className="text-white/80 text-[11px] line-clamp-1 font-medium mt-0.5">
+                                    {currentTrack.artist}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 </div>
 
