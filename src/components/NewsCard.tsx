@@ -42,7 +42,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
         />
         <div className="flex flex-col justify-center min-w-0">
           <span className="news-category-badge mb-1 self-start text-[10px]">{article.category}</span>
-          <h4 className="news-headline news-headline-hover text-sm line-clamp-2">
+          <h4 className="news-headline news-headline-hover text-sm line-clamp-3 sm:line-clamp-2">
             {article.title}
           </h4>
           <span className="news-timestamp mt-1">{article.timestamp}</span>
@@ -67,7 +67,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
         />
         <div className="flex flex-col justify-center min-w-0">
           <span className="news-category-badge mb-2 self-start">{article.category}</span>
-          <h3 className="news-headline news-headline-hover text-base sm:text-lg line-clamp-2">
+          <h3 className="news-headline news-headline-hover text-base sm:text-lg line-clamp-3 sm:line-clamp-2">
             {article.title}
           </h3>
           <p className="text-sm text-muted-foreground mt-1 line-clamp-2 hidden sm:block">
@@ -97,7 +97,7 @@ const NewsCard = ({ article, variant = "default" }: NewsCardProps) => {
       </div>
       <div className="pt-3">
         <span className="news-category-badge mb-2 inline-block">{article.category}</span>
-        <h3 className="news-headline news-headline-hover text-lg leading-snug">
+        <h3 className="news-headline news-headline-hover text-base sm:text-lg leading-snug line-clamp-4">
           {article.title}
         </h3>
         <p className="text-sm text-muted-foreground mt-2 line-clamp-2">

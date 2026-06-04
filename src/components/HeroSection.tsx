@@ -92,18 +92,18 @@ const HeroSection = ({ heroArticles = [], sideArticles = [] }: HeroSectionProps)
               {/* Gradient overlay for text legibility */}
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
               {/* Text overlay on image */}
-              <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-                <span className="news-category-badge mb-2 inline-block">{article.category}</span>
-                <h2 className="text-white font-heading font-black text-xl sm:text-2xl md:text-3xl leading-tight drop-shadow-lg">
+              <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                <span className="news-category-badge mb-1.5 inline-block text-[10px] sm:text-xs">{article.category}</span>
+                <h2 className="text-white font-heading font-black text-lg sm:text-2xl md:text-3xl leading-[1.1] drop-shadow-xl line-clamp-3 sm:line-clamp-none">
                   {article.title}
                 </h2>
-                <p className="text-white/80 mt-2 text-sm leading-relaxed max-w-2xl line-clamp-2 drop-shadow">
+                <p className="text-white/90 mt-2 text-sm leading-relaxed max-w-2xl line-clamp-2 drop-shadow hidden sm:block">
                   {article.summary}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-white/70 font-medium">{article.author}</span>
+                  <span className="text-[10px] sm:text-xs text-white/80 font-medium">{article.author}</span>
                   <span className="text-white/50">·</span>
-                  <span className="text-xs text-white/60">{article.timestamp}</span>
+                  <span className="text-[10px] sm:text-xs text-white/70">{article.timestamp}</span>
                 </div>
               </div>
             </div>
