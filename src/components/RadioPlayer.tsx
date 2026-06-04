@@ -6,7 +6,7 @@ import { toast } from "sonner";
 // Lista de URLs possíveis para a Rádio
 const RADIOS = [
     { name: "Rádio Nacional", url: "https://paineldj5.com.br:20087/stream" },
-    { name: "Girassol FM", url: "/api/radio-stream" },
+    { name: "Sem Filtros FM", url: "https://listen.radioking.com/radio/882461/stream/952706" },
     { name: "MFM", url: "https://centova87.instainternet.com/proxy/mfm?mp=/stream" },
     { name: "Rádio 5", url: "https://paineldj5.com.br:20088/stream" }
 ];

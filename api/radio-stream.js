@@ -1,4 +1,4 @@
-import http from 'http';
+import https from 'https';
 
 export const config = {
     runtime: 'nodejs',
@@ -20,9 +20,9 @@ export default function handler(req, res) {
         return;
     }
 
-    const streamUrl = 'http://102.222.150.46:8800/GirassolFM';
+    const streamUrl = 'https://listen.radioking.com/radio/882461/stream/952706';
 
-    const proxyReq = http.get(streamUrl, { timeout: 15000 }, (proxyRes) => {
+    const proxyReq = https.get(streamUrl, { timeout: 15000 }, (proxyRes) => {
         // Forward content-type and other relevant headers
         const contentType = proxyRes.headers['content-type'] || 'audio/mpeg';
         res.setHeader('Content-Type', contentType);
