@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2 } from "lucide-react";
+import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2, ChevronDown, Square } from "lucide-react";
 import { toast } from "sonner";
 
 // Lista de URLs possíveis para a Rádio Girassol
@@ -146,12 +146,17 @@ const RadioPlayer = () => {
         return (
             <button
                 onClick={() => setIsExpanded(true)}
-                className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-4 py-3 rounded-full shadow-2xl hover:shadow-red-500/25 hover:scale-105 transition-all duration-300 group"
-                title="Ouvir Rádio"
+                className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 flex items-center gap-2 bg-gradient-to-r from-red-600 to-red-700 text-white px-3 py-2.5 sm:px-4 sm:py-3 rounded-full shadow-2xl hover:shadow-red-500/25 hover:scale-105 transition-all duration-300 group"
+                title="Abrir Rádio"
             >
-                <Radio className={`w-5 h-5 ${isPlaying ? "animate-pulse" : ""}`} />
-                <span className="text-sm font-semibold tracking-wide">
-                    {isPlaying ? "🔴 AO VIVO" : "Rádio"}
+                <div className="relative">
+                    <Radio className={`w-4 h-4 sm:w-5 sm:h-5 ${isPlaying ? "animate-pulse" : ""}`} />
+                    {isPlaying && (
+                        <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping" />
+                    )}
+                </div>
+                <span className="text-xs sm:text-sm font-semibold tracking-wide">
+                    {isPlaying ? "AO VIVO" : "Rádio"}
                 </span>
             </button>
         );
@@ -159,15 +164,27 @@ const RadioPlayer = () => {
 
     // Expanded: full player
     return (
-        <div className="fixed bottom-6 right-6 z-50 w-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/40 animate-in slide-in-from-bottom-4 duration-300">
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[85vw] sm:w-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/40 animate-in slide-in-from-bottom-4 duration-300">
             {/* Header */}
             <div className="bg-gradient-to-r from-red-700 via-red-600 to-orange-600 p-4 relative">
-                <button
-                    onClick={() => setIsExpanded(false)}
-                    className="absolute top-3 right-3 text-white/70 hover:text-white transition-colors"
-                >
-                    <X className="w-4 h-4" />
-                </button>
+                <div className="absolute top-2 right-2 flex items-center gap-1">
+                    <button
+                        onClick={() => setIsExpanded(false)}
+                        className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                        title="Minimizar"
+                    >
+                        <ChevronDown className="w-5 h-5" />
+                    </button>
+                    {isPlaying && (
+                        <button
+                            onClick={() => { togglePlay(); setIsExpanded(false); }}
+                            className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+                            title="Parar Rádio"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
                 <div className="flex items-center gap-3">
                     <div className="relative group/cover">
                         <div className={`w-12 h-12 rounded-full bg-white/15 flex items-center justify-center backdrop-blur-sm overflow-hidden ${isPlaying ? "ring-2 ring-white/40 ring-offset-2 ring-offset-transparent" : ""}`}>
