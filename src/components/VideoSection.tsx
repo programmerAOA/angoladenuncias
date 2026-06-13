@@ -5,6 +5,9 @@ import { getYoutubeId } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import Hls from "hls.js";
 import AdSquare from "./AdSquare";
+import ReactPlayer from "react-player";
+
+const ReactPlayerComponent = ReactPlayer as any;
 
 export interface VideoItem {
   id: string;
@@ -98,10 +101,19 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
     }
   }, [videos, featuredVideo]);
 
+  // Autoplay para directos (live streams)
+  const rawUrl = featuredVideo?.video_url || featuredVideo?.videoUrl || "";
+  const isLive = rawUrl.includes('/live/') || rawUrl.includes('youtube.com/live/') || featuredVideo?.category?.toLowerCase() === 'directo';
+
+  useEffect(() => {
+    if (isLive && featuredVideo && !playing) {
+      setPlaying(true);
+    }
+  }, [isLive, featuredVideo?.id]);
+
   if (videos.length === 0 || !featuredVideo) return null;
 
   // Extrair ID do vídeo se for YouTube
-  const rawUrl = featuredVideo.video_url || featuredVideo.videoUrl || "";
   const youtubeId = getYoutubeId(rawUrl);
   const videoType = getVideoType(rawUrl);
 
@@ -109,13 +121,27 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const renderPlayer = () => {
     if (videoType === "youtube" && youtubeId) {
       return (
-        <iframe
-          src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1`}
-          title={featuredVideo.title}
-          className="w-full h-full border-0"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
+        <div className="w-full h-full bg-black flex items-center justify-center relative">
+          <ReactPlayerComponent
+            url={rawUrl}
+            playing={true}
+            controls={true}
+            muted={isLive} // Autoplay directo requer mute em muitos browsers
+            width="100%"
+            height="100%"
+            style={{ position: 'absolute', top: 0, left: 0 }}
+            config={{
+              youtube: {
+                playerVars: {
+                  autoplay: 1,
+                  modestbranding: 1,
+                  rel: 0,
+                  mute: isLive ? 1 : 0
+                }
+              } as any
+            }}
+          />
+        </div>
       );
     }
     if (videoType === "hls") {
