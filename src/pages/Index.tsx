@@ -14,6 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { NewsArticle } from "@/components/NewsCard";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import HighlightsModal from "@/components/HighlightsModal";
 
 import { categories, getCategorySlug } from "@/constants/categories";
 
@@ -373,6 +374,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
       <AdBanner slot="banner_bottom" />
       <Footer />
       <RadioPlayer />
+      <HighlightsModal />
     </div>
   );
 };

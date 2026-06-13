@@ -11,6 +11,7 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 
 import { SEOMetadata } from "@/components/SEOMetadata";
+import RelatedContent from "@/components/RelatedContent";
 
 const OpinionDetail = () => {
     const { id, slug } = useParams();
@@ -229,6 +230,7 @@ const OpinionDetail = () => {
 
 
                 <CommentsSection articleId={opinion.id} />
+                <RelatedContent currentId={opinion.id} type="opinion" />
             </main>
 
             <Footer />
