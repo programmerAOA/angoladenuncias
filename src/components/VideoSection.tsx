@@ -119,54 +119,42 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
 
   /** Renderiza o player correto com base no tipo de URL */
   const renderPlayer = () => {
-    if (videoType === "youtube" && youtubeId) {
+    // 1. Se for YouTube, usamos o Iframe oficial (mais compatível com lives)
+    if (youtubeId) {
       return (
         <div className="w-full h-full bg-black flex items-center justify-center relative">
-          <ReactPlayerComponent
-            url={rawUrl}
-            playing={true}
-            controls={true}
-            muted={isLive} // Autoplay directo requer mute em muitos browsers
-            width="100%"
-            height="100%"
-            style={{ position: 'absolute', top: 0, left: 0 }}
-            config={{
-              youtube: {
-                playerVars: {
-                  autoplay: 1,
-                  modestbranding: 1,
-                  rel: 0,
-                  mute: isLive ? 1 : 0
-                }
-              } as any
-            }}
+          <iframe
+            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=${isLive ? 1 : 0}&rel=0&modestbranding=1`}
+            title={featuredVideo.title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
           />
         </div>
       );
     }
+
+    // 2. Se for HLS (m3u8), usamos o componente customizado com hls.js
     if (videoType === "hls") {
       return <HlsPlayer src={rawUrl} title={featuredVideo.title} />;
     }
-    if (videoType === "direct") {
-      return (
-        <video
-          src={rawUrl}
-          controls
-          autoPlay
-          className="w-full h-full object-contain bg-black"
-          title={featuredVideo.title}
-        />
-      );
-    }
-    // Fallback: tentar como vídeo directo
+
+    // 3. Para outros formatos suportados, usamos ReactPlayer
     return (
-      <video
-        src={rawUrl}
-        controls
-        autoPlay
-        className="w-full h-full object-contain bg-black"
-        title={featuredVideo.title}
-      />
+      <div className="w-full h-full bg-black flex items-center justify-center relative">
+        <ReactPlayerComponent
+          url={rawUrl}
+          playing={true}
+          controls={true}
+          muted={isLive}
+          width="100%"
+          height="100%"
+          style={{ position: 'absolute', top: 0, left: 0 }}
+          onError={() => {
+            console.error("Falha ao carregar vídeo:", rawUrl);
+          }}
+        />
+      </div>
     );
   };
 
