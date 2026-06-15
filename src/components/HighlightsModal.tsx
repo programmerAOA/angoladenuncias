@@ -17,13 +17,8 @@ const HighlightsModal = () => {
     const SLIDE_DURATION = 6000; // 6 secundos por slide
 
     useEffect(() => {
-        const hasShown = sessionStorage.getItem("highlights_modal_shown");
-        if (!hasShown) {
-            const timer = setTimeout(() => {
-                fetchHighlights();
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
+        // Inicializar busca de destaques
+        fetchHighlights();
     }, []);
 
     useEffect(() => {
@@ -57,27 +52,60 @@ const HighlightsModal = () => {
             const categoriesToFetch = ["Política", "Economia", "Internacional", "Sociedade", "Desporto"];
             const now = new Date().toISOString();
 
-            const promises = categoriesToFetch.map(cat =>
-                supabase
-                    .from("news_articles")
-                    .select("id, title, category, image_url, slug")
-                    .eq("category", cat)
-                    .eq("published", true)
-                    .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .single()
-            );
+            // Buscar os 20 artigos mais recentes de todas as categorias
+            const { data: latestArticles, error } = await (supabase
+                .from("news_articles")
+                .select("id, title, category, image_url, slug, created_at, scheduled_at") as any)
+                .eq("published", true)
+                .or(`scheduled_at.is.null,scheduled_at.lte.${now}`)
+                .order("created_at", { ascending: false })
+                .limit(20);
 
-            const results = await Promise.all(promises);
-            const validHighlights = results
-                .filter(res => res.data)
-                .map(res => res.data);
+            if (error) throw error;
+            if (!latestArticles || latestArticles.length === 0) return;
 
-            if (validHighlights.length > 0) {
-                setHighlights(validHighlights);
-                setOpen(true);
-                sessionStorage.setItem("highlights_modal_shown", "true");
+            // Filtrar para ter no máximo 5 destaques, tentando variar as categorias
+            const selectedHighlights: any[] = [];
+            const seenCategories = new Set();
+
+            for (const article of latestArticles) {
+                if (selectedHighlights.length >= 5) break;
+
+                // Priorizar diversidade de categorias inicialmente
+                if (!seenCategories.has(article.category)) {
+                    selectedHighlights.push(article);
+                    seenCategories.add(article.category);
+                }
+            }
+
+            // Se ainda não temos 5, preencher com os restantes mais recentes independente da categoria
+            if (selectedHighlights.length < 5) {
+                for (const article of latestArticles) {
+                    if (selectedHighlights.length >= 5) break;
+                    if (!selectedHighlights.find(h => h.id === article.id)) {
+                        selectedHighlights.push(article);
+                    }
+                }
+            }
+
+            if (selectedHighlights.length > 0) {
+                const newestArticle = latestArticles[0];
+                const lastSeenId = localStorage.getItem("highlights_last_seen_id");
+                const lastSeenDate = localStorage.getItem("highlights_last_seen_date");
+
+                // Só mostrar se o artigo mais recente for diferente do último visto
+                // ou se nunca tiver sido mostrado
+                const isNewContent = newestArticle.id !== lastSeenId &&
+                    (!lastSeenDate || new Date(newestArticle.created_at) > new Date(lastSeenDate));
+
+                if (isNewContent) {
+                    setHighlights(selectedHighlights);
+                    setOpen(true);
+
+                    // Marcar como visto com o ID e data do conteúdo atual
+                    localStorage.setItem("highlights_last_seen_id", newestArticle.id);
+                    localStorage.setItem("highlights_last_seen_date", newestArticle.created_at);
+                }
             }
         } catch (err) {
             console.error("Error fetching highlights for modal:", err);
