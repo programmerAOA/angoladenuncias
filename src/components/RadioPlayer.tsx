@@ -5,7 +5,7 @@ import { toast } from "sonner";
 // Lista de URLs possíveis para a Rádio Girassol
 // Lista de URLs possíveis para a Rádio
 const RADIOS = [
-    { name: "Sem Filtros FM", url: "https://listen.radioking.com/radio/882461/stream/952706" }
+    { name: "Sem Filtros FM", url: "https://api.radioking.io/radio/890006/listen.m3u" }
 ];
 
 const RadioPlayer = () => {
@@ -50,7 +50,7 @@ const RadioPlayer = () => {
     useEffect(() => {
         const fetchCurrentTrack = async () => {
             try {
-                const response = await fetch("https://www.radioking.com/widgets/currenttrack.php?radio=882461&format=json");
+                const response = await fetch("https://www.radioking.com/widgets/currenttrack.php?radio=890006&format=json");
                 if (response.ok) {
                     const data = await response.json();
                     setCurrentTrack({
