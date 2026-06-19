@@ -2,12 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { Radio, Play, Pause, Volume2, VolumeX, X, Loader2, ChevronDown, Square } from "lucide-react";
 import { toast } from "sonner";
 
-// Lista de URLs possíveis para a Rádio Girassol
 // Lista de URLs possíveis para a Rádio
-const RADIO_SLUG = "sem-filtros-fm";
+const RADIO_ID = 890006;
 
 const RADIOS = [
-    { name: "Sem Filtros FM", url: `https://api.radioking.io/radio/${RADIO_SLUG}/listen.m3u` }
+    { name: "Sem Filtros FM", url: "https://listen.radioking.com/radio/890006/stream/960421" }
 ];
 
 const RadioPlayer = () => {
@@ -52,7 +51,7 @@ const RadioPlayer = () => {
     useEffect(() => {
         const fetchCurrentTrack = async () => {
             try {
-                const response = await fetch(`https://www.radioking.com/widgets/currenttrack.php?radio=${RADIO_SLUG}&format=json`);
+                const response = await fetch(`https://www.radioking.com/widgets/currenttrack.php?radio=${RADIO_ID}&format=json`);
                 if (response.ok) {
                     const data = await response.json();
                     setCurrentTrack({
