@@ -29,14 +29,7 @@ const TechnicalSheetPage = () => {
                                 <p className="font-bold uppercase text-xs text-primary mb-0">Redacção</p>
                                 <p className="text-base">Equipa Sem Filtros</p>
                             </div>
-                            <div>
-                                <p className="font-bold uppercase text-xs text-primary mb-0">Desenvolvido por</p>
-                                <p className="text-base italic">BYTEKWANZA - PRESTAÇÃO DE SERVIÇOS, LDA.</p>
-                            </div>
-                            <div>
-                                <p className="font-bold uppercase text-xs text-primary mb-0">NIF</p>
-                                <p className="text-base">5003198294</p>
-                            </div>
+
                         </div>
                     </div>
 
