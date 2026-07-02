@@ -67,7 +67,9 @@ export const AnalyticsTracker = () => {
                 const userEmail = user?.email || null;
 
                 // 4. Log the visit to Supabase
-                const { data, error } = await supabase.from("site_visits").insert({
+                const visitId = crypto.randomUUID();
+                const { error } = await supabase.from("site_visits").insert({
+                    id: visitId,
                     country,
                     device_type: deviceType,
                     device_model: deviceModel,
@@ -75,11 +77,11 @@ export const AnalyticsTracker = () => {
                     os,
                     user_email: userEmail,
                     visitor_id: visitorId
-                }).select('id').single();
+                });
 
-                if (!error && data) {
+                if (!error) {
                     sessionStorage.setItem("site_visit_tracked", "true");
-                    sessionStorage.setItem("current_visit_record_id", data.id);
+                    sessionStorage.setItem("current_visit_record_id", visitId);
                     console.log("Visit tracked successfully:", { country, deviceType, deviceModel, browser, os, userEmail, visitorId });
                 } else {
                     console.error("Error logging visit:", error);
