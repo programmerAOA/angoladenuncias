@@ -1297,35 +1297,59 @@ const AdminPage = () => {
     console.log("AI: Generating rewrite with line:", dataToUse.editorialLine);
 
     try {
-      // Chamada à Edge Function 'ai-rewrite'
-      const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-        body: {
+      // Chamada à API de IA via Vercel Serverless Function (/api/ai-rewrite)
+      const res = await fetch('/api/ai-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           content: dataToUse.sourceContent,
           title: dataToUse.sourceTitle,
           line: dataToUse.editorialLine,
           url: dataToUse.sourceUrl
-        }
+        })
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Helper to build HTML from the structured sections returned by Gemini
+      const buildHtml = (d: any): string => {
+        if (d.full_content_html) return d.full_content_html;
+        if (typeof d.content === 'string') return d.content;
+        const sections = d.content?.sections;
+        if (!sections) return "";
+        return sections.map((s: any) => {
+          if (s.type === 'body' && Array.isArray(s.value)) return s.value.map((p: string) => `<p>${p}</p>`).join('\n');
+          if (s.type === 'analysis') return s.value ? `<h3>Análise — Angola Sem Filtros</h3><p>${s.value}</p>` : '';
+          return '';
+        }).filter(Boolean).join('\n');
+      };
+
+      const seoSection = data.content?.sections?.find((s: any) => s.type === 'seo_keywords');
+      const seoKeywords = seoSection?.value || data.seo?.tags?.join(', ') || data.seo_keywords || "";
 
       setAiWorkspace({
         ...dataToUse,
-        adaptedTitle: data.titulo || data.title,
-        adaptedContent: data.full_content_html || data.content,
-        adaptedSummary: data.resumo || data.summary,
-        impacto: data.impacto || "",
-        relevancia_para_angola: data.relevancia_para_angola || "",
-        category: data.categoria || data.category || dataToUse.category,
-        factos: data.factos || "",
-        contexto: data.contexto || "",
-        leitura_critica: data.leitura_critica || "",
-        seo_keywords: data.seo_keywords || ""
+        adaptedTitle: data.title || data.titulo || "",
+        adaptedContent: buildHtml(data),
+        adaptedSummary: data.summary || data.resumo || "",
+        category: data.category || data.categoria || dataToUse.category,
+        seo_keywords: seoKeywords,
+        slug: data.slug || data.seo?.slug || "",
+        tags: Array.isArray(data.seo?.tags) ? data.seo.tags.join(', ') : "",
+        facebook: data.social?.facebook || "",
+        instagram: data.social?.instagram || "",
+        twitter: data.social?.twitter || "",
+        reliability_score: data.reliability_score || 0
       });
       toast.success("Notícia reestruturada com sucesso pela IA!");
     } catch (err: any) {
       console.error("AI Error:", err);
-      toast.warning("A IA não está disponível. Verifique se a GEMINI_API_KEY está configurada no Supabase.");
+      toast.warning("A IA não está disponível. Verifique se GEMINI_API_KEY está configurada nas variáveis de ambiente da Vercel.");
       // Fallback: usar o conteúdo original como base para edição manual
       await new Promise(r => setTimeout(r, 500));
       setAiWorkspace({
