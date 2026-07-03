@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { Facebook, Instagram, Youtube, Mail, MessageSquare } from "lucide-react";
+import { useSiteConfig } from "@/hooks/useSiteConfig";
 
 const Footer = () => {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
+  const { facebookUrl, instagramUrl, youtubeUrl, contactEmail, whatsappNumber, copyrightText } = useSiteConfig();
 
   return (
     <footer className="bg-black text-white py-12 px-4 border-t border-white/10">
@@ -11,30 +13,36 @@ const Footer = () => {
 
         {/* Social Icons */}
         <div className="flex items-center gap-4 mb-8">
-          <a
-            href="https://facebook.com/angolasemfiltros"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300 group"
-          >
-            <Facebook className="w-5 h-5 text-white" />
-          </a>
-          <a
-            href="https://instagram.com/angolasemfiltros"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300"
-          >
-            <Instagram className="w-5 h-5 text-white" />
-          </a>
-          <a
-            href="https://youtube.com/@semfiltrostv"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300"
-          >
-            <Youtube className="w-5 h-5 text-white" />
-          </a>
+          {facebookUrl && (
+            <a
+              href={facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300 group"
+            >
+              <Facebook className="w-5 h-5 text-white" />
+            </a>
+          )}
+          {instagramUrl && (
+            <a
+              href={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300"
+            >
+              <Instagram className="w-5 h-5 text-white" />
+            </a>
+          )}
+          {youtubeUrl && (
+            <a
+              href={youtubeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center hover:bg-primary transition-all duration-300"
+            >
+              <Youtube className="w-5 h-5 text-white" />
+            </a>
+          )}
         </div>
 
         {/* Main Navigation */}
@@ -61,14 +69,18 @@ const Footer = () => {
 
         {/* Secondary Links & Contacts */}
         <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-8 text-white/60 text-xs">
-          <a href="mailto:redaccao@semfiltros.com" className="flex items-center gap-1.5 hover:text-white transition-colors">
-            <Mail className="w-3.5 h-3.5" />
-            redaccao@semfiltros.com
-          </a>
-          <a href="https://wa.me/244952679780" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-white transition-colors">
-            <MessageSquare className="w-3.5 h-3.5" />
-            +244 952 679 780
-          </a>
+          {contactEmail && (
+            <a href={`mailto:${contactEmail}`} className="flex items-center gap-1.5 hover:text-white transition-colors">
+              <Mail className="w-3.5 h-3.5" />
+              {contactEmail}
+            </a>
+          )}
+          {whatsappNumber && (
+            <a href={`https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-white transition-colors">
+              <MessageSquare className="w-3.5 h-3.5" />
+              {whatsappNumber}
+            </a>
+          )}
           <button onClick={() => navigate("/termos")} className="hover:text-white transition-colors">
             Termos de Uso
           </button>
@@ -79,7 +91,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="text-center text-white/40 text-[11px] select-none">
-          <p>© {currentYear} Todos os Direitos Reservados. <span className="font-bold text-white/60">Portal Sem Filtros.</span></p>
+          <p>© {currentYear} Todos os Direitos Reservados. <span className="font-bold text-white/60">{copyrightText}</span></p>
         </div>
 
       </div>

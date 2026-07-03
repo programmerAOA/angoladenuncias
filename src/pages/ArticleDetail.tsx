@@ -231,10 +231,21 @@ const ArticleDetail = () => {
                         </div>
                     )}
 
-                    <div className="prose prose-zinc dark:prose-invert max-w-none">
-                        <div className="text-foreground leading-relaxed text-lg whitespace-pre-wrap space-y-4 text-justify">
-                            {article.content}
-                        </div>
+                    <div className="prose prose-zinc dark:prose-invert max-w-none w-full">
+                        {article.content && /<[a-z][\s\S]*>/i.test(article.content) ? (
+                            <div
+                                className="text-foreground leading-relaxed text-lg text-justify
+                                    prose-p:mb-4 prose-p:leading-relaxed
+                                    prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-primary
+                                    prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-primary
+                                    prose-strong:font-black prose-strong:text-foreground"
+                                dangerouslySetInnerHTML={{ __html: article.content }}
+                            />
+                        ) : (
+                            <div className="text-foreground leading-relaxed text-lg whitespace-pre-wrap space-y-4 text-justify">
+                                {article.content}
+                            </div>
+                        )}
                     </div>
                 </article>
 

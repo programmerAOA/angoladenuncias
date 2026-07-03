@@ -13,19 +13,20 @@ Deno.serve(async (req) => {
     try {
         const { content, title, line, url: sourceUrl } = await req.json();
 
-        // Check for Gemini Key
-        const apiKey = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_STUDIO_API_KEY") || "AIzaSyCNTcRuSzZuYn8lbBKsRvl0o3gDxjjqgOs";
+        // Volta a usar Gemini, obrigatoriamente a versão 2.5-flash porque a chave tem quota 0 para o 2.0
+        const apiKey = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_AI_STUDIO_API_KEY");
+        const GEMINI_MODEL = "gemini-2.5-flash";
+
         if (!apiKey) {
             console.error("Missing GEMINI_API_KEY");
             return new Response(
-                JSON.stringify({ error: "Configuração de IA em falta (GEMINI_API_KEY não encontrada no Supabase)." }),
+                JSON.stringify({ error: "Chave de API Gemini não configurada." }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
 
         let finalContent = content || "";
 
-        // Se tiver URL e o conteúdo estiver vazio ou parecer ser apenas um snippet (curto), tentamos buscar a notícia completa
         if (sourceUrl && (finalContent.length < 500 || finalContent.includes("[+"))) {
             console.log("AI-Rewrite: Fetching full content from URL:", sourceUrl);
             try {
@@ -37,7 +38,6 @@ Deno.serve(async (req) => {
 
                 if (scrapeResponse.ok) {
                     const html = await scrapeResponse.text();
-                    // Limpeza básica para remover scripts e estilos antes de enviar para a IA
                     const cleanHtml = html
                         .replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "")
                         .replace(/<style\b[^>]*>([\s\S]*?)<\/style>/gim, "")
@@ -48,74 +48,198 @@ Deno.serve(async (req) => {
                         .trim();
 
                     if (cleanHtml.length > finalContent.length) {
-                        finalContent = cleanHtml.substring(0, 30000); // Captura até 30k caracteres
-                        console.log("AI-Rewrite: Successfully scraped content length:", finalContent.length);
+                        finalContent = cleanHtml.substring(0, 30000);
+                        console.log("AI-Rewrite: Scraped content length:", finalContent.length);
                     }
                 }
             } catch (scrapeError) {
                 console.error("AI-Rewrite: Scraping failed:", scrapeError);
-                // Mantém o conteúdo original (snippet) se falhar
             }
         }
 
-        // Clean content from common truncation markers
-        let cleanContent = finalContent.replace(/\[\+\d+\s+chars\]/gi, '').replace(/\[\d+\s+chars\]/gi, '').trim();
+        const cleanContent = finalContent
+            .replace(/\[\+\d+\s+chars\]/gi, '')
+            .replace(/\[\d+\s+chars\]/gi, '')
+            .trim();
 
         const prompt = `
-      Você é um jornalista sénior e editor-chefe do portal "Sem Filtros" em Angola. 
-      Sua missão é reescrever a notícia abaixo seguindo RIGOROSAMENTE a nossa linha editorial.
+Tu és um motor avançado de reescrita jornalística e geração editorial automática.
 
-      DIRETRIZES SEM FILTROS:
-      1. TÍTULO (DESTAQUE): Deve ser extremamente chamativo, directo e optimizado para SEO. Evite títulos institucionais. Ex: "Angola aproxima-se do Japão para acelerar reformas" em vez de "Encontro entre delegações de Angola e Japão".
-      2. RESUMO: Um resumo "punchy" e impactante de 2 frases que prenda o leitor.
-      3. CONTEÚDO: Redesenhe a notícia totalmente. Não faça apenas um resumo. Use um tom de voz audaz, claro e sem filtros, sem perder o foco nos factos reais.
-      4. ANÁLISE: TODA notícia DEVE terminar com uma secção entitulada "Análise – Angola Sem Filtros". Esta secção deve oferecer uma visão crítica, contextual e honesta sobre o impacto real do acontecimento para os angolanos.
+O teu nome de operação é: ANGOLA SEM FILTROS ENGINE.
 
-      ESTRUTURA DE RETORNO (JSON):
+OBJECTIVO:
+Transformar qualquer notícia fornecida em um artigo jornalístico completo, original, crítico, optimizado para SEO e pronto para publicação num CMS.
+
+---
+
+## REGRAS EDITORIAIS OBRIGATÓRIAS (ANGOLA SEM FILTROS)
+
+- Escrever sempre em português de Angola
+- Usar exclusivamente o antigo Acordo Ortográfico (pré-AO90)
+- Estilo: crítico, directo, analítico, sem linguagem neutra ou genérica
+- Evitar cópia ou estrutura da fonte original
+- Nunca usar linguagem vaga ou institucional sem análise
+- Títulos devem ser fortes, com gancho e optimizados para SEO
+- Evitar repetição de palavras como "expõe" e "reacende" (usar variações)
+- Sempre incluir contexto social, político ou institucional quando aplicável
+
+---
+
+## ESTRUTURA OBRIGATÓRIA DO ARTIGO
+
+### 1. TÍTULO (SEO + IMPACTO)
+- Curto ou médio
+- Forte, crítico e com palavra-chave principal
+- Pode omitir parcialmente o sujeito para gerar curiosidade
+
+### 2. RESUMO (curto)
+- 1 a 3 linhas apenas
+- Informação directa, sem opinião longa
+
+### 3. TEXTO PRINCIPAL (3 a 5 ALÍNEAS FACTUAIS)
+- Estrutura em pontos ou parágrafos curtos
+- Informação reorganizada (não copiada)
+- Contexto adicional sempre que possível
+- Clareza e objectividade
+
+### 4. ANÁLISE — ANGOLA SEM FILTROS
+- Tom crítico e interpretativo
+- Explica implicações sociais, políticas ou económicas
+- Linguagem directa e sem neutralidade artificial
+- Pode expor contradições ou falhas institucionais
+
+### 5. SEO
+- Lista de palavras-chave separadas por vírgulas (horizontal)
+- Optimizado para Google e redes sociais
+
+---
+
+## DADOS A GERAR (OBRIGATÓRIO EM JSON)
+
+Responde SEM texto fora do JSON. Devolve APENAS o JSON abaixo preenchido:
+
+{
+  "title": "",
+  "slug": "",
+  "category": "",
+  "author": "Angola Sem Filtros",
+  "summary": "",
+  "content": {
+    "sections": [
       {
-        "titulo": "Título SEO chamativo",
-        "resumo": "Resumo impactante",
-        "full_content_html": "Notícia completa em HTML (<p>), terminando OBRIGATORIAMENTE com a <br/><strong>Análise – Angola Sem Filtros</strong><br/>[Análise crítica aqui]",
-        "factos": "Os factos brutos",
-        "contexto": "Histórico e contexto",
-        "leitura_critica": "A análise crítica (mesmo texto que vai no final do HTML)",
-        "impacto": "Impacto na vida das pessoas",
-        "relevancia_para_angola": "Porquê isto importa",
-        "categoria": "Política, Economia, Sociedade, Tecnologia, Mundo ou Desporto",
-        "seo_keywords": "5-8 palavras-chave"
+        "type": "title",
+        "value": ""
+      },
+      {
+        "type": "summary",
+        "value": ""
+      },
+      {
+        "type": "body",
+        "value": [
+          "alínea 1",
+          "alínea 2",
+          "alínea 3",
+          "alínea 4"
+        ]
+      },
+      {
+        "type": "analysis",
+        "value": ""
+      },
+      {
+        "type": "seo_keywords",
+        "value": ""
       }
+    ]
+  },
+  "seo": {
+    "meta_description": "",
+    "tags": [],
+    "slug": ""
+  },
+  "social": {
+    "facebook": "",
+    "instagram": "",
+    "twitter": ""
+  },
+  "reliability_score": 0,
+  "language": "pt-AO",
+  "editorial_mode": "angola_sem_filtros"
+}
 
-      EXEMPLO DE ESTILO (Siga este padrão de tom e estrutura):
-      Fonte: "Angola e Japão reforçam cooperação no petróleo..."
-      Resultado:
-      Título: "Angola aproxima-se do Japão para acelerar reformas e reduzir dependência do petróleo"
-      Resumo: "Angola quer transformar o Japão num parceiro estratégico central para impulsionar reformas económicas e acelerar a diversificação."
-      Análise Sem Filtro: "Angola volta a apostar numa narrativa já conhecida... O desafio está na capacidade interna de execução..."
+---
 
-      DADOS PARA PROCESSAMENTO:
-      LINHA EDITORIAL ADICIONAL: "${line}"
-      TÍTULO ORIGINAL: ${title}
-      CONTEÚDO ORIGINAL: ${cleanContent}
-    `;
+## REGRAS DE GERAÇÃO DE CAMPOS
 
-        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }],
-                generationConfig: {
-                    responseMimeType: "application/json",
-                }
-            }),
-        });
+slug:
+- lowercase, separado por hífen, sem acentos
+
+meta_description:
+- máximo 155 caracteres
+- resumo jornalístico optimizado SEO
+
+tags:
+- 5 a 12 tags relevantes (array de strings)
+
+social:
+- gerar 3 versões diferentes (facebook, instagram, twitter)
+- estilo viral e informativo
+
+reliability_score:
+- 0 a 100
+- baseado em: consistência da fonte, clareza dos dados, nível de confirmação
+- se for rumor → abaixo de 40
+- se for confirmado → acima de 70
+
+---
+
+## IMPORTANTE
+
+- Não inventar factos fora do texto base
+- Reorganizar e enriquecer, não fabricar informação
+- Se faltar dados, manter neutro mas crítico
+- Nunca sair do formato JSON
+
+---
+
+## INPUT
+
+TÍTULO ORIGINAL: ${title || "(sem título)"}
+CONTEXTO ADICIONAL: ${line || "Nenhum"}
+FONTE: ${sourceUrl || "Não especificada"}
+
+NOTÍCIA EM BRUTO:
+${cleanContent}
+`;
+
+        console.log(`AI-Rewrite: Sending prompt to Gemini (${GEMINI_MODEL})...`);
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=` + apiKey,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        temperature: 0.7,
+                        maxOutputTokens: 8192,
+                    },
+                }),
+            }
+        );
 
         if (!response.ok) {
             const errorMsg = await response.text();
-            throw new Error(`Gemini API Error: ${response.status} - ${errorMsg}`);
+            console.error(`Gemini API Error ${response.status}:`, errorMsg);
+            let friendlyError = `Gemini API Error ${response.status}`;
+            try {
+                const errJson = JSON.parse(errorMsg);
+                friendlyError = errJson?.error?.message || friendlyError;
+            } catch { /* ignore parse errors */ }
+            throw new Error(friendlyError);
         }
 
         const aiData = await response.json();
@@ -125,9 +249,61 @@ Deno.serve(async (req) => {
         }
 
         const rawText = aiData.candidates[0].content.parts[0].text;
-        const result = JSON.parse(rawText);
+        console.log("AI-Rewrite: Raw Gemini response length:", rawText.length);
 
-        return new Response(JSON.stringify(result), {
+        let result: any;
+        try {
+            result = JSON.parse(rawText);
+        } catch (parseErr) {
+            const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
+            if (jsonMatch) {
+                result = JSON.parse(jsonMatch[1].trim());
+            } else {
+                throw new Error("Falha ao interpretar resposta JSON da IA: " + parseErr.message);
+            }
+        }
+
+        const sections = result.content?.sections || [];
+
+        const getSection = (type: string) => sections.find((s: any) => s.type === type);
+        const bodySection = getSection("body");
+        const bodyLines: string[] = Array.isArray(bodySection?.value)
+            ? bodySection.value
+            : [bodySection?.value || ""];
+
+        const fullContentHtml = [
+            ...bodyLines.map((line: string) => `<p>${line}</p>`),
+            `<h3>Análise — Angola Sem Filtros</h3>`,
+            `<p>${getSection("analysis")?.value || ""}</p>`,
+        ].join("\n");
+
+        const normalized = {
+            titulo: result.title,
+            resumo: result.summary,
+            full_content_html: fullContentHtml,
+            categoria: result.category,
+            autor: result.author || "Angola Sem Filtros",
+            seo_keywords: result.seo?.tags?.join(", ") || getSection("seo_keywords")?.value || "",
+            factos: bodyLines.join(" | "),
+            contexto: "",
+            leitura_critica: getSection("analysis")?.value || "",
+            impacto: "",
+            relevancia_para_angola: getSection("analysis")?.value || "",
+            slug: result.slug || result.seo?.slug || "",
+            meta_description: result.seo?.meta_description || "",
+            tags: result.seo?.tags || [],
+            social_facebook: result.social?.facebook || "",
+            social_instagram: result.social?.instagram || "",
+            social_twitter: result.social?.twitter || "",
+            reliability_score: result.reliability_score ?? 70,
+            language: result.language || "pt-AO",
+            editorial_mode: result.editorial_mode || "angola_sem_filtros",
+            raw: result,
+        };
+
+        console.log("AI-Rewrite: Success. Reliability score:", normalized.reliability_score);
+
+        return new Response(JSON.stringify(normalized), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200,
         });
@@ -140,4 +316,3 @@ Deno.serve(async (req) => {
         });
     }
 });
-

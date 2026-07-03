@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw, Lock,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
-  ExternalLink, Clock, ChevronDown, ChevronUp, Download, Database, HardDriveDownload
+  ExternalLink, Clock, ChevronDown, ChevronUp, Download, Database, HardDriveDownload, Settings
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -14,7 +14,7 @@ import { formatRelativeDate, withTimeout } from "@/lib/utils";
 import { categories } from "@/constants/categories";
 import { exportToJSON, exportToWordPressXML, exportToSQL } from "@/lib/exportUtils";
 
-type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter" | "authorized-services" | "backups";
+type Tab = "dashboard" | "articles" | "videos" | "opinions" | "breaking" | "users" | "ai-discovery" | "ads" | "stats" | "digital-editions" | "newsletter" | "authorized-services" | "backups" | "site-settings";
 
 interface Article {
   id: string;
@@ -222,7 +222,7 @@ const AdminPage = () => {
   const [newUserRole, setNewUserRole] = useState<"admin" | "editor">("editor");
   const [userSearch, setUserSearch] = useState("");
 
-  // AI Discovery & Adaptation state
+  // AI Discovery & Adaptation state (legacy)
   const [discoveryQuery, setDiscoveryQuery] = useState("");
   const [discoveryResults, setDiscoveryResults] = useState<any[]>([]);
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -246,6 +246,75 @@ const AdminPage = () => {
     seo_keywords: ""
   });
   const [isAdapting, setIsAdapting] = useState(false);
+
+  // AI Discovery v2 — Editor-Chefe Inteligente
+  const [aiStep, setAiStep] = useState<'search' | 'selected' | 'generating' | 'preview'>('search');
+  const [selectedNewsItem, setSelectedNewsItem] = useState<any>(null);
+  const [generatedArticle, setGeneratedArticle] = useState<any>(null);
+  const [generationSteps, setGenerationSteps] = useState<{ label: string; done: boolean; active: boolean }[]>([]);
+  const [isPublishingAI, setIsPublishingAI] = useState(false);
+  const [aiFormData, setAiFormData] = useState({
+    title: '', summary: '', category: 'Política', author: 'Angola Sem Filtros',
+    content: '', seo_keywords: '', image_url: '', meta_description: '',
+    slug: '', tags: '', facebook: '', instagram: '', twitter: '',
+    reliability_score: 0
+  });
+
+  // Site Settings
+  const [siteSettingsForm, setSiteSettingsForm] = useState({
+    siteName: "", primaryColor: "", facebookUrl: "", instagramUrl: "", youtubeUrl: "", contactEmail: "", whatsappNumber: "", copyrightText: "", logoUrl: ""
+  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [savingSiteSettings, setSavingSiteSettings] = useState(false);
+  const [siteSettingsLoading, setSiteSettingsLoading] = useState(false);
+
+  const loadSiteSettings = async () => {
+    setSiteSettingsLoading(true);
+    const { data } = await supabase.from("site_config").select("key, value");
+    if (data) {
+      const map: any = { site_name: "siteName", site_logo_url: "logoUrl", primary_color: "primaryColor", facebook_url: "facebookUrl", instagram_url: "instagramUrl", youtube_url: "youtubeUrl", contact_email: "contactEmail", whatsapp_number: "whatsappNumber", copyright_text: "copyrightText" };
+      const config: any = { ...siteSettingsForm };
+      data.forEach(row => { if (map[row.key] && row.value) config[map[row.key]] = row.value });
+      setSiteSettingsForm(config as any);
+    }
+    setSiteSettingsLoading(false);
+  };
+
+  const handleSaveSiteSettings = async () => {
+    setSavingSiteSettings(true);
+    try {
+      let finalLogoUrl = siteSettingsForm.logoUrl;
+      if (logoFile) {
+        const fileExt = logoFile.name.split('.').pop();
+        const fileName = `logo-${Math.random()}.${fileExt}`;
+        const { error } = await supabase.storage.from("news").upload(fileName, logoFile, { upsert: true });
+        if (error) throw new Error("Erro ao enviar logo: " + error.message);
+        const { data: { publicUrl } } = supabase.storage.from("news").getPublicUrl(fileName);
+        finalLogoUrl = publicUrl;
+      }
+
+      const configToSave = {
+        site_name: siteSettingsForm.siteName,
+        site_logo_url: finalLogoUrl,
+        primary_color: siteSettingsForm.primaryColor,
+        facebook_url: siteSettingsForm.facebookUrl,
+        instagram_url: siteSettingsForm.instagramUrl,
+        youtube_url: siteSettingsForm.youtubeUrl,
+        contact_email: siteSettingsForm.contactEmail,
+        whatsapp_number: siteSettingsForm.whatsappNumber,
+        copyright_text: siteSettingsForm.copyrightText
+      };
+
+      for (const [key, value] of Object.entries(configToSave)) {
+        await supabase.from("site_config").upsert({ key, value });
+      }
+      toast.success("Configurações salvas com sucesso!");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSavingSiteSettings(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && !user) navigate("/auth");
@@ -518,6 +587,9 @@ const AdminPage = () => {
           toast.error("Erro ao carregar e-mails autorizados: " + error.message);
         }
         if (data) setAuthorizedEmails(data);
+      }
+      if (tab === "site-settings") {
+        await loadSiteSettings();
       }
     } catch (err: any) {
       console.error("Unexpected error in loadData:", err);
@@ -1268,7 +1340,6 @@ const AdminPage = () => {
   };
 
   const handleFinalizeAIArticle = () => {
-    // Preencher o formulário de artigos com os dados da IA
     setArticleForm({
       title: aiWorkspace.adaptedTitle,
       summary: aiWorkspace.adaptedSummary || "Notícia adaptada via IA.",
@@ -1286,6 +1357,139 @@ const AdminPage = () => {
     setShowArticleForm(true);
     toast.success("Dados transferidos para o formulário de publicação.");
   };
+
+  // ── Editor-Chefe v2 handlers ────────────────────────────────────────────
+
+  const handleUseThisNews = (item: any) => {
+    setSelectedNewsItem(item);
+    setAiStep('selected');
+    setGeneratedArticle(null);
+    toast.info('Notícia importada. Clique em "Gerar Artigo Sem Filtros" para iniciar.');
+  };
+
+  const GENERATION_STEP_LABELS = [
+    'Activar Modo Sem Filtros',
+    'Pesquisa OSINT + ChatGPT Search',
+    'Cruzamento de Fontes',
+    'Fact Check Automático',
+    'Geração SEO',
+    'Compilar Artigo',
+    'Preencher Formulário CMS',
+  ];
+
+  const handleGenerateSemFiltros = async () => {
+    if (!selectedNewsItem) return;
+    setAiStep('generating');
+    const steps = GENERATION_STEP_LABELS.map((label, i) => ({ label, done: false, active: i === 0 }));
+    setGenerationSteps(steps);
+
+    const advanceStep = (index: number) => {
+      setGenerationSteps(prev => prev.map((s, i) => ({
+        ...s,
+        done: i < index,
+        active: i === index
+      })));
+    };
+
+    try {
+      advanceStep(0); await new Promise(r => setTimeout(r, 600));
+      advanceStep(1); await new Promise(r => setTimeout(r, 700));
+      advanceStep(2); await new Promise(r => setTimeout(r, 500));
+      advanceStep(3);
+
+      const { data, error } = await supabase.functions.invoke('ai-rewrite', {
+        body: {
+          content: selectedNewsItem.content || selectedNewsItem.snippet || '',
+          title: selectedNewsItem.title || '',
+          line: 'angola_sem_filtros',
+          url: selectedNewsItem.url || ''
+        }
+      });
+
+      if (error) throw error;
+
+      advanceStep(4); await new Promise(r => setTimeout(r, 400));
+      advanceStep(5); await new Promise(r => setTimeout(r, 400));
+      advanceStep(6); await new Promise(r => setTimeout(r, 300));
+
+      setGenerationSteps(GENERATION_STEP_LABELS.map(label => ({ label, done: true, active: false })));
+
+      const raw = data?.raw || {};
+      setAiFormData({
+        title: data?.titulo || raw?.title || '',
+        summary: data?.resumo || raw?.summary || '',
+        category: data?.categoria || raw?.category || 'Política',
+        author: data?.autor || raw?.author || 'Angola Sem Filtros',
+        content: data?.full_content_html || '',
+        seo_keywords: data?.seo_keywords || (raw?.seo?.tags || []).join(', ') || '',
+        image_url: selectedNewsItem.image || selectedNewsItem.imageUrl || '',
+        meta_description: data?.meta_description || raw?.seo?.meta_description || '',
+        slug: data?.slug || raw?.slug || raw?.seo?.slug || '',
+        tags: Array.isArray(raw?.seo?.tags) ? raw.seo.tags.join(', ') : '',
+        facebook: data?.social_facebook || raw?.social?.facebook || '',
+        instagram: data?.social_instagram || raw?.social?.instagram || '',
+        twitter: data?.social_twitter || raw?.social?.twitter || '',
+        reliability_score: data?.reliability_score ?? raw?.reliability_score ?? 70,
+      });
+
+      setGeneratedArticle(data);
+      setAiStep('preview');
+      toast.success('Artigo Angola Sem Filtros gerado com sucesso!');
+    } catch (err: any) {
+      console.error('GenerateSemFiltros error:', err);
+      toast.error('Erro ao gerar artigo: ' + (err?.message || 'Tente novamente.'));
+      setAiStep('selected');
+    }
+  };
+
+  const handlePublishArticleFromAI = async (published: boolean) => {
+    if (!aiFormData.title) { toast.error('Título obrigatório.'); return; }
+    setIsPublishingAI(true);
+    try {
+      const { error } = await supabase.from('news_articles').insert({
+        title: aiFormData.title,
+        summary: aiFormData.summary,
+        content: aiFormData.content,
+        category: aiFormData.category,
+        author: aiFormData.author,
+        image_url: aiFormData.image_url || null,
+        seo_keywords: aiFormData.seo_keywords,
+        published,
+      });
+      if (error) throw error;
+      toast.success(published ? 'Artigo publicado com sucesso!' : 'Rascunho guardado!');
+      if (published) {
+        setAiStep('search');
+        setSelectedNewsItem(null);
+        setGeneratedArticle(null);
+        loadData('articles');
+      }
+    } catch (err: any) {
+      toast.error('Erro ao guardar: ' + err.message);
+    } finally {
+      setIsPublishingAI(false);
+    }
+  };
+
+  const handleCopyAIContent = () => {
+    const text = [aiFormData.title, '', aiFormData.summary, '', aiFormData.content.replace(/<[^>]+>/g, '')].join('\n');
+    navigator.clipboard.writeText(text);
+    toast.success('Conteúdo copiado!');
+  };
+
+  const handleExportDocxAI = () => {
+    const text = `# ${aiFormData.title}\n\n${aiFormData.summary}\n\n${aiFormData.content.replace(/<[^>]+>/g, '')}\n\nSEO: ${aiFormData.seo_keywords}`;
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${aiFormData.slug || 'artigo-sem-filtros'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Ficheiro exportado!');
+  };
+
+  const handleExportPdfAI = () => { window.print(); };
 
   // Categories logic moved to top
 
@@ -1350,6 +1554,7 @@ const AdminPage = () => {
       { id: "users" as Tab, label: "Utilizadores", icon: Users },
       { id: "newsletter" as Tab, label: "Newsletter", icon: Mail },
       { id: "authorized-services" as Tab, label: "Serviços Autorizados", icon: Lock },
+      { id: "site-settings" as Tab, label: "Configurações do Site", icon: Settings },
       { id: "backups" as Tab, label: "Backups", icon: HardDriveDownload }
     ] : []),
   ].filter(tab => {
@@ -2919,250 +3124,342 @@ const AdminPage = () => {
             )
           }
 
-          {/* AI Discovery & News OSINT */}
-          {
-            activeTab === "ai-discovery" && (
-              <div className="space-y-6">
-                <div className="bg-card border border-border p-6">
-                  <h3 className="font-heading text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                    <SearchIcon className="w-5 h-5 text-primary" />
-                    Pesquisa Inteligente de Notícias (OSINT)
-                  </h3>
-                  <div className="flex gap-2">
+          {/* AI Discovery v2 — Editor-Chefe Inteligente */}
+          {activeTab === "ai-discovery" && (
+            <div className="space-y-6">
+
+              {/* Header Banner */}
+              <div className="bg-gradient-to-r from-red-950/30 via-card to-card border border-red-900/20 p-5 rounded-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-red-600 flex items-center justify-center rounded-sm flex-shrink-0">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-heading text-base font-black uppercase tracking-tight text-foreground">Editor-Chefe Inteligente</h3>
+                    <p className="text-[10px] text-muted-foreground">Angola Sem Filtros Engine · Modo Editorial Automático</p>
+                  </div>
+                  <span className="text-[10px] bg-red-600/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-sm font-bold uppercase tracking-wider flex items-center gap-1.5 flex-shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse inline-block" />
+                    Modo Sem Filtros
+                  </span>
+                </div>
+                {/* Step indicators */}
+                <div className="flex items-center gap-1">
+                  {['1 · Pesquisar', '2 · Seleccionar', '3 · Gerar', '4 · Publicar'].map((label, i) => {
+                    const stepOrder = ['search', 'selected', 'generating', 'preview'];
+                    const currentIdx = stepOrder.indexOf(aiStep === 'generating' ? 'generating' : aiStep);
+                    const isActive = currentIdx >= i;
+                    return (
+                      <div key={label} className="flex items-center gap-1 flex-1">
+                        <div className={`flex-1 text-center py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-sm transition-all ${isActive ? 'bg-red-600 text-white' : 'bg-secondary text-muted-foreground'}`}>
+                          {label}
+                        </div>
+                        {i < 3 && <div className={`w-2 h-px ${isActive && currentIdx > i ? 'bg-red-600' : 'bg-border'}`} />}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* STEP 1 + 2: Search bar (always visible when not generating/previewing) */}
+              {(aiStep === 'search' || aiStep === 'selected') && (
+                <div className="bg-card border border-border p-5">
+                  <div className="flex gap-3 mb-4">
                     <input
                       value={discoveryQuery}
-                      onChange={(e) => setDiscoveryQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleDiscoverNews()}
-                      placeholder="Pesquise por temas ou fontes (ex: 'Economia Angola' ou 'Notícias de Luanda')..."
-                      className="flex-1 bg-secondary border border-border text-foreground px-4 py-2 text-sm focus:outline-none focus:border-primary"
+                      onChange={e => setDiscoveryQuery(e.target.value)}
+                      onKeyDown={e => e.key === 'Enter' && handleDiscoverNews()}
+                      placeholder="Pesquise um tema: Sonangol, João Lourenço, Economia Angola, Petróleo, Namibe..."
+                      className="flex-1 bg-secondary border border-border text-foreground px-4 py-2.5 text-sm focus:outline-none focus:border-red-600 transition-colors"
                     />
                     <button
                       onClick={() => handleDiscoverNews()}
                       disabled={isDiscovering}
-                      className="bg-primary text-primary-foreground px-6 py-2 text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50"
+                      className="bg-red-600 text-white px-6 py-2.5 text-sm font-bold uppercase tracking-wider hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 flex-shrink-0"
                     >
                       {isDiscovering ? <RefreshCw className="w-4 h-4 animate-spin" /> : <SearchIcon className="w-4 h-4" />}
                       Pesquisar
                     </button>
                   </div>
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-3">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Filtros OSINT:</span>
-                      <div className="flex flex-wrap gap-2">
-                        {["Tudo", "Angola", "Luanda", "Política Angola", "Economia Angola", "Energia & Petróleo", "Sociedade Angolana", "Negócios Angola", "Relações Internacionais", "Cuanza"].map(f => (
-                          <button
-                            key={f}
-                            onClick={() => {
-                              setDiscoveryFilter(f);
-                              handleDiscoverNews(f);
-                            }}
-                            className={`text-[10px] px-2 py-0.5 border transition-colors uppercase font-bold tracking-tighter ${discoveryFilter === f
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "bg-secondary text-muted-foreground border-border hover:border-primary/50"
-                              }`}
-                          >
-                            {f}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 md:ml-auto">
-                      <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Período:</span>
-                      <select
-                        value={discoveryTime}
-                        onChange={(e) => setDiscoveryTime(e.target.value)}
-                        className="bg-secondary border border-border text-xs font-semibold text-foreground px-3 py-1 focus:outline-none focus:border-primary cursor-pointer"
-                      >
-                        <option value="">Qualquer período</option>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Temas rápidos:</span>
+                    {['Sonangol', 'João Lourenço', 'Economia Angola', 'Petróleo', 'Namibe', 'Luanda', 'MPLA', 'UNITA'].map(f => (
+                      <button key={f} onClick={() => { setDiscoveryQuery(f); handleDiscoverNews(f); }} className="text-[10px] px-2.5 py-1 border border-border bg-secondary hover:border-red-500/50 hover:text-red-400 transition-colors font-bold text-muted-foreground rounded-sm">
+                        {f}
+                      </button>
+                    ))}
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Período:</span>
+                      <select value={discoveryTime} onChange={e => setDiscoveryTime(e.target.value)} className="bg-secondary border border-border text-[11px] text-foreground px-2 py-1 focus:outline-none focus:border-red-600">
+                        <option value="">Qualquer</option>
                         <option value="qdr:h1">Última hora</option>
-                        <option value="qdr:d1">Últimas 24h</option>
-                        <option value="qdr:d2">Últimas 48h</option>
-                        <option value="qdr:w1">Última semana</option>
-                        <option value="qdr:m1">Último mês</option>
+                        <option value="qdr:d1">24h</option>
+                        <option value="qdr:d2">48h</option>
+                        <option value="qdr:w1">Semana</option>
+                        <option value="qdr:m1">Mês</option>
                       </select>
                     </div>
                   </div>
                 </div>
+              )}
 
-                {/* Workspace for AI Adaptation */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Discovery Results */}
-                  <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
-                    <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                        <Globe className="w-3.5 h-3.5" />
-                        Resultados da Descoberta
-                      </h4>
-                      <span className="text-[10px] text-muted-foreground">{discoveryResults.length} resultados encontrados</span>
-                    </div>
-                    <div className="flex-1 overflow-auto p-4 space-y-4">
-                      {discoveryResults.map((item, idx) => (
-                        <div key={idx} className="bg-secondary/20 border border-border p-4 rounded hover:border-primary/30 transition-all group">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                              {item.url ? (
-                                <a
-                                  href={item.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[10px] font-bold text-primary uppercase tracking-tighter hover:underline flex items-center gap-1"
-                                >
-                                  {item.source || "Fonte Externa"}
-                                  <ExternalLink className="w-2 h-2" />
-                                </a>
-                              ) : (
-                                <span className="text-[10px] font-bold text-primary uppercase tracking-tighter">{item.source || "Fonte Externa"}</span>
-                              )}
-                              {item.isTranslated && (
-                                <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 border border-blue-500/20 rounded-sm font-bold flex items-center gap-1">
-                                  <Sparkles className="w-2 h-2" /> TRADUZIDO
-                                </span>
-                              )}
+              {/* Loading */}
+              {isDiscovering && (
+                <div className="bg-card border border-border p-12 text-center">
+                  <RefreshCw className="w-8 h-8 text-red-500 animate-spin mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">A pesquisar em múltiplas fontes OSINT...</p>
+                </div>
+              )}
+
+              {/* Results grid */}
+              {aiStep === 'search' && !isDiscovering && discoveryResults.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-red-500" />
+                      {discoveryResults.length} notícias encontradas
+                    </h4>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {discoveryResults.map((item, idx) => (
+                      <div key={idx} className="bg-card border border-border hover:border-red-600/40 transition-all group overflow-hidden flex flex-col">
+                        <div className="h-32 bg-gradient-to-br from-secondary to-muted overflow-hidden relative flex-shrink-0">
+                          {item.image ? (
+                            <img src={item.image} alt="" className="w-full h-full object-cover opacity-70 group-hover:opacity-90 transition-opacity" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Globe className="w-8 h-8 text-muted-foreground/20" />
                             </div>
-                            <span className="text-[10px] text-muted-foreground italic">{item.date}</span>
+                          )}
+                          {item.reliability !== undefined && (
+                            <div className={`absolute top-2 right-2 text-[9px] font-black px-1.5 py-0.5 rounded-sm ${item.reliability > 70 ? 'bg-green-600 text-white' : item.reliability > 40 ? 'bg-amber-500 text-black' : 'bg-red-600 text-white'}`}>
+                              {item.reliability}%
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-4 flex flex-col flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black text-red-500 uppercase tracking-tight truncate">{item.source || 'Fonte externa'}</span>
+                            <span className="text-[10px] text-muted-foreground flex-shrink-0 ml-2">{item.date}</span>
                           </div>
-                          <h5 className="text-sm font-bold text-foreground mb-2 leading-tight group-hover:text-primary transition-colors">{item.title}</h5>
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{item.snippet}</p>
-                          <button
-                            onClick={() => handleAdaptToEditorial(item)}
-                            className="w-full flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 transition-all py-1.5 text-xs font-bold uppercase tracking-wider"
-                          >
-                            <Wand2 className="w-3.5 h-3.5" />
-                            Adaptar para o Modelo Sem Filtros
+                          <h5 className="text-sm font-bold text-foreground leading-tight mb-2 group-hover:text-red-400 transition-colors line-clamp-2 flex-1">{item.title}</h5>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{item.snippet}</p>
+                          <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                            {item.language && <span className="text-[9px] bg-secondary border border-border px-1.5 py-0.5 text-muted-foreground font-mono uppercase rounded-sm">{item.language}</span>}
+                            {item.country && <span className="text-[9px] bg-secondary border border-border px-1.5 py-0.5 text-muted-foreground uppercase rounded-sm">{item.country}</span>}
+                            {item.isTranslated && <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-sm font-bold">TRADUZIDO</span>}
+                          </div>
+                          <button onClick={() => handleUseThisNews(item)} className="w-full bg-red-600 text-white py-2 text-[11px] font-black uppercase tracking-widest hover:bg-red-700 transition-colors flex items-center justify-center gap-2 mt-auto">
+                            <Zap className="w-3.5 h-3.5" /> Usar Esta Notícia
                           </button>
                         </div>
-                      ))}
-                      {!isDiscovering && discoveryResults.length === 0 && (
-                        <div className="h-full flex flex-col items-center justify-center text-center p-8">
-                          <Globe className="w-8 h-8 text-muted/30 mb-2" />
-                          <p className="text-sm text-muted-foreground">Utilize o campo de pesquisa acima para descobrir notícias recentes de diversas fontes.</p>
-                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state */}
+              {aiStep === 'search' && !isDiscovering && discoveryResults.length === 0 && (
+                <div className="bg-card border border-dashed border-border p-16 text-center">
+                  <Bot className="w-12 h-12 text-muted-foreground/20 mx-auto mb-4" />
+                  <p className="text-sm text-muted-foreground mb-1">Editor-Chefe aguarda tema de pesquisa</p>
+                  <p className="text-xs text-muted-foreground/50">Pesquise um tema acima para descobrir notícias e gerar artigos automaticamente</p>
+                </div>
+              )}
+
+              {/* STEP 2: Selected news + generate button */}
+              {aiStep === 'selected' && selectedNewsItem && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-card border border-red-600/30 p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Zap className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      <span className="text-xs font-bold uppercase tracking-wider text-red-500">Notícia Seleccionada</span>
+                      <button onClick={() => { setAiStep('search'); setSelectedNewsItem(null); }} className="ml-auto text-[10px] text-muted-foreground hover:text-foreground underline">Alterar</button>
+                    </div>
+                    {selectedNewsItem.image && (
+                      <img src={selectedNewsItem.image} alt="" className="w-full h-36 object-cover mb-4 rounded-sm opacity-80" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    )}
+                    <p className="text-[10px] font-black text-red-500 uppercase mb-2">{selectedNewsItem.source}</p>
+                    <h4 className="font-bold text-foreground text-sm mb-3 leading-snug">{selectedNewsItem.title}</h4>
+                    <p className="text-xs text-muted-foreground mb-3 line-clamp-3">{selectedNewsItem.snippet}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-muted-foreground flex-wrap">
+                      <span>{selectedNewsItem.date}</span>
+                      {selectedNewsItem.url && (
+                        <a href={selectedNewsItem.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary hover:underline">
+                          <ExternalLink className="w-3 h-3" /> Ver fonte
+                        </a>
                       )}
                     </div>
                   </div>
-
-                  {/* AI Adaptation Workspace */}
-                  <div className="bg-card border border-border overflow-hidden h-[600px] flex flex-col">
-                    <div className="p-4 border-b border-border bg-secondary/30 flex items-center justify-between">
-                      <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
-                        <Sparkles className="w-3.5 h-3.5 text-primary" />
-                        Espaço de Trabalho IA
-                      </h4>
-                      {aiWorkspace.sourceTitle && (
-                        <button
-                          onClick={() => setAiWorkspace({ ...aiWorkspace, sourceTitle: "", sourceContent: "", adaptedContent: "", adaptedTitle: "", adaptedSummary: "" })}
-                          className="text-[10px] font-bold uppercase text-destructive hover:underline"
-                        >
-                          Limpar
-                        </button>
-                      )}
+                  <div className="bg-card border border-border p-5 flex flex-col">
+                    <div className="bg-red-950/20 border border-red-900/30 p-4 rounded-sm mb-5">
+                      <p className="text-[10px] font-bold uppercase text-red-400 mb-1 flex items-center gap-2"><Bot className="w-3 h-3" /> Angola Sem Filtros Engine — Activo</p>
+                      <p className="text-xs text-muted-foreground">O sistema irá executar automaticamente: pesquisa OSINT, cruzamento de fontes, fact check, geração SEO e preenchimento completo do formulário CMS.</p>
                     </div>
-                    <div className="flex-1 overflow-auto p-4 space-y-6">
+                    <ul className="space-y-2 mb-5 flex-1">
+                      {GENERATION_STEP_LABELS.map((s, i) => (
+                        <li key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <div className="w-4 h-4 rounded-full bg-red-600/20 border border-red-600/30 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[9px] text-red-400 font-bold">{i + 1}</span>
+                          </div>
+                          {s}
+                        </li>
+                      ))}
+                    </ul>
+                    <button onClick={handleGenerateSemFiltros} className="w-full bg-red-600 text-white py-4 font-heading font-black uppercase tracking-widest text-sm hover:bg-red-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-red-600/20 group">
+                      <Bot className="w-5 h-5 group-hover:animate-pulse" />
+                      Gerar Artigo Sem Filtros
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: Animated generation progress */}
+              {aiStep === 'generating' && (
+                <div className="max-w-md mx-auto bg-card border border-border p-10 text-center">
+                  <div className="w-16 h-16 bg-red-600/10 border-2 border-red-600 rounded-full flex items-center justify-center mx-auto mb-5 animate-pulse">
+                    <Bot className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h4 className="font-heading font-black text-base uppercase tracking-tight text-foreground mb-1">Editor-Chefe em Acção</h4>
+                  <p className="text-xs text-muted-foreground mb-6">Angola Sem Filtros Engine a processar...</p>
+                  <div className="space-y-2 text-left">
+                    {generationSteps.map((step, i) => (
+                      <div key={i} className={`flex items-center gap-3 px-4 py-2.5 rounded-sm transition-all ${step.done ? 'bg-green-500/10 border border-green-500/20' : step.active ? 'bg-red-600/10 border border-red-600/30' : 'bg-secondary/30 border border-border'}`}>
+                        <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-green-500' : step.active ? 'bg-red-600' : 'bg-muted-foreground/20'}`}>
+                          {step.done ? <Check className="w-3 h-3 text-white" /> : step.active ? <RefreshCw className="w-3 h-3 text-white animate-spin" /> : <span className="text-[9px] text-muted-foreground font-bold">{i + 1}</span>}
+                        </div>
+                        <span className={`text-xs font-semibold ${step.done ? 'text-green-400' : step.active ? 'text-red-400' : 'text-muted-foreground'}`}>{step.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: Preview + auto-filled form */}
+              {aiStep === 'preview' && (
+                <div>
+                  {/* Action bar */}
+                  <div className="bg-card border border-border p-4 mb-5 flex items-center gap-2 flex-wrap">
+                    <button onClick={() => handlePublishArticleFromAI(true)} disabled={isPublishingAI} className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 text-xs font-black uppercase tracking-wider hover:bg-green-700 transition-colors disabled:opacity-50 rounded-sm">
+                      <Check className="w-3.5 h-3.5" />{isPublishingAI ? 'A publicar...' : 'Publicar'}
+                    </button>
+                    <button onClick={() => handlePublishArticleFromAI(false)} disabled={isPublishingAI} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border disabled:opacity-50 rounded-sm">
+                      <FileText className="w-3.5 h-3.5" /> Guardar Rascunho
+                    </button>
+                    <button onClick={handleCopyAIContent} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border rounded-sm">
+                      <Copy className="w-3.5 h-3.5" /> Copiar
+                    </button>
+                    <button onClick={handleExportDocxAI} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border rounded-sm">
+                      <Download className="w-3.5 h-3.5" /> Exportar DOCX
+                    </button>
+                    <button onClick={handleExportPdfAI} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border rounded-sm">
+                      <Monitor className="w-3.5 h-3.5" /> Exportar PDF
+                    </button>
+                    {aiFormData.reliability_score > 0 && (
+                      <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-bold border ${aiFormData.reliability_score >= 70 ? 'bg-green-500/10 text-green-400 border-green-500/20' : aiFormData.reliability_score >= 40 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                        Confiabilidade: {aiFormData.reliability_score}%
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                    {/* Auto-filled form */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Sparkles className="w-3.5 h-3.5 text-red-500" /> Formulário Auto-Preenchido (Editável)</p>
                       <div>
-                        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg mb-4">
-                          <p className="text-[10px] font-bold uppercase text-primary mb-1">Modelo Editorial Ativo</p>
-                          <p className="text-xs text-muted-foreground">O sistema irá reestruturar a notícia automaticamente seguindo o novo padrão "Sem Filtros".</p>
-                        </div>
-
-                        <div className="mb-6">
-                          <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
-                            Linha Editorial / Contexto Adicional
-                          </label>
-                          <textarea
-                            value={aiWorkspace.editorialLine}
-                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, editorialLine: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[60px] resize-none"
-                            placeholder="Ex: Reforçar o foco na tecnologia japonesa e nos impactos económicos reais..."
-                          />
-                          <p className="text-[9px] text-muted-foreground mt-1 italic">
-                            Dê orientações específicas de tom ou ângulo que deseja para este conteúdo.
-                          </p>
-                        </div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Título SEO *</label>
+                        <input value={aiFormData.title} onChange={e => setAiFormData(f => ({ ...f, title: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600 font-bold" />
                       </div>
-
-                      {/* Source Preview */}
-                      <div className="space-y-3">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Resumo</label>
+                        <textarea value={aiFormData.summary} onChange={e => setAiFormData(f => ({ ...f, summary: e.target.value }))} rows={3} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600 resize-none" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Título da Fonte (Opcional)</label>
-                          <input
-                            value={aiWorkspace.sourceTitle}
-                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceTitle: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-1.5 text-xs focus:outline-none focus:border-primary"
-                            placeholder="Título da notícia original..."
-                          />
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Categoria</label>
+                          <select value={aiFormData.category} onChange={e => setAiFormData(f => ({ ...f, category: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600">
+                            {displayedCategories.map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
                         </div>
                         <div>
-                          <label className="block text-[9px] font-bold uppercase text-muted-foreground mb-1">Conteúdo da Fonte (Cole aqui)</label>
-                          <textarea
-                            value={aiWorkspace.sourceContent}
-                            onChange={(e) => setAiWorkspace({ ...aiWorkspace, sourceContent: e.target.value })}
-                            className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-[11px] focus:outline-none focus:border-primary min-h-[120px] resize-none"
-                            placeholder="Cole o texto da notícia original aqui..."
-                          />
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Autor</label>
+                          <input value={aiFormData.author} onChange={e => setAiFormData(f => ({ ...f, author: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600" />
                         </div>
                       </div>
-
-                      <button
-                        onClick={handleGenerateAI}
-                        disabled={isAdapting || !aiWorkspace.sourceContent}
-                        className="w-full flex items-center justify-center gap-3 bg-primary text-primary-foreground py-3 font-heading font-black uppercase tracking-widest text-sm hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary/20"
-                      >
-                        {isAdapting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bot className="w-5 h-5" />}
-                        {isAdapting ? "A Reestruturar Notícia..." : "Gerar com IA / Reestruturar"}
-                      </button>
-
-                      {/* AI Result */}
-                      {aiWorkspace.adaptedContent && (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                          <div className="border-t border-border pt-4">
-                            <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Resultado da IA (Revisar)</label>
-                            <input
-                              value={aiWorkspace.adaptedTitle}
-                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedTitle: e.target.value })}
-                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm font-bold mb-2 focus:outline-none focus:border-primary"
-                              placeholder="Título adaptado..."
-                            />
-                            <textarea
-                              value={aiWorkspace.adaptedContent}
-                              onChange={(e) => setAiWorkspace({ ...aiWorkspace, adaptedContent: e.target.value })}
-                              className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-primary min-h-[200px]"
-                              placeholder="Conteúdo reestruturado..."
-                            />
-
-                            <div className="mt-4">
-                              <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-1">Palavras-chave SEO Sugeridas</label>
-                              <textarea
-                                value={aiWorkspace.seo_keywords}
-                                onChange={(e) => setAiWorkspace({ ...aiWorkspace, seo_keywords: e.target.value })}
-                                className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-[11px] focus:outline-none focus:border-primary min-h-[60px] resize-none"
-                                placeholder="Palavras-chave sugeridas pela IA..."
-                              />
-                            </div>
-
-                            <div className="mt-4">
-                              <label className="block text-[10px] font-bold uppercase tracking-widest text-primary mb-2 text-right">Preview do Post Completo</label>
-                              <div
-                                className="w-full bg-secondary/30 border border-border p-4 rounded text-sm text-foreground prose prose-invert max-w-none min-h-[300px] overflow-auto text-justify"
-                                dangerouslySetInnerHTML={{ __html: aiWorkspace.adaptedContent }}
-                              />
-                              <p className="text-[10px] text-muted-foreground mt-2 italic">* O conteúdo acima já inclui a análise crítica final de acordo com o modelo "Sem Filtros".</p>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Imagem (URL)</label>
+                        <input value={aiFormData.image_url} onChange={e => setAiFormData(f => ({ ...f, image_url: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600" placeholder="https://..." />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Palavras-chave SEO</label>
+                        <input value={aiFormData.seo_keywords} onChange={e => setAiFormData(f => ({ ...f, seo_keywords: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Slug</label>
+                          <input value={aiFormData.slug} onChange={e => setAiFormData(f => ({ ...f, slug: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs font-mono focus:outline-none focus:border-red-600" />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Tags</label>
+                          <input value={aiFormData.tags} onChange={e => setAiFormData(f => ({ ...f, tags: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-red-600" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Meta Description</label>
+                        <textarea value={aiFormData.meta_description} onChange={e => setAiFormData(f => ({ ...f, meta_description: e.target.value }))} rows={2} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-red-600 resize-none font-mono" />
+                        <p className="text-[9px] text-muted-foreground mt-0.5">{aiFormData.meta_description.length}/155 caracteres</p>
+                      </div>
+                      <div className="border-t border-border pt-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2"><Globe className="w-3 h-3" /> Textos Redes Sociais</p>
+                        {([['facebook', 'Facebook'], ['instagram', 'Instagram'], ['twitter', 'Twitter/X']] as const).map(([key, label]) => (
+                          <div key={key} className="mb-3">
+                            <label className="block text-[9px] font-bold uppercase text-muted-foreground/70 mb-1">{label}</label>
+                            <div className="relative">
+                              <textarea value={(aiFormData as any)[key]} onChange={e => setAiFormData(f => ({ ...f, [key]: e.target.value }))} rows={2} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-red-600 resize-none pr-8" />
+                              <button onClick={() => { navigator.clipboard.writeText((aiFormData as any)[key]); toast.success(`${label} copiado!`); }} className="absolute top-2 right-2 text-muted-foreground hover:text-foreground">
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
-                          <button
-                            onClick={handleFinalizeAIArticle}
-                            className="w-full bg-green-600 text-white py-2.5 font-bold uppercase tracking-widest text-xs flex items-center justify-center gap-2 hover:bg-green-700 transition-colors"
-                          >
-                            <Check className="w-4 h-4" />
-                            Encaminhar para Publicação
-                          </button>
+                        ))}
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Conteúdo Completo</label>
+                        <textarea value={aiFormData.content} onChange={e => setAiFormData(f => ({ ...f, content: e.target.value }))} rows={10} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs focus:outline-none focus:border-red-600 resize-none font-mono" />
+                      </div>
+                    </div>
+
+                    {/* Article preview */}
+                    <div className="space-y-4">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Monitor className="w-3.5 h-3.5 text-red-500" /> Pré-visualização</p>
+                      <div className="bg-card border border-border overflow-hidden sticky top-4">
+                        {aiFormData.image_url && (
+                          <img src={aiFormData.image_url} alt="" className="w-full h-44 object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                        )}
+                        <div className="p-6">
+                          <span className="text-[10px] font-black uppercase text-red-500 tracking-widest">{aiFormData.category}</span>
+                          <h2 className="font-heading text-xl font-black text-foreground mt-2 mb-3 leading-tight">{aiFormData.title || 'Título do artigo'}</h2>
+                          {aiFormData.summary && <p className="text-sm text-muted-foreground border-l-2 border-red-600 pl-3 mb-4 italic">{aiFormData.summary}</p>}
+                          <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed" dangerouslySetInnerHTML={{ __html: aiFormData.content }} />
+                          <div className="mt-6 pt-4 border-t border-border">
+                            <p className="text-[10px] text-muted-foreground">
+                              <span className="font-bold text-foreground">{aiFormData.author}</span> · Angola Sem Filtros · {new Date().toLocaleDateString('pt-PT')}
+                            </p>
+                          </div>
                         </div>
-                      )}
+                      </div>
+                      <button onClick={() => { setAiStep('search'); setSelectedNewsItem(null); setGeneratedArticle(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground border border-border py-2 hover:bg-secondary transition-colors rounded-sm">
+                        ← Nova pesquisa
+                      </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            )
-          }
+              )}
+
+            </div>
+          )}
+
 
           {/* Ads management */}
           {
@@ -3806,6 +4103,116 @@ const AdminPage = () => {
               </div>
             )
           }
+
+          {/* Site Settings */}
+          {activeTab === "site-settings" && (
+            <div className="max-w-4xl mx-auto space-y-8">
+              {siteSettingsLoading ? (
+                <div className="flex justify-center p-12">
+                  <RefreshCw className="w-8 h-8 text-primary animate-spin" />
+                </div>
+              ) : (
+                <>
+                  <div className="bg-card border border-border overflow-hidden">
+                    <div className="p-6 border-b border-border">
+                      <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                        <Settings className="w-5 h-5 text-primary" />
+                        Identidade Visual
+                      </h3>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Nome do Site</label>
+                        <input value={siteSettingsForm.siteName} onChange={e => setSiteSettingsForm(f => ({ ...f, siteName: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Cor Primária (Tema)</label>
+                        <div className="flex gap-2 items-center">
+                          <input type="color" value={siteSettingsForm.primaryColor} onChange={e => setSiteSettingsForm(f => ({ ...f, primaryColor: e.target.value }))} className="w-10 h-10 border-0 bg-transparent cursor-pointer" />
+                          <input value={siteSettingsForm.primaryColor} onChange={e => setSiteSettingsForm(f => ({ ...f, primaryColor: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary font-mono" />
+                        </div>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Logótipo do Site</label>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          <div className="flex-1">
+                            <input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files?.[0] || null)} className="w-full bg-secondary border border-border px-3 py-2 text-sm file:bg-primary file:text-primary-foreground file:border-0 file:px-3 file:py-1 file:mr-4 file:text-xs file:font-bold file:cursor-pointer p-0" />
+                          </div>
+                          <div className="flex-1">
+                            <input value={siteSettingsForm.logoUrl} onChange={e => setSiteSettingsForm(f => ({ ...f, logoUrl: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" placeholder="Ou cole o URL..." />
+                          </div>
+                        </div>
+                        {(logoFile || siteSettingsForm.logoUrl) && (
+                          <div className="mt-4 p-4 border border-dashed border-border bg-black rounded w-max">
+                            <img src={logoFile ? URL.createObjectURL(logoFile) : siteSettingsForm.logoUrl} alt="Logo Preview" className="h-10 object-contain" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border overflow-hidden">
+                    <div className="p-6 border-b border-border">
+                      <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                        <Globe className="w-5 h-5 text-blue-500" />
+                        Redes Sociais
+                      </h3>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL Facebook</label>
+                        <input value={siteSettingsForm.facebookUrl} onChange={e => setSiteSettingsForm(f => ({ ...f, facebookUrl: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL Instagram</label>
+                        <input value={siteSettingsForm.instagramUrl} onChange={e => setSiteSettingsForm(f => ({ ...f, instagramUrl: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL YouTube</label>
+                        <input value={siteSettingsForm.youtubeUrl} onChange={e => setSiteSettingsForm(f => ({ ...f, youtubeUrl: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border overflow-hidden">
+                    <div className="p-6 border-b border-border">
+                      <h3 className="font-heading font-bold text-foreground flex items-center gap-2">
+                        <Mail className="w-5 h-5 text-green-500" />
+                        Contactos e Rodapé
+                      </h3>
+                    </div>
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Email de Redacção</label>
+                        <input value={siteSettingsForm.contactEmail} onChange={e => setSiteSettingsForm(f => ({ ...f, contactEmail: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Número de WhatsApp</label>
+                        <input value={siteSettingsForm.whatsappNumber} onChange={e => setSiteSettingsForm(f => ({ ...f, whatsappNumber: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" placeholder="+244..." />
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Texto de Direitos Autorais (Copyright)</label>
+                        <input value={siteSettingsForm.copyrightText} onChange={e => setSiteSettingsForm(f => ({ ...f, copyrightText: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" placeholder="Portal Sem Filtros." />
+                        <p className="text-[10px] text-muted-foreground mt-1">O ano é atualizado automaticamente.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-4">
+                    <button
+                      onClick={handleSaveSiteSettings}
+                      disabled={savingSiteSettings}
+                      className="bg-primary text-primary-foreground px-8 py-3 font-semibold uppercase tracking-wider hover:opacity-90 disabled:opacity-50 transition-opacity flex items-center gap-2"
+                    >
+                      <Check className="w-5 h-5" />
+                      {savingSiteSettings ? "A Guardar..." : "Salvar Configurações"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
         </div >
       </main >
     </div >
