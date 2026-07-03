@@ -1421,16 +1421,23 @@ const AdminPage = () => {
       advanceStep(2); await new Promise(r => setTimeout(r, 500));
       advanceStep(3);
 
-      const { data, error } = await supabase.functions.invoke('ai-rewrite', {
-        body: {
+      const res = await fetch('/api/ai-rewrite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           content: selectedNewsItem.content || selectedNewsItem.snippet || '',
           title: selectedNewsItem.title || '',
           line: 'angola_sem_filtros',
           url: selectedNewsItem.url || ''
-        }
+        })
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+        throw new Error(errData.error || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
 
       advanceStep(4); await new Promise(r => setTimeout(r, 400));
       advanceStep(5); await new Promise(r => setTimeout(r, 400));
@@ -1438,22 +1445,37 @@ const AdminPage = () => {
 
       setGenerationSteps(GENERATION_STEP_LABELS.map(label => ({ label, done: true, active: false })));
 
-      const raw = data?.raw || {};
+      // Build HTML from structured sections if full_content_html is not present
+      const buildHtml = (d: any): string => {
+        if (d.full_content_html) return d.full_content_html;
+        if (typeof d.content === 'string') return d.content;
+        const sections = d.content?.sections;
+        if (!sections) return '';
+        return sections.map((s: any) => {
+          if (s.type === 'body' && Array.isArray(s.value)) return s.value.map((p: string) => `<p>${p}</p>`).join('\n');
+          if (s.type === 'analysis') return s.value ? `<h3>Análise — Angola Sem Filtros</h3><p>${s.value}</p>` : '';
+          return '';
+        }).filter(Boolean).join('\n');
+      };
+
+      const seoSection = data.content?.sections?.find((s: any) => s.type === 'seo_keywords');
+      const seoKeywords = seoSection?.value || (data.seo?.tags || []).join(', ') || data.seo_keywords || '';
+
       setAiFormData({
-        title: data?.titulo || raw?.title || '',
-        summary: data?.resumo || raw?.summary || '',
-        category: data?.categoria || raw?.category || 'Política',
-        author: data?.autor || raw?.author || 'Angola Sem Filtros',
-        content: data?.full_content_html || '',
-        seo_keywords: data?.seo_keywords || (raw?.seo?.tags || []).join(', ') || '',
+        title: data.title || data.titulo || '',
+        summary: data.summary || data.resumo || '',
+        category: data.category || data.categoria || 'Política',
+        author: data.author || 'Angola Sem Filtros',
+        content: buildHtml(data),
+        seo_keywords: seoKeywords,
         image_url: selectedNewsItem.image || selectedNewsItem.imageUrl || '',
-        meta_description: data?.meta_description || raw?.seo?.meta_description || '',
-        slug: data?.slug || raw?.slug || raw?.seo?.slug || '',
-        tags: Array.isArray(raw?.seo?.tags) ? raw.seo.tags.join(', ') : '',
-        facebook: data?.social_facebook || raw?.social?.facebook || '',
-        instagram: data?.social_instagram || raw?.social?.instagram || '',
-        twitter: data?.social_twitter || raw?.social?.twitter || '',
-        reliability_score: data?.reliability_score ?? raw?.reliability_score ?? 70,
+        meta_description: data.seo?.meta_description || '',
+        slug: data.slug || data.seo?.slug || '',
+        tags: Array.isArray(data.seo?.tags) ? data.seo.tags.join(', ') : '',
+        facebook: data.social?.facebook || '',
+        instagram: data.social?.instagram || '',
+        twitter: data.social?.twitter || '',
+        reliability_score: data.reliability_score ?? 70,
       });
 
       setGeneratedArticle(data);
