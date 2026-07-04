@@ -1,9 +1,9 @@
-// Vercel Edge Runtime configuration
+// Vercel Edge Runtime configuration (forced redeploy to load new API key)
 export const config = {
     runtime: 'edge',
 };
 
-// Main API Handler for AI Article Rewrite (forces Vercel redeploy to load new env vars)
+// Main API Handler for AI Article Rewrite
 export default async function handler(req) {
     // Set CORS headers
     const corsHeaders = {
