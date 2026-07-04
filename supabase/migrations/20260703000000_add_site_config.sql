@@ -25,5 +25,6 @@ INSERT INTO public.site_config (key, value) VALUES
   ('youtube_url',     'https://youtube.com/@semfiltrostv'),
   ('contact_email',   'redaccao@semfiltros.com'),
   ('whatsapp_number', '+244952679780'),
-  ('copyright_text',  'Portal Sem Filtros.')
+  ('copyright_text',  'Portal Sem Filtros.'),
+  ('gemini_api_key',   '')
 ON CONFLICT (key) DO NOTHING;

@@ -262,7 +262,7 @@ const AdminPage = () => {
 
   // Site Settings
   const [siteSettingsForm, setSiteSettingsForm] = useState({
-    siteName: "", primaryColor: "", facebookUrl: "", instagramUrl: "", youtubeUrl: "", contactEmail: "", whatsappNumber: "", copyrightText: "", logoUrl: ""
+    siteName: "", primaryColor: "", facebookUrl: "", instagramUrl: "", youtubeUrl: "", contactEmail: "", whatsappNumber: "", copyrightText: "", logoUrl: "", geminiApiKey: ""
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [savingSiteSettings, setSavingSiteSettings] = useState(false);
@@ -270,9 +270,9 @@ const AdminPage = () => {
 
   const loadSiteSettings = async () => {
     setSiteSettingsLoading(true);
-    const { data } = await supabase.from("site_config").select("key, value");
+    const { data } = await supabase.from("site_config" as any).select("key, value");
     if (data) {
-      const map: any = { site_name: "siteName", site_logo_url: "logoUrl", primary_color: "primaryColor", facebook_url: "facebookUrl", instagram_url: "instagramUrl", youtube_url: "youtubeUrl", contact_email: "contactEmail", whatsapp_number: "whatsappNumber", copyright_text: "copyrightText" };
+      const map: any = { site_name: "siteName", site_logo_url: "logoUrl", primary_color: "primaryColor", facebook_url: "facebookUrl", instagram_url: "instagramUrl", youtube_url: "youtubeUrl", contact_email: "contactEmail", whatsapp_number: "whatsappNumber", copyright_text: "copyrightText", gemini_api_key: "geminiApiKey" };
       const config: any = { ...siteSettingsForm };
       data.forEach(row => { if (map[row.key] && row.value) config[map[row.key]] = row.value });
       setSiteSettingsForm(config as any);
@@ -302,11 +302,12 @@ const AdminPage = () => {
         youtube_url: siteSettingsForm.youtubeUrl,
         contact_email: siteSettingsForm.contactEmail,
         whatsapp_number: siteSettingsForm.whatsappNumber,
-        copyright_text: siteSettingsForm.copyrightText
+        copyright_text: siteSettingsForm.copyrightText,
+        gemini_api_key: siteSettingsForm.geminiApiKey
       };
 
       for (const [key, value] of Object.entries(configToSave)) {
-        await supabase.from("site_config").upsert({ key, value });
+        await supabase.from("site_config" as any).upsert({ key, value });
       }
       toast.success("Configurações salvas com sucesso!");
     } catch (e: any) {
@@ -1298,6 +1299,9 @@ const AdminPage = () => {
 
     try {
       // Chamada à API de IA via Vercel Serverless Function (/api/ai-rewrite)
+      const { data: configData } = await supabase.from("site_config" as any).select("value").eq("key", "gemini_api_key").maybeSingle() as any;
+      const userApiKey = configData?.value || '';
+
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1305,7 +1309,8 @@ const AdminPage = () => {
           content: dataToUse.sourceContent,
           title: dataToUse.sourceTitle,
           line: dataToUse.editorialLine,
-          url: dataToUse.sourceUrl
+          url: dataToUse.sourceUrl,
+          apiKey: userApiKey
         })
       });
 
@@ -1421,6 +1426,10 @@ const AdminPage = () => {
       advanceStep(2); await new Promise(r => setTimeout(r, 500));
       advanceStep(3);
 
+      // Load Gemini API Key from site_config database
+      const { data: configData } = await supabase.from("site_config" as any).select("value").eq("key", "gemini_api_key").maybeSingle() as any;
+      const userApiKey = configData?.value || '';
+
       const res = await fetch('/api/ai-rewrite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1428,7 +1437,8 @@ const AdminPage = () => {
           content: selectedNewsItem.content || selectedNewsItem.snippet || '',
           title: selectedNewsItem.title || '',
           line: 'angola_sem_filtros',
-          url: selectedNewsItem.url || ''
+          url: selectedNewsItem.url || '',
+          apiKey: userApiKey
         })
       });
 
@@ -4240,6 +4250,11 @@ const AdminPage = () => {
                         <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Texto de Direitos Autorais (Copyright)</label>
                         <input value={siteSettingsForm.copyrightText} onChange={e => setSiteSettingsForm(f => ({ ...f, copyrightText: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary" placeholder="Portal Sem Filtros." />
                         <p className="text-[10px] text-muted-foreground mt-1">O ano é atualizado automaticamente.</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Chave de API Gemini (Editor-Chefe Inteligente)</label>
+                        <input type="password" value={siteSettingsForm.geminiApiKey} onChange={e => setSiteSettingsForm(f => ({ ...f, geminiApiKey: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary font-mono" placeholder="AQ.Ab8RN..." />
+                        <p className="text-[10px] text-muted-foreground mt-1">Insira a chave obtida no Google AI Studio. Esta chave será usada no servidor de produção de forma segura para reescrever as notícias livre de bloqueios CORS do navegador.</p>
                       </div>
                     </div>
                   </div>

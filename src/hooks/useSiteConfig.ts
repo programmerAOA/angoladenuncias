@@ -11,6 +11,7 @@ export interface SiteConfig {
     contactEmail: string;
     whatsappNumber: string;
     copyrightText: string;
+    geminiApiKey: string;
 }
 
 const DEFAULTS: SiteConfig = {
@@ -23,6 +24,7 @@ const DEFAULTS: SiteConfig = {
     contactEmail: "redaccao@semfiltros.com",
     whatsappNumber: "+244952679780",
     copyrightText: "Portal Sem Filtros.",
+    geminiApiKey: "",
 };
 
 const KEY_MAP: Record<string, keyof SiteConfig> = {
@@ -35,6 +37,7 @@ const KEY_MAP: Record<string, keyof SiteConfig> = {
     contact_email: "contactEmail",
     whatsapp_number: "whatsappNumber",
     copyright_text: "copyrightText",
+    gemini_api_key: "geminiApiKey",
 };
 
 export function useSiteConfig() {
@@ -56,8 +59,8 @@ export function useSiteConfig() {
         let channel: ReturnType<typeof supabase.channel> | null = null;
 
         const load = async () => {
-            const { data } = await supabase.from("site_config").select("key, value");
-            if (data) setConfig(parseRows(data));
+            const { data } = await supabase.from("site_config" as any).select("key, value");
+            if (data) setConfig(parseRows(data as any));
             setLoading(false);
         };
 
@@ -70,8 +73,8 @@ export function useSiteConfig() {
                 "postgres_changes",
                 { event: "*", schema: "public", table: "site_config" },
                 async () => {
-                    const { data } = await supabase.from("site_config").select("key, value");
-                    if (data) setConfig(parseRows(data));
+                    const { data } = await supabase.from("site_config" as any).select("key, value");
+                    if (data) setConfig(parseRows(data as any));
                 }
             )
             .subscribe();

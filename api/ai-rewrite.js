@@ -18,15 +18,15 @@ export default async function handler(req) {
 
     try {
         const body = await req.json();
-        const { content, title, line, url: sourceUrl } = body;
+        const { content, title, line, url: sourceUrl, apiKey: passedApiKey } = body;
 
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY;
+        const apiKey = passedApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY;
         const GEMINI_MODEL = "gemini-2.5-flash";
 
         if (!apiKey) {
-            console.error("Missing GEMINI_API_KEY in environment variables");
+            console.error("Missing GEMINI_API_KEY in environment variables and body");
             return new Response(
-                JSON.stringify({ error: "Chave de API Gemini não configurada nas variáveis de ambiente da Vercel." }),
+                JSON.stringify({ error: "Chave de API Gemini não configurada. Configure a sua chave nas Configurações do Site no painel de administração." }),
                 { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
             );
         }
