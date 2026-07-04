@@ -127,12 +127,7 @@
     -webkit-user-select: none !important;
   }
 
-  /* Bloquear impressão da página */
-  @media print {
-    body {
-      display: none !important;
-    }
-  }
+
 
   h1,
   h2,
