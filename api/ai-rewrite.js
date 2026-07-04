@@ -20,17 +20,6 @@ export default async function handler(req) {
         const body = await req.json();
         const { content, title, line, url: sourceUrl, apiKey: passedApiKey } = body;
 
-        const apiKey = passedApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY;
-        const GEMINI_MODEL = "gemini-2.5-flash";
-
-        if (!apiKey) {
-            console.error("Missing GEMINI_API_KEY in environment variables and body");
-            return new Response(
-                JSON.stringify({ error: "Chave de API Gemini não configurada. Configure a sua chave nas Configurações do Site no painel de administração." }),
-                { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-            );
-        }
-
         let finalContent = content || "";
 
         // Web scraping fallback if url is present and content is short
@@ -68,6 +57,9 @@ export default async function handler(req) {
             .replace(/\[\+\d+\s+chars\]/gi, '')
             .replace(/\[\d+\s+chars\]/gi, '')
             .trim();
+
+        const apiKey = passedApiKey || process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_STUDIO_API_KEY;
+        const GEMINI_MODEL = "gemini-2.5-flash";
 
         const prompt = `
 Tu és um motor avançado de reescrita jornalística e geração editorial automática.
@@ -219,6 +211,15 @@ FONTE: ${sourceUrl || "Não especificada"}
 NOTÍCIA EM BRUTO:
 ${cleanContent}
 `;
+
+        // If API key is missing, return scraped content and prompt as fallback to allow client-side Puter.js rewriter
+        if (!apiKey) {
+            console.warn("ai-rewrite (vercel): No API Key configured. Returning scraped content and prompt for Puter fallback.");
+            return new Response(
+                JSON.stringify({ status: "missing_api_key", scrapedContent: cleanContent, prompt: prompt }),
+                { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+        }
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,

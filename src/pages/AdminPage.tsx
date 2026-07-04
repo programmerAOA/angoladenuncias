@@ -1314,12 +1314,37 @@ const AdminPage = () => {
         })
       });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(errData.error || `HTTP ${res.status}`);
-      }
+      let data = await res.json();
 
-      const data = await res.json();
+      if (data.status === "missing_api_key") {
+        console.log("AI: Gemini API Key missing on backend. Falling back to client-side Puter.js...");
+        const puter = (window as any).puter;
+        if (!puter) {
+          throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
+        }
+
+        const puterResponse = await puter.ai.chat(data.prompt, {
+          model: 'gemini-3.5-flash'
+        });
+
+        const rawText = typeof puterResponse === 'string' ? puterResponse : (puterResponse?.message?.content || puterResponse?.text || "");
+        if (!rawText) {
+          throw new Error("Ocorreu um erro ao comunicar com a inteligência artificial do Puter.js.");
+        }
+
+        let cleanedJsonText = rawText.trim();
+        if (cleanedJsonText.startsWith("```json")) {
+          cleanedJsonText = cleanedJsonText.substring(7);
+        } else if (cleanedJsonText.startsWith("```")) {
+          cleanedJsonText = cleanedJsonText.substring(3);
+        }
+        if (cleanedJsonText.endsWith("```")) {
+          cleanedJsonText = cleanedJsonText.substring(0, cleanedJsonText.length - 3);
+        }
+        cleanedJsonText = cleanedJsonText.trim();
+
+        data = JSON.parse(cleanedJsonText);
+      }
 
       // Helper to build HTML from the structured sections returned by Gemini
       const buildHtml = (d: any): string => {
@@ -1447,7 +1472,37 @@ const AdminPage = () => {
         throw new Error(errData.error || `HTTP ${res.status}`);
       }
 
-      const data = await res.json();
+      let data = await res.json();
+
+      if (data.status === "missing_api_key") {
+        console.log("AI: Gemini API Key missing on backend. Falling back to client-side Puter.js...");
+        const puter = (window as any).puter;
+        if (!puter) {
+          throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
+        }
+
+        const puterResponse = await puter.ai.chat(data.prompt, {
+          model: 'gemini-3.5-flash'
+        });
+
+        const rawText = typeof puterResponse === 'string' ? puterResponse : (puterResponse?.message?.content || puterResponse?.text || "");
+        if (!rawText) {
+          throw new Error("Ocorreu um erro ao comunicar com a inteligência artificial do Puter.js.");
+        }
+
+        let cleanedJsonText = rawText.trim();
+        if (cleanedJsonText.startsWith("```json")) {
+          cleanedJsonText = cleanedJsonText.substring(7);
+        } else if (cleanedJsonText.startsWith("```")) {
+          cleanedJsonText = cleanedJsonText.substring(3);
+        }
+        if (cleanedJsonText.endsWith("```")) {
+          cleanedJsonText = cleanedJsonText.substring(0, cleanedJsonText.length - 3);
+        }
+        cleanedJsonText = cleanedJsonText.trim();
+
+        data = JSON.parse(cleanedJsonText);
+      }
 
       advanceStep(4); await new Promise(r => setTimeout(r, 400));
       advanceStep(5); await new Promise(r => setTimeout(r, 400));
