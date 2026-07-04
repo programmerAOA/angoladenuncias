@@ -99,6 +99,33 @@ interface DigitalEdition {
   created_at: string;
 }
 
+function buildPuterPrompt(title: string, line: string, url: string, content: string): string {
+  const safeTitle = (title || "(sem título)").replace(/"/g, '\\"');
+  return "Tu és um motor avançado de reescrita jornalística e geração editorial automática.\n\n" +
+    "O teu nome de operação é: ANGOLA SEM FILTROS ENGINE.\n\n" +
+    "OBJECTIVO:\nTransformar qualquer notícia fornecida em um artigo jornalístico completo, original, crítico, optimizado para SEO e pronto para publicação num CMS.\n\n---\n\n" +
+    "## REGRAS EDITORIAIS OBRIGATÓRIAS (ANGOLA SEM FILTROS)\n\n" +
+    "- Escrever sempre em português de Angola\n- Usar exclusivamente o antigo Acordo Ortográfico (pré-AO90)\n- Estilo: crítico, directo, analítico, sem linguagem neutra ou genérica\n- Evitar cópia ou estrutura da fonte original\n- Nunca usar linguagem vaga ou institucional sem análise\n- Títulos devem ser fortes, com gancho e optimizados para SEO\n- Evitar repetição de palavras como \"expõe\" e \"reacende\" (usar variações)\n- Sempre incluir contexto social, político ou institucional quando aplicável\n\n---\n\n" +
+    "## ESTRUTURA OBRIGATÓRIA DO ARTIGO\n\n" +
+    "### 1. TÍTULO (SEO + IMPACTO)\n- Curto ou médio\n- Forte, crítico e com palavra-chave principal\n- Pode omitir parcialmente o sujeito para gerar curiosidade\n\n" +
+    "### 2. RESUMO (curto)\n- 1 a 3 linhas apenas\n- Informação directa, sem opinião longa\n\n" +
+    "### 3. TEXTO PRINCIPAL (3 a 5 ALÍNEAS FACTUAIS)\n- Estrutura em pontos ou parágrafos curtos\n- Informação reorganizada (não copiada)\n- Contexto adicional sempre que possível\n- Clareza e objectividade\n\n" +
+    "### 4. ANÁLISE — ANGOLA SEM FILTROS\n- Tom crítico e interpretativo\n- Explica implicações sociais, políticas ou económicas\n- Linguagem directa e sem neutralidade artificial\n- Pode expor contradições ou falhas institucionais\n\n" +
+    "### 5. SEO\n- Lista de palavras-chave separadas por vírgulas (horizontal)\n- Optimizado para Google e redes sociais\n\n---\n\n" +
+    "## DADOS A GERAR (OBRIGATÓRIO EM JSON)\n\nResponde SEM texto fora do JSON. Devolve APENAS o JSON abaixo preenchido:\n\n" +
+    '{\n  "title": "",\n  "slug": "",\n  "category": "",\n  "author": "Angola Sem Filtros",\n  "summary": "",\n' +
+    '  "content": {\n    "sections": [\n      { "type": "title", "value": "" },\n      { "type": "summary", "value": "" },\n      { "type": "body", "value": ["alínea 1", "alínea 2", "alínea 3", "alínea 4"] },\n      { "type": "analysis", "value": "" },\n      { "type": "seo_keywords", "value": "" }\n    ]\n  },\n' +
+    '  "seo": { "meta_description": "", "tags": [], "slug": "" },\n' +
+    '  "social": { "facebook": "", "instagram": "", "twitter": "" },\n' +
+    '  "reliability_score": 0,\n  "language": "pt-AO",\n  "editorial_mode": "angola_sem_filtros"\n}\n\n---\n\n' +
+    "## REGRAS DE GERAÇÃO DE CAMPOS\n\nslug:\n- lowercase, separado por hífen, sem acentos\n\nmeta_description:\n- máximo 155 caracteres\n- resumo jornalístico optimizado SEO\n\ntags:\n- 5 a 12 tags relevantes (array de strings)\n\nsocial:\n- gerar 3 versões diferentes (facebook, instagram, twitter)\n- estilo viral e informativo\n\nreliability_score:\n- 0 a 100\n- baseado em: consistência da fonte, clareza dos dados, nível de confirmação\n- se for rumor → abaixo de 40\n- se for confirmado → acima de 70\n\n---\n\n" +
+    "## IMPORTANTE\n\n- Não inventar factos fora do texto base\n- Reorganizar e enriquecer, não fabricar informação\n- Se faltar dados, manter neutro mas crítico\n- Nunca sair do formato JSON\n\n---\n\n" +
+    "## INPUT\n\nTÍTULO ORIGINAL: " + safeTitle + "\n" +
+    "CONTEXTO ADICIONAL: " + (line || "Nenhum") + "\n" +
+    "FONTE: " + (url || "Não especificada") + "\n\n" +
+    "NOTÍCIA EM BRUTO:\n" + content;
+}
+
 interface SiteVisit {
   id: string;
   country: string | null;
@@ -286,7 +313,7 @@ const AdminPage = () => {
       let finalLogoUrl = siteSettingsForm.logoUrl;
       if (logoFile) {
         const fileExt = logoFile.name.split('.').pop();
-        const fileName = `logo-${Math.random()}.${fileExt}`;
+        const fileName = `logo-${Math.random()}.${fileExt} `;
         const { error } = await supabase.storage.from("news").upload(fileName, logoFile, { upsert: true });
         if (error) throw new Error("Erro ao enviar logo: " + error.message);
         const { data: { publicUrl } } = supabase.storage.from("news").getPublicUrl(fileName);
@@ -527,7 +554,7 @@ const AdminPage = () => {
         if (data) setAdvertisements(data);
 
         // Load ad carousel settings for the selected slot
-        const settingsKey = `ad_carousel_${selectedSettingsSlot}`;
+        const settingsKey = `ad_carousel_${selectedSettingsSlot} `;
         const { data: adSettings } = await supabase.from("system_settings").select("value").eq("key", settingsKey).single();
 
         if (adSettings?.value && typeof adSettings.value === 'object') {
@@ -649,8 +676,8 @@ const AdminPage = () => {
 
   const uploadFile = async (file: File, bucket: string = "news", returnPath = false) => {
     const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt} `;
+    const filePath = `${fileName} `;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -746,7 +773,7 @@ const AdminPage = () => {
 
       // Safety check: verify if the category is allowed for this editor
       if (!isAdmin && allowedCategories.length > 0 && !allowedCategories.includes(articleForm.category)) {
-        toast.error(`Não tem permissão para publicar na categoria: ${articleForm.category}`);
+        toast.error(`Não tem permissão para publicar na categoria: ${articleForm.category} `);
         setSavingArticle(false);
         return;
       }
@@ -786,7 +813,7 @@ const AdminPage = () => {
       }
 
       const duration = Date.now() - startTime;
-      console.log(`[SaveArticle] DB Operation finished in ${duration}ms.`, result);
+      console.log(`[SaveArticle] DB Operation finished in ${duration} ms.`, result);
 
       if (result.error) {
         console.error("[SaveArticle] Supabase error:", result.error);
@@ -1037,7 +1064,7 @@ const AdminPage = () => {
   const saveAdCarouselSettings = async () => {
     setSavingSettings(true);
     try {
-      const settingsKey = `ad_carousel_${selectedSettingsSlot}`;
+      const settingsKey = `ad_carousel_${selectedSettingsSlot} `;
       const { error } = await supabase
         .from("system_settings")
         .upsert({
@@ -1302,28 +1329,48 @@ const AdminPage = () => {
       const { data: configData } = await supabase.from("site_config" as any).select("value").eq("key", "gemini_api_key").maybeSingle() as any;
       const userApiKey = configData?.value || '';
 
-      const res = await fetch('/api/ai-rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: dataToUse.sourceContent,
-          title: dataToUse.sourceTitle,
-          line: dataToUse.editorialLine,
-          url: dataToUse.sourceUrl,
-          apiKey: userApiKey
-        })
-      });
+      let data: any = null;
+      let usePuterFallback = false;
+      let puterPrompt = '';
 
-      let data = await res.json();
+      try {
+        const res = await fetch('/api/ai-rewrite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: dataToUse.sourceContent,
+            title: dataToUse.sourceTitle,
+            line: dataToUse.editorialLine,
+            url: dataToUse.sourceUrl,
+            apiKey: userApiKey
+          })
+        });
 
-      if (data.status === "missing_api_key") {
-        console.log("AI: Gemini API Key missing on backend. Falling back to client-side Puter.js...");
+        if (res.status === 404) {
+          console.warn("AI: /api/ai-rewrite returned 404. Falling back to Puter.js...");
+          usePuterFallback = true;
+          puterPrompt = buildPuterPrompt(dataToUse.sourceTitle || '', dataToUse.editorialLine || '', dataToUse.sourceUrl || '', dataToUse.sourceContent || '');
+        } else {
+          data = await res.json();
+          if (data.status === "missing_api_key") {
+            usePuterFallback = true;
+            puterPrompt = data.prompt || buildPuterPrompt(dataToUse.sourceTitle || '', dataToUse.editorialLine || '', dataToUse.sourceUrl || '', dataToUse.sourceContent || '');
+          }
+        }
+      } catch (fetchErr) {
+        console.warn("AI: fetch to /api/ai-rewrite failed. Falling back to Puter.js...", fetchErr);
+        usePuterFallback = true;
+        puterPrompt = buildPuterPrompt(dataToUse.sourceTitle || '', dataToUse.editorialLine || '', dataToUse.sourceUrl || '', dataToUse.sourceContent || '');
+      }
+
+      if (usePuterFallback) {
+        console.log("AI: Using client-side Puter.js for article generation...");
         const puter = (window as any).puter;
         if (!puter) {
           throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
         }
 
-        const puterResponse = await puter.ai.chat(data.prompt, {
+        const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
 
@@ -1455,33 +1502,56 @@ const AdminPage = () => {
       const { data: configData } = await supabase.from("site_config" as any).select("value").eq("key", "gemini_api_key").maybeSingle() as any;
       const userApiKey = configData?.value || '';
 
-      const res = await fetch('/api/ai-rewrite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: selectedNewsItem.content || selectedNewsItem.snippet || '',
-          title: selectedNewsItem.title || '',
-          line: 'angola_sem_filtros',
-          url: selectedNewsItem.url || '',
-          apiKey: userApiKey
-        })
-      });
+      let data: any = null;
+      let usePuterFallback = false;
+      let puterPrompt = '';
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(errData.error || `HTTP ${res.status}`);
+      const newsContent = selectedNewsItem.content || selectedNewsItem.snippet || '';
+      const newsTitle = selectedNewsItem.title || '';
+      const newsUrl = selectedNewsItem.url || '';
+
+      try {
+        const res = await fetch('/api/ai-rewrite', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: newsContent,
+            title: newsTitle,
+            line: 'angola_sem_filtros',
+            url: newsUrl,
+            apiKey: userApiKey
+          })
+        });
+
+        if (res.status === 404) {
+          console.warn("AI: /api/ai-rewrite returned 404. Falling back to Puter.js...");
+          usePuterFallback = true;
+          puterPrompt = buildPuterPrompt(newsTitle, 'angola_sem_filtros', newsUrl, newsContent);
+        } else if (!res.ok) {
+          const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          throw new Error(errData.error || `HTTP ${res.status}`);
+        } else {
+          data = await res.json();
+          if (data.status === "missing_api_key") {
+            usePuterFallback = true;
+            puterPrompt = data.prompt || buildPuterPrompt(newsTitle, 'angola_sem_filtros', newsUrl, newsContent);
+          }
+        }
+      } catch (fetchErr: any) {
+        if (fetchErr?.message?.includes('HTTP')) throw fetchErr;
+        console.warn("AI: fetch to /api/ai-rewrite failed. Falling back to Puter.js...", fetchErr);
+        usePuterFallback = true;
+        puterPrompt = buildPuterPrompt(newsTitle, 'angola_sem_filtros', newsUrl, newsContent);
       }
 
-      let data = await res.json();
-
-      if (data.status === "missing_api_key") {
-        console.log("AI: Gemini API Key missing on backend. Falling back to client-side Puter.js...");
+      if (usePuterFallback) {
+        console.log("AI: Using client-side Puter.js for article generation...");
         const puter = (window as any).puter;
         if (!puter) {
           throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
         }
 
-        const puterResponse = await puter.ai.chat(data.prompt, {
+        const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
 
