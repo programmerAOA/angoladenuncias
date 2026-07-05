@@ -22,6 +22,7 @@ interface Article {
 interface Opinion {
   id: string;
   title: string;
+  excerpt: string | null;
   content: string;
   author: string;
   avatar_url: string | null;
@@ -141,7 +142,7 @@ const DigitalNewspaperTemplate = () => {
             .limit(30),
           supabase
             .from("opinion_articles")
-            .select("id, title, content, author, avatar_url, created_at")
+            .select("id, title, excerpt, content, author, avatar_url, created_at")
             .order("created_at", { ascending: false })
             .limit(8),
           supabase
@@ -664,6 +665,11 @@ const DigitalNewspaperTemplate = () => {
                     <div style={{ flex: 1 }}>
                       <span className="nyt-sans" style={{ fontSize: "9px", color: opColor, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em" }}>Coluna Editorial</span>
                       <h4 className="nyt-title" style={{ fontSize: "15px", color: "#1c1917", margin: "2px 0 1px" }}>{opinion.author}</h4>
+                      {opinion.excerpt && (
+                        <p className="nyt-sans" style={{ fontSize: "10px", color: "#44403c", marginBottom: "2px", letterSpacing: "0.02em" }}>
+                          {opinion.excerpt}
+                        </p>
+                      )}
                       <span className="nyt-sans" style={{ fontSize: "9px", color: "#78716c" }}>
                         {format(new Date(opinion.created_at), "dd 'de' MMMM 'de' yyyy", { locale: pt })}
                       </span>

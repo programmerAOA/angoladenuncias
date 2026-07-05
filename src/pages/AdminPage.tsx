@@ -2896,12 +2896,13 @@ const AdminPage = () => {
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Excerto (Opcional)</label>
-                      <textarea
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Função / Cargo do Autor (Opcional)</label>
+                      <input
+                        type="text"
                         value={opinionForm.excerpt}
                         onChange={e => setOpinionForm(f => ({ ...f, excerpt: e.target.value }))}
-                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none"
-                        rows={2}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        placeholder="Ex: Economista, Analista Político, etc."
                       />
                     </div>
                     <div className="md:col-span-2">
