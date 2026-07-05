@@ -3063,26 +3063,35 @@ const AdminPage = () => {
               <div>
                 <div className="flex items-center justify-between mb-6">
                   <p className="text-sm text-muted-foreground">{digitalEditions.length} edições digitais no total</p>
-                  <button
-                    onClick={() => {
-                      setEditingDigital(null);
-                      setDigitalForm({
-                        title: "",
-                        description: "",
-                        edition_date: format(new Date(), "yyyy-MM-dd"),
-                        price_aoa: 0,
-                        price_usd: 0,
-                        is_free: false,
-                        cover_url: "",
-                        pdf_url: ""
-                      });
-                      setShowDigitalForm(true);
-                    }}
-                    className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Nova edição digital
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => window.open("/admin/gerar-jornal", "_blank")}
+                      className="flex items-center gap-2 bg-[#b91c1c] text-white px-4 py-2 text-sm font-semibold hover:bg-[#991b1b] transition-all"
+                    >
+                      <Newspaper className="w-4 h-4" />
+                      Gerar Jornal (12 Págs)
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingDigital(null);
+                        setDigitalForm({
+                          title: "",
+                          description: "",
+                          edition_date: format(new Date(), "yyyy-MM-dd"),
+                          price_aoa: 0,
+                          price_usd: 0,
+                          is_free: false,
+                          cover_url: "",
+                          pdf_url: ""
+                        });
+                        setShowDigitalForm(true);
+                      }}
+                      className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:opacity-90 transition-opacity"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Nova edição digital
+                    </button>
+                  </div>
                 </div>
 
                 {showDigitalForm && (

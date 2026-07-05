@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# Temporary directories and files
+tmp/
+supabase/.temp/
+push_error.txt
+push_error_raw.txt
+files.txt

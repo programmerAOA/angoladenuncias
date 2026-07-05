@@ -12,6 +12,7 @@ import AdminPage from "./pages/AdminPage";
 import ArticleDetail from "./pages/ArticleDetail";
 import OpinionDetail from "./pages/OpinionDetail";
 import DigitalEditions from "./pages/DigitalEditions";
+import DigitalNewspaperTemplate from "./pages/DigitalNewspaperTemplate";
 import AdvertisingPage from "./pages/AdvertisingPage";
 import TermsPage from "./pages/TermsPage";
 import PrivacyPage from "./pages/PrivacyPage";
@@ -51,6 +52,7 @@ const App = () => (
                 })}
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/admin/gerar-jornal" element={<DigitalNewspaperTemplate />} />
                 <Route path="/opinioes" element={<Index defaultCategory="Opinião" />} />
                 <Route path="/edicao-digital" element={<DigitalEditions />} />
                 <Route path="/publicidade" element={<AdvertisingPage />} />
