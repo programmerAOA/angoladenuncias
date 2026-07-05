@@ -206,7 +206,7 @@ const DigitalNewspaperTemplate = () => {
   // Artigos Internos: preenchem o espaço entre a Capa e as Opiniões. 
   // Queremos 12 - 1(capa) - maxOpinions = X páginas internas.
   const targetInternalCount = 11 - maxOpinions;
-  const internalArticles = news.slice(4, 4 + targetInternalCount);
+  const internalArticles = news.slice(0, targetInternalCount);
 
   // We use a minimum of 1 page per section when there are no articles
   // but only show actual ad/placeholder — no empty white pages
