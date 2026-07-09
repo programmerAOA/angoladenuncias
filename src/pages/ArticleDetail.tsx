@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
-import { ArrowLeft, User, Calendar, Share2, Headphones } from "lucide-react";
+import { ArrowLeft, User, Calendar, Share2, Headphones, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -51,12 +51,12 @@ const ArticleDetail = () => {
         const fetchArticle = async () => {
             setLoading(true);
             try {
-                let query = supabase.from("news_articles").select("id, slug, title, summary, content, category, image_url, audio_url, created_at, author, scheduled_at, seo_keywords");
+                let query = supabase.from("news_articles").select("id, slug, title, summary, content, category, image_url, audio_url, created_at, author, scheduled_at, seo_keywords, source_name, source_url");
 
                 if (id) {
                     query = query.eq("id", id);
                 } else if (slug) {
-                    query = query.eq("slug", slug);
+                    query = (query as any).eq("slug", slug);
                 }
 
                 const { data, error } = (await withTimeout((query as any).single())) as any;
@@ -195,6 +195,23 @@ const ArticleDetail = () => {
                             <Calendar className="w-4 h-4" />
                             <span className="text-sm">{formatRelativeDate(article.scheduled_at || article.created_at)}</span>
                         </div>
+                        {article.source_name && (
+                            <div className="flex items-center gap-1.5 text-muted-foreground">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                {article.source_url ? (
+                                    <a
+                                        href={article.source_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs hover:text-primary transition-colors underline underline-offset-2"
+                                    >
+                                        Fonte: {article.source_name}
+                                    </a>
+                                ) : (
+                                    <span className="text-xs">Fonte: {article.source_name}</span>
+                                )}
+                            </div>
+                        )}
                         <button
                             onClick={handleShare}
                             className="text-muted-foreground hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/10"
@@ -231,22 +248,41 @@ const ArticleDetail = () => {
                         </div>
                     )}
 
-                    <div className="prose prose-zinc dark:prose-invert max-w-none w-full">
-                        {article.content && /<[a-z][\s\S]*>/i.test(article.content) ? (
-                            <div
-                                className="text-foreground leading-relaxed text-lg text-justify
-                                    prose-p:mb-4 prose-p:leading-relaxed
-                                    prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-primary
-                                    prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-primary
-                                    prose-strong:font-black prose-strong:text-foreground"
-                                dangerouslySetInnerHTML={{ __html: article.content }}
-                            />
-                        ) : (
-                            <div className="text-foreground leading-relaxed text-lg whitespace-pre-wrap space-y-4 text-justify">
-                                {article.content}
-                            </div>
-                        )}
-                    </div>
+                    {(() => {
+                        let htmlContent = article.content || "";
+                        const hasHtml = /<[a-z][\s\S]*>/i.test(htmlContent);
+
+                        if (hasHtml) {
+                            // If it has HTML but no block-level tags (like <p>, <div>, <br>), 
+                            // it means it's plain text mixed with inline HTML (like <span>).
+                            // We need to convert newlines to paragraphs so they don't collapse.
+                            if (!/<(?:p|br|div|h[1-6]|ul|ol|li|blockquote|table)[>\s]/i.test(htmlContent)) {
+                                htmlContent = htmlContent
+                                    .split(/\n\n+/)
+                                    .map((p: string) => `<p>${p.replace(/\n/g, '<br/>')}</p>`)
+                                    .join('');
+                            }
+                            return (
+                                <div
+                                    className="prose prose-zinc dark:prose-invert max-w-none w-full
+                                        text-foreground leading-relaxed text-lg text-justify
+                                        prose-p:mb-5 prose-p:leading-relaxed prose-p:text-justify
+                                        prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:text-primary
+                                        prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-primary
+                                        prose-strong:font-black prose-strong:text-foreground"
+                                    dangerouslySetInnerHTML={{ __html: htmlContent }}
+                                />
+                            );
+                        } else {
+                            return (
+                                <div className="prose prose-zinc dark:prose-invert max-w-none w-full prose-p:mb-5 prose-p:leading-relaxed">
+                                    {(htmlContent).split(/\n\n+/).map((para: string, i: number) =>
+                                        para.trim() ? <p key={i} className="text-foreground leading-relaxed text-lg text-justify mb-5">{para.trim()}</p> : null
+                                    )}
+                                </div>
+                            );
+                        }
+                    })()}
                 </article>
 
 

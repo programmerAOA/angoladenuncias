@@ -32,6 +32,8 @@ interface Article {
   views: number | null;
   created_at: string;
   seo_keywords?: string;
+  source_name?: string;
+  source_url?: string;
 }
 
 interface VideoItem {
@@ -221,7 +223,7 @@ const AdminPage = () => {
   const [sendingNewsletter, setSendingNewsletter] = useState(false);
 
   // Article form
-  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", audio_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
+  const [articleForm, setArticleForm] = useState({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", audio_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "", source_name: "", source_url: "" });
   const [articleImageFile, setArticleImageFile] = useState<File | null>(null);
   const [articleAudioFile, setArticleAudioFile] = useState<File | null>(null);
   const [editingArticle, setEditingArticle] = useState<string | null>(null);
@@ -794,7 +796,9 @@ const AdminPage = () => {
         is_breaking: articleForm.is_breaking,
         published: true,
         scheduled_at: isScheduled ? new Date(articleForm.scheduled_at).toISOString() : null,
-        seo_keywords: articleForm.seo_keywords
+        seo_keywords: articleForm.seo_keywords,
+        source_name: articleForm.source_name || null,
+        source_url: articleForm.source_url || null
       };
 
       console.log("[SaveArticle] Sending payload to DB...", payload);
@@ -806,10 +810,10 @@ const AdminPage = () => {
 
       if (editingArticle) {
         console.log("[SaveArticle] Updating article:", editingArticle);
-        result = await supabase.from("news_articles").update(payload).eq("id", editingArticle).select();
+        result = await supabase.from("news_articles").update(payload as any).eq("id", editingArticle).select();
       } else {
         console.log("[SaveArticle] Inserting new article");
-        result = await supabase.from("news_articles").insert(payload).select();
+        result = await supabase.from("news_articles").insert(payload as any).select();
       }
 
       const duration = Date.now() - startTime;
@@ -834,7 +838,7 @@ const AdminPage = () => {
         setEditingArticle(null);
         setArticleImageFile(null);
         setArticleAudioFile(null);
-        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", audio_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "" });
+        setArticleForm({ title: "", summary: "", content: "", category: "Política", author: "Redacção", image_url: "", audio_url: "", is_hero: false, is_breaking: false, scheduled_at: "", seo_keywords: "", source_name: "", source_url: "" });
 
         // Reload data
         loadData("articles");
@@ -956,8 +960,8 @@ const AdminPage = () => {
       toast.info(isScheduled ? "A agendar opinião..." : "A gravar opinião...");
 
       const queryBuilder = editingOpinion
-        ? supabase.from("opinion_articles").update(payload).eq("id", editingOpinion).select()
-        : supabase.from("opinion_articles").insert(payload).select();
+        ? supabase.from("opinion_articles").update(payload as any).eq("id", editingOpinion).select()
+        : supabase.from("opinion_articles").insert(payload as any).select();
 
       const result = await queryBuilder;
 
@@ -1400,8 +1404,10 @@ const AdminPage = () => {
         const sections = d.content?.sections;
         if (!sections) return "";
         return sections.map((s: any) => {
-          if (s.type === 'body' && Array.isArray(s.value)) return s.value.map((p: string) => `<p>${p}</p>`).join('\n');
-          if (s.type === 'analysis') return s.value ? `<h3>Análise — Angola Sem Filtros</h3><p>${s.value}</p>` : '';
+          if (s.type === 'body' && Array.isArray(s.value))
+            return s.value.map((p: string) => `<p>${p}</p>`).join('\n');
+          if (s.type === 'analysis' && s.value)
+            return `<p><br/><span style="color:#d32f2f;"> <strong>ANÁLISE – ANGOLA SEM FILTROS </strong> </span></p>\n<p>${s.value}</p>`;
           return '';
         }).filter(Boolean).join('\n');
       };
@@ -1452,7 +1458,9 @@ const AdminPage = () => {
       is_hero: false,
       is_breaking: false,
       scheduled_at: "",
-      seo_keywords: aiWorkspace.seo_keywords
+      seo_keywords: aiWorkspace.seo_keywords,
+      source_name: aiWorkspace.sourceUrl ? new URL(aiWorkspace.sourceUrl).hostname.replace('www.', '') : '',
+      source_url: aiWorkspace.sourceUrl || ''
     });
     setActiveTab("articles");
     setShowArticleForm(true);
@@ -1587,8 +1595,10 @@ const AdminPage = () => {
         const sections = d.content?.sections;
         if (!sections) return '';
         return sections.map((s: any) => {
-          if (s.type === 'body' && Array.isArray(s.value)) return s.value.map((p: string) => `<p>${p}</p>`).join('\n');
-          if (s.type === 'analysis') return s.value ? `<h3>Análise — Angola Sem Filtros</h3><p>${s.value}</p>` : '';
+          if (s.type === 'body' && Array.isArray(s.value))
+            return s.value.map((p: string) => `<p>${p}</p>`).join('\n');
+          if (s.type === 'analysis' && s.value)
+            return `<p><br/><span style="color:#d32f2f;"> <strong>ANÁLISE – ANGOLA SEM FILTROS </strong> </span></p>\n<p>${s.value}</p>`;
           return '';
         }).filter(Boolean).join('\n');
       };
@@ -1955,6 +1965,25 @@ const AdminPage = () => {
                         placeholder="angola, noticia, política, ..."
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Fonte da Notícia (opcional)</label>
+                      <input
+                        value={articleForm.source_name}
+                        onChange={e => setArticleForm(f => ({ ...f, source_name: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        placeholder="Ex: Jornal de Angola, Reuters, Lusa..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">URL da Fonte (opcional)</label>
+                      <input
+                        type="url"
+                        value={articleForm.source_url}
+                        onChange={e => setArticleForm(f => ({ ...f, source_url: e.target.value }))}
+                        className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        placeholder="https://..."
+                      />
+                    </div>
                     <div className="md:col-span-2">
                       <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Imagem do Artigo</label>
                       <div className="flex flex-col sm:flex-row gap-4">
@@ -2126,7 +2155,9 @@ const AdminPage = () => {
                                     ? new Date(article.scheduled_at).toISOString().slice(0, 16)
                                     : "",
                                   seo_keywords: article.seo_keywords || "",
-                                  audio_url: article.audio_url || ""
+                                  audio_url: article.audio_url || "",
+                                  source_name: (article as any).source_name || "",
+                                  source_url: (article as any).source_url || ""
                                 });
                                 setShowArticleForm(true);
                               }}

@@ -209,22 +209,38 @@ const OpinionDetail = () => {
 
                     <div className="relative">
                         <Quote className="absolute -top-6 -left-6 w-12 h-12 text-primary/10 -z-10" />
-                        <div className="prose prose-zinc dark:prose-invert max-w-none w-full">
-                            {opinion.content && /<[a-z][\s\S]*>/i.test(opinion.content) ? (
-                                <div
-                                    className="text-foreground leading-relaxed text-xl text-justify font-serif
-                                        prose-p:mb-6 prose-p:leading-relaxed
-                                        prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-3 prose-h2:text-primary
-                                        prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-2 prose-h3:text-primary
-                                        prose-strong:font-bold prose-strong:text-foreground"
-                                    dangerouslySetInnerHTML={{ __html: opinion.content }}
-                                />
-                            ) : (
-                                <div className="text-foreground leading-relaxed text-xl whitespace-pre-wrap space-y-6 font-serif text-justify">
-                                    {opinion.content}
-                                </div>
-                            )}
-                        </div>
+                        {(() => {
+                            let htmlContent = opinion.content || "";
+                            const hasHtml = /<[a-z][\s\S]*>/i.test(htmlContent);
+
+                            if (hasHtml) {
+                                if (!/<(?:p|br|div|h[1-6]|ul|ol|li|blockquote|table)[>\s]/i.test(htmlContent)) {
+                                    htmlContent = htmlContent
+                                        .split(/\n\n+/)
+                                        .map((p: string) => `<p>${p.replace(/\n/g, '<br/>')}</p>`)
+                                        .join('');
+                                }
+                                return (
+                                    <div
+                                        className="prose prose-zinc dark:prose-invert max-w-none w-full
+                                            text-foreground leading-relaxed text-xl text-justify font-serif
+                                            prose-p:mb-6 prose-p:leading-relaxed prose-p:text-justify
+                                            prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:text-primary
+                                            prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-primary
+                                            prose-strong:font-bold prose-strong:text-foreground"
+                                        dangerouslySetInnerHTML={{ __html: htmlContent }}
+                                    />
+                                );
+                            } else {
+                                return (
+                                    <div className="prose prose-zinc dark:prose-invert max-w-none w-full prose-p:mb-6 prose-p:leading-relaxed">
+                                        {(htmlContent).split(/\n\n+/).map((para: string, i: number) =>
+                                            para.trim() ? <p key={i} className="text-foreground leading-relaxed text-xl text-justify mb-6 font-serif">{para.trim()}</p> : null
+                                        )}
+                                    </div>
+                                );
+                            }
+                        })()}
                     </div>
 
                     <div className="mt-12 pt-8 border-t border-border flex justify-between items-center">
