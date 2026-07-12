@@ -21,6 +21,10 @@ interface DigitalEdition {
     is_free: boolean;
 }
 
+// Edition is considered free if is_free is true OR both prices are 0
+const isFreeEdition = (edition: DigitalEdition) =>
+    edition.is_free || (Number(edition.price_aoa) === 0 && Number(edition.price_usd) === 0);
+
 const DigitalEditions = () => {
     const [editions, setEditions] = useState<DigitalEdition[]>([]);
     const [purchases, setPurchases] = useState<string[]>([]);
@@ -70,7 +74,7 @@ const DigitalEditions = () => {
     }, [user]);
 
     const handleDownload = async (edition: DigitalEdition) => {
-        if (edition.is_free || purchases.includes(edition.id)) {
+        if (isFreeEdition(edition) || purchases.includes(edition.id)) {
             // Logica de download (link assinado)
             const { data, error } = await supabase.storage
                 .from("digital-editions")
@@ -170,7 +174,7 @@ const DigitalEditions = () => {
                                     </div>
 
                                     {/* Overlay status */}
-                                    {(edition.is_free || purchases.includes(edition.id)) && (
+                                    {(isFreeEdition(edition) || purchases.includes(edition.id)) && (
                                         <div className="absolute top-4 right-4 bg-green-500 text-white p-2.5 rounded-full shadow-2xl z-20 animate-bounce">
                                             <CheckCircle className="w-5 h-5" />
                                         </div>
@@ -180,9 +184,11 @@ const DigitalEditions = () => {
                                 {/* Conteúdo do Card */}
                                     <div className="p-6 flex flex-col gap-5">
                                         <div className="flex flex-col items-center gap-1">
-                                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">Pague por</p>
+                                            <p className="text-muted-foreground text-[10px] uppercase font-bold tracking-widest">
+                                                {isFreeEdition(edition) ? "Acesso gratuito" : "Pague por"}
+                                            </p>
                                             <p className="text-[#22c55e] text-xl font-black tabular-nums font-heading">
-                                                {edition.is_free ? "GRÁTIS" : `${edition.price_aoa.toLocaleString()} Kz / ${edition.price_usd.toLocaleString()}$`}
+                                                {isFreeEdition(edition) ? "GRÁTIS" : `${Number(edition.price_aoa).toLocaleString()} Kz / ${Number(edition.price_usd).toLocaleString()}$`}
                                             </p>
                                         </div>
 
@@ -193,10 +199,10 @@ const DigitalEditions = () => {
                                             </span>
                                         </div>
 
-                                    {edition.is_free || purchases.includes(edition.id) ? (
+                                    {isFreeEdition(edition) || purchases.includes(edition.id) ? (
                                         <button
                                             onClick={() => handleDownload(edition)}
-                                            className="w-full bg-[#b91c1c] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-[#991b1b] transition-all"
+                                            className="w-full bg-[#b91c1c] text-white py-3.5 rounded-xl font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-[#991b1b] transition-all shadow-lg shadow-red-900/30 hover:scale-[1.02] active:scale-[0.98]"
                                         >
                                             <Download className="w-4 h-4" /> Baixar Edição
                                         </button>
