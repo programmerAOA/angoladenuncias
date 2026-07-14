@@ -20,6 +20,10 @@ import VideosPage from "./pages/VideosPage";
 import ServicesPage from "./pages/ServicesPage";
 import EditorialLinePage from "./pages/EditorialLinePage";
 import TechnicalSheetPage from "./pages/TechnicalSheetPage";
+import AboutPage from "./pages/AboutPage";
+import FactCheckingPage from "./pages/FactCheckingPage";
+import CorrectionsPage from "./pages/CorrectionsPage";
+import EditorialTeamPage from "./pages/EditorialTeamPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
 import CookieConsent from "@/components/CookieConsent";
@@ -62,6 +66,10 @@ const App = () => (
                 <Route path="/ficha-tecnica" element={<TechnicalSheetPage />} />
                 <Route path="/termos" element={<TermsPage />} />
                 <Route path="/privacidade" element={<PrivacyPage />} />
+                <Route path="/sobre-nos" element={<AboutPage />} />
+                <Route path="/fact-checking" element={<FactCheckingPage />} />
+                <Route path="/correcoes" element={<CorrectionsPage />} />
+                <Route path="/equipa-editorial" element={<EditorialTeamPage />} />
                 <Route path="/article/:id" element={<ArticleDetail />} />
                 <Route path="/opinion/:id" element={<OpinionDetail />} />
                 <Route path="/:category/:slug" element={<ArticleDetail />} />

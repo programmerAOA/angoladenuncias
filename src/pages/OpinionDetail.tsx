@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { formatRelativeDate, withTimeout } from "@/lib/utils";
-import { ArrowLeft, Headphones, Quote, Share2, User } from "lucide-react";
+import { ArrowLeft, Headphones, Quote, Share2, User, ChevronRight, Home } from "lucide-react";
 import { toast } from "sonner";
 import CommentsSection from "@/components/CommentsSection";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -167,11 +167,22 @@ const OpinionDetail = () => {
             <main className="container py-8 max-w-3xl">
                 <button
                     onClick={() => navigate(-1)}
-                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-10 transition-colors"
+                    className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-4 transition-colors"
                 >
                     <ArrowLeft className="w-4 h-4" />
                     Voltar para a página inicial
                 </button>
+
+                {/* Visual Breadcrumbs */}
+                <nav aria-label="breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground mb-8">
+                    <button onClick={() => navigate("/")} className="flex items-center gap-1 hover:text-primary transition-colors">
+                        <Home className="w-3 h-3" /> Início
+                    </button>
+                    <ChevronRight className="w-3 h-3" />
+                    <button onClick={() => navigate("/opinioes")} className="hover:text-primary transition-colors">Opinião</button>
+                    <ChevronRight className="w-3 h-3" />
+                    <span className="text-foreground/60 line-clamp-1 max-w-[200px]">{opinion.title}</span>
+                </nav>
 
                 <article className="animate-fade-in">
                     <header className="text-center mb-12">

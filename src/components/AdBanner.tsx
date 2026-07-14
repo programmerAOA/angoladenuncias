@@ -89,7 +89,7 @@ const AdBanner = ({ slot }: AdBannerProps) => {
 
     if (ads.length === 0) {
         return (
-            <div className="w-full px-4 py-3">
+            <div className="w-full px-4 py-3" style={{ minHeight: '120px' }}>
                 <div className="relative w-full max-w-[1350px] mx-auto h-[100px] sm:h-[200px] md:h-[300px] bg-secondary/50 border border-dashed border-border rounded-sm flex flex-col items-center justify-center gap-2 text-muted-foreground/50 font-sans">
                     <Megaphone className="w-5 h-5" />
                     <span className="text-xs font-semibold uppercase tracking-widest">Publicite Aqui</span>

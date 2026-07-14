@@ -54,10 +54,34 @@ const Footer = () => {
             Página Inicial
           </button>
           <button
+            onClick={() => navigate("/sobre-nos")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Sobre Nós
+          </button>
+          <button
+            onClick={() => navigate("/equipa-editorial")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Equipa Editorial
+          </button>
+          <button
             onClick={() => navigate("/linha-editorial")}
             className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
           >
             Linha Editorial
+          </button>
+          <button
+            onClick={() => navigate("/fact-checking")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Fact-Checking
+          </button>
+          <button
+            onClick={() => navigate("/correcoes")}
+            className="text-sm font-bold uppercase tracking-wider hover:text-primary transition-colors"
+          >
+            Correções
           </button>
           <button
             onClick={() => navigate("/ficha-tecnica")}
