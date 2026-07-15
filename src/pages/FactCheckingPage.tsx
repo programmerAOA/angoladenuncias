@@ -192,10 +192,10 @@ const FactCheckingPage = () => {
                             Encontrou uma informação suspeita? Partilhe connosco e a nossa equipa verificará a sua veracidade.
                         </p>
                         <a
-                            href="mailto:factchecking@semfiltros.com"
+                            href="mailto:redaccao@semfiltros.com"
                             className="inline-block px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors"
                         >
-                            factchecking@semfiltros.com
+                            redaccao@semfiltros.com
                         </a>
                     </section>
                 </article>

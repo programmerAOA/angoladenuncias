@@ -139,30 +139,26 @@ const CorrectionsPage = () => {
                         </div>
                     </section>
 
-                    {/* Reportar Erro */}
-                    <section className="p-8 bg-primary/5 border border-primary/15 rounded-2xl">
-                        <div className="flex items-center gap-3 mb-4">
+                    <section className="p-8 bg-primary/5 border border-primary/15 rounded-2xl text-center">
+                        <div className="flex items-center justify-center gap-3 mb-4">
                             <AlertCircle className="w-6 h-6 text-primary" />
                             <h2 className="text-xl font-heading font-bold text-foreground">Encontrou um Erro?</h2>
                         </div>
-                        <p className="text-muted-foreground mb-6 leading-relaxed">
+                        <p className="text-muted-foreground mb-6 leading-relaxed max-w-xl mx-auto">
                             Se identificou um erro factual, uma informação desactualizada ou qualquer imprecisão nos nossos artigos,
                             pedimos que nos contacte. A sua contribuição é essencial para mantermos os padrões editoriais que nos comprometemos a cumprir.
                         </p>
-                        <div className="flex flex-wrap gap-4">
+                        <div className="flex justify-center">
                             <a
-                                href="mailto:correcoes@semfiltros.com"
-                                className="px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors"
-                            >
-                                correcoes@semfiltros.com
-                            </a>
-                            <a
-                                href="https://wa.me/244900000000"
+                                href="https://wa.me/244952679780"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-6 py-3 border border-border text-foreground font-bold rounded-lg hover:bg-secondary transition-colors"
+                                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[#25D366] text-white font-bold rounded-lg hover:bg-[#20ba5a] transition-colors"
                             >
-                                WhatsApp Editorial
+                                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436.002 9.858-4.42 9.86-9.86.002-2.63-1.023-5.102-2.884-6.964a9.782 9.782 0 00-6.956-2.88c-5.433 0-9.859 4.417-9.863 9.857-.001 1.8.49 3.559 1.42 5.11L1.936 21.08l5.215-1.366zM15.86 12.59c-.312-.156-1.848-.91-2.128-1.012-.281-.102-.485-.156-.689.156-.204.311-.79.1-.96.115-.17.015-.34-.062-.653-.218-1.32-.526-2.308-1.52-2.83-2.422-.156-.268-.017-.414.118-.549.12-.12.28-.328.42-.492.14-.164.186-.28.28-.468.093-.188.047-.353-.023-.509-.07-.156-.689-1.66-.944-2.274-.25-.6-.505-.519-.689-.527-.179-.008-.383-.01-.587-.01s-.536.078-.816.383c-.28.305-1.072 1.047-1.072 2.553 0 1.506 1.097 2.96 1.248 3.166.15.206 2.16 3.3 5.23 4.624.73.315 1.298.503 1.743.644.733.233 1.4.2 1.929.122.589-.089 1.848-.755 2.11-.1.263-.733.263-1.288.188-1.396-.075-.108-.28-.156-.593-.312z" />
+                                </svg>
+                                <span>WhatsApp: +244 952 679 780</span>
                             </a>
                         </div>
                     </section>
