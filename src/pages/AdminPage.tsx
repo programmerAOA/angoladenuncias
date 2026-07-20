@@ -1374,6 +1374,7 @@ const AdminPage = () => {
           throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
         }
 
+        await puter.auth.setAuthToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ');
         const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
@@ -1559,6 +1560,7 @@ const AdminPage = () => {
           throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
         }
 
+        await puter.auth.setAuthToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ');
         const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
