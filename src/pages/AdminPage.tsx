@@ -3818,6 +3818,11 @@ const AdminPage = () => {
                           <option value="sidebar_carousel">Carrossel Lateral</option>
                           <option value="sidebar_video">Vídeo Vertical</option>
                           <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
+                          <option value="newspaper_full">Jornal (Pág. Inteira)</option>
+                          <option value="newspaper_half_h">Jornal (Meia Horizontal)</option>
+                          <option value="newspaper_half_v">Jornal (Meia Vertical)</option>
+                          <option value="newspaper_quarter">Jornal (Um Quarto)</option>
+                          <option value="newspaper_banner">Jornal (Rodapé/Banner)</option>
                         </select>
                       </div>
                       <div>
@@ -3929,14 +3934,19 @@ const AdminPage = () => {
                 )}
 
                 {/* Ads list grouped by slot */}
-                {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar"].map(slot => {
+                {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar", "newspaper_full", "newspaper_half_h", "newspaper_half_v", "newspaper_quarter", "newspaper_banner"].map(slot => {
                   const slotAds = advertisements.filter(a => a.slot === slot);
                   const labels: Record<string, string> = {
                     banner_top: "Banner Topo",
                     banner_bottom: "Banner Final",
                     sidebar_carousel: "Carrossel Lateral",
                     sidebar_video: "Vídeo Vertical",
-                    video_section_sidebar: "Destaque Vídeos (Lateral)"
+                    video_section_sidebar: "Destaque Vídeos (Lateral)",
+                    newspaper_full: "Jornal (Pág. Inteira)",
+                    newspaper_half_h: "Jornal (Meia Horizontal)",
+                    newspaper_half_v: "Jornal (Meia Vertical)",
+                    newspaper_quarter: "Jornal (Um Quarto)",
+                    newspaper_banner: "Jornal (Rodapé/Banner)"
                   };
                   return (
                     <div key={slot} className="mb-8">

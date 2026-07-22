@@ -144,7 +144,7 @@ const DigitalNewspaperTemplate = () => {
             .from("opinion_articles")
             .select("id, title, excerpt, content, author, avatar_url, created_at")
             .order("created_at", { ascending: false })
-            .limit(8),
+            .limit(1),
           supabase
             .from("advertisements")
             .select("id, title, image_url, link_url, slot")
@@ -200,11 +200,11 @@ const DigitalNewspaperTemplate = () => {
   // Página 1: Capa (usa 4 artigos principais)
   const capaArticles = news.slice(0, 4);
 
-  // Opinião: reservamos as últimas N páginas para opinião (máx 2)
-  const maxOpinions = Math.min(opinions.length, 2);
+  // Opinião: reservamos apenas 1 página de opinião
+  const maxOpinions = Math.min(opinions.length, 1);
   const existingOpinions = opinions.slice(0, maxOpinions);
 
-  // Artigos Internos: preenchem o espaço entre a Capa e as Opiniões. 
+  // Artigos Internos: preenchem o espaço entre a Capa e a Opinião.
   // Queremos 12 - 1(capa) - maxOpinions = X páginas internas.
   const targetInternalCount = 11 - maxOpinions;
   const internalArticles = news.slice(0, targetInternalCount);
