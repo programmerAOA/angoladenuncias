@@ -58,8 +58,6 @@ const getCategoryColor = (category: string) =>
 const AD_SLOTS = {
   FULL:    "newspaper_full",    // Whole page ad (A4 full — 180×257mm usable)
   HALF_H:  "newspaper_half_h",  // Half page horizontal (180×120mm)
-  HALF_V:  "newspaper_half_v",  // Half page vertical (85×257mm)
-  QUARTER: "newspaper_quarter", // Quarter page (85×120mm)
   BANNER:  "newspaper_banner",  // Banner strip (180×60mm)
   // Also pulls from existing web ad slots as fallback
   BANNER_TOP:    "banner_top",
@@ -559,10 +557,8 @@ const DigitalNewspaperTemplate = () => {
           internalArticles.map((article, idx) => {
             const pageNum = idx + 2;
             const catColor = getCategoryColor(article.category);
-            // Every 4th article page, show a quarter ad on the side
-            const quarterAd = (idx % 4 === 3) ? getAd([AD_SLOTS.QUARTER, AD_SLOTS.SQUARE], Math.floor(idx / 4)) : null;
-            // Every 6th article page, append a half-banner below content
-            const halfAd = (idx % 6 === 5) ? getAd([AD_SLOTS.HALF_H, AD_SLOTS.BANNER_TOP], Math.floor(idx / 6)) : null;
+            // Coloca publicidade horizontal na base de todas as páginas internas
+            const halfAd = getAd([AD_SLOTS.HALF_H, AD_SLOTS.BANNER, AD_SLOTS.BANNER_TOP, AD_SLOTS.BANNER_BOTTOM], idx);
 
             return (
               <div key={article.id} className="newspaper-page">
@@ -596,36 +592,24 @@ const DigitalNewspaperTemplate = () => {
                           />
                         </div>
                       )}
-                      {/* Ao remover o flex: 1 daqui, forçamos as colunas a balancearem o texto perfeitamente em vez de deixar uma coluna vazia */}
-                      <div className={`nyt-body clamp-internal ${quarterAd ? "" : "newspaper-cols-3"}`} style={{ fontSize: "12px", lineHeight: 1.5, color: "#292524", columnCount: quarterAd ? 2 : undefined }}>
+                      {/* Ao remover o flex: 1 daqui, forçamos as colunas a balancearem o texto perfeitamente */}
+                      <div className="nyt-body clamp-internal newspaper-cols-3" style={{ fontSize: "12px", lineHeight: 1.5, color: "#292524" }}>
                         {stripHtml(article.content)}
                       </div>
 
                       {/* Caixa Dinâmica de Preenchimento: absorve qualquer espaço branco indesejado na parte inferior */}
-                      {!quarterAd && (
-                        <div style={{ flex: 1, minHeight: halfAd ? "60px" : 0, display: "flex", flexDirection: "column", marginTop: "4px", overflow: "hidden" }}>
-                          {halfAd ? (
-                            <div style={{ flex: 1, overflow: "hidden", border: `1px solid ${catColor}20` }}>
-                              <AdImage ad={halfAd} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
-                            </div>
-                          ) : (
-                            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                              <AdPlaceholder label="Espaço Publicitário Automático" dims="Tamanho Ajustável" color={catColor} />
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Quarter ad sidebar (estica junto com a altura principal) */}
-                    {quarterAd && (
-                      <div style={{ width: "75px", flexShrink: 0, display: "flex", flexDirection: "column" }}>
-                        <div style={{ flex: 1, overflow: "hidden", border: `1px solid ${catColor}30` }}>
-                          <AdImage ad={quarterAd} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
-                        </div>
-                        <span className="nyt-sans" style={{ fontSize: "7px", color: "#9ca3af", textTransform: "uppercase", textAlign: "center", paddingTop: "2px" }}>Publicidade</span>
+                      <div style={{ flex: 1, minHeight: halfAd ? "60px" : 0, display: "flex", flexDirection: "column", marginTop: "4px", overflow: "hidden" }}>
+                        {halfAd ? (
+                          <div style={{ flex: 1, overflow: "hidden", border: `1px solid ${catColor}20` }}>
+                            <AdImage ad={halfAd} style={{ objectFit: "cover", width: "100%", height: "100%" }} />
+                          </div>
+                        ) : (
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                            <AdPlaceholder label="Espaço Publicitário Automático" dims="Tamanho Ajustável" color={catColor} />
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
 
@@ -644,7 +628,7 @@ const DigitalNewspaperTemplate = () => {
             const pageNum = internalArticles.length + 2 + idx;
             const opColor = "#9f1239";
             // Inject a square ad after the author block every 2nd opinion
-            const squareAd = (idx % 2 === 1) ? getAd([AD_SLOTS.QUARTER, AD_SLOTS.SQUARE], idx) : null;
+            const squareAd = (idx % 2 === 1) ? getAd([AD_SLOTS.SQUARE], idx) : null;
 
             return (
               <div key={opinion.id} className="newspaper-page">
