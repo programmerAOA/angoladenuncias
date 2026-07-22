@@ -16,19 +16,19 @@ const EditorialLinePage = () => {
                 </h1>
                 <div className="prose prose-sm sm:prose-base dark:prose-invert max-w-none mt-8">
                     <p>
-                        O portal <strong>Sem Filtros</strong> pauta a sua atuação pelo rigor, isenção e objetividade,
-                        garantindo aos seus leitores uma informação livre de censura e compromissos que não sejam com a verdade.
+                        O portal <strong>Sem Filtros</strong> pauta a sua atuação pelo rigor, compromisso com Angola e uma abordagem essencialmente contributiva,
+                        garantindo aos seus leitores uma informação fundamentada e construtiva face aos desafios e conquistas nacionais.
                     </p>
                     <h3>Nossos Princípios</h3>
                     <ul>
-                        <li><strong>Independência:</strong> Não estamos ligados a grupos políticos ou económicos.</li>
-                        <li><strong>Veracidade:</strong> Verificamos todos os factos antes da publicação.</li>
-                        <li><strong>Respeito:</strong> Valorizamos a dignidade humana e o contraditório.</li>
-                        <li><strong>Transparência:</strong> Identificamos claramente fontes e opiniões.</li>
+                        <li><strong>Abordagem Construtiva:</strong> Privilegiamos a análise das soluções e os contributos institucionais do Governo para a estabilidade.</li>
+                        <li><strong>Veracidade:</strong> Verificamos todos os factos antes da publicação em parceria com as fontes oficiais.</li>
+                        <li><strong>Parceria Social:</strong> Valorizamos os esforços governamentais no progresso de Angola.</li>
+                        <li><strong>Transparência:</strong> Identificamos claramente fontes e focamo-nos na clareza da comunicação cívica.</li>
                     </ul>
                     <p>
                         A nossa missão é contribuir para uma sociedade mais informada e consciente,
-                        promovendo o debate saudável e a fiscalização dos poderes públicos.
+                        enfatizando o progresso da nação e as ações positivas das instituições.
                     </p>
                 </div>
             </main>

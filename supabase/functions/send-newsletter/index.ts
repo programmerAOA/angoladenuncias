@@ -12,23 +12,27 @@ serve(async (req) => {
     }
 
     try {
-        const supabaseClient = createClient(
+        // Extrair o token JWT do header de autorização
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) throw new Error('Não autorizado: header de autorização em falta');
+        const token = authHeader.replace('Bearer ', '');
+
+        // Usar apenas o cliente admin (service role) para tudo
+        const supabaseAdmin = createClient(
             Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-            { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
         );
 
-        // Obter o utilizador validado
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        if (userError || !user) throw new Error('Não autorizado');
+        // Validar o utilizador pelo token JWT
+        const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+        if (userError || !user) throw new Error('Não autorizado: token inválido');
 
         // Verificar se o utilizador possui regra de 'admin'
-        // De acordo com o enum app_role: admin, editor, user
-        const { data: roles } = await supabaseClient
+        const { data: roles } = await supabaseAdmin
             .from('user_roles')
             .select('role')
             .eq('user_id', user.id)
-            .eq('role', 'admin') // Apenas admins podem enviar newsletters por agora
+            .eq('role', 'admin')
             .single();
 
         if (!roles) {
@@ -37,12 +41,6 @@ serve(async (req) => {
 
         const { subject, content } = await req.json();
         if (!subject || !content) throw new Error('Assunto e conteúdo são obrigatórios');
-
-        // Usar a chave de serviço (Service Role) para conseguir listar todos os perfis dos utilizadores
-        const supabaseAdmin = createClient(
-            Deno.env.get('SUPABASE_URL') ?? '',
-            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-        );
 
         // Buscar perfis com e-mail
         const { data: profiles, error: profilesError } = await supabaseAdmin

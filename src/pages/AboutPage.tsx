@@ -31,8 +31,8 @@ const AboutPage = () => {
                         Sobre o Sem Filtros
                     </h1>
                     <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl">
-                        Somos um portal de jornalismo independente, crítico e investigativo dedicado a informar os angolanos
-                        com rigor, transparência e sem qualquer filtro ideológico ou comercial.
+                        Somos um portal de jornalismo construtivo e investigativo dedicado a informar os angolanos
+                        com rigor, transparência e responsabilidade cidadã, focando num jornalismo contributivo.
                     </p>
                 </header>
 
@@ -51,14 +51,12 @@ const AboutPage = () => {
                                 nas páginas dos meios de comunicação convencionais.
                             </p>
                             <p className="text-foreground/80 leading-relaxed text-lg mt-4">
-                                Em Angola, onde a informação é frequentemente controlada por interesses políticos e económicos, o Sem Filtros
-                                posiciona-se como uma alternativa editorial independente. Não somos afiliados a nenhum partido político,
-                                grupo empresarial ou governo. O nosso único compromisso é com o leitor e com a verdade dos factos.
+                                Em Angola, o Sem Filtros
+                                posiciona-se como uma plataforma editorial contributiva. O nosso compromisso é com o leitor, com a verdade dos factos e com o destaque das acções positivas que contribuem para a estabilidade e progresso da nação.
                             </p>
                             <p className="text-foreground/80 leading-relaxed text-lg mt-4">
                                 Acreditamos que cidadãos bem informados constroem democracias mais sólidas. Por isso, trabalhamos todos os dias
-                                para produzir artigos aprofundados, investigações exclusivas e análises críticas que sirvam o interesse público
-                                e promovam a transparência nas instituições angolanas.
+                                para produzir artigos aprofundados, investigações rigorosas e análises contributivas que sirvam o interesse público, destaquem soluções e promovam o avanço institucional do país.
                             </p>
                         </div>
                     </section>
@@ -71,8 +69,8 @@ const AboutPage = () => {
                         </div>
                         <div className="p-8 bg-primary/5 border-l-4 border-primary rounded-r-xl">
                             <p className="text-foreground/90 leading-relaxed text-lg italic">
-                                "Ser a referência de jornalismo independente e investigativo em Angola, contribuindo para uma
-                                sociedade mais informada, mais crítica e mais exigente com o poder."
+                                "Ser a referência de jornalismo construtivo em Angola, contribuindo para uma
+                                sociedade mais informada, mais proactiva e parceira do desenvolvimento do país."
                             </p>
                         </div>
                         <div className="prose prose-zinc dark:prose-invert max-w-none text-justify mt-6">
@@ -95,12 +93,12 @@ const AboutPage = () => {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {[
-                                { title: "Independência", desc: "Não recebemos financiamento de partidos políticos, governos ou grupos empresariais com interesses editoriais." },
+                                { title: "Positivismo Institucional", desc: "Destacamos os esforços governamentais e institucionais que trazem impacto positivo à vida dos angolanos." },
                                 { title: "Rigor Factual", desc: "Todos os factos publicados são verificados junto de fontes primárias ou documentos oficiais antes da publicação." },
                                 { title: "Transparência", desc: "Identificamos sempre as nossas fontes quando possível. Quando usamos fontes confidenciais, explicamos o porquê." },
                                 { title: "Responsabilidade", desc: "Corrigimos os nossos erros abertamente e sem hesitação. O leitor tem o direito de ser bem informado." },
-                                { title: "Pluralismo", desc: "Damos espaço a diferentes perspectivas e vozes, garantindo um debate plural e enriquecedor." },
-                                { title: "Interesse Público", desc: "Priorizamos temas que afectam directamente a vida dos angolanos: saúde, economia, direitos, segurança e governação." },
+                                { title: "Pluralismo", desc: "Damos espaço a diferentes perspectivas e vozes, valorizando a crítica construtiva." },
+                                { title: "Contribuição Social", desc: "Priorizamos temas que promovem o desenvolvimento de Angola e valorizam a estabilidade nacional." },
                             ].map((v, i) => (
                                 <div key={i} className="p-6 bg-secondary border border-border rounded-xl">
                                     <h3 className="font-heading font-bold text-foreground mb-2">{v.title}</h3>
@@ -118,9 +116,9 @@ const AboutPage = () => {
                         </div>
                         <div className="prose prose-zinc dark:prose-invert max-w-none text-justify space-y-4">
                             <p className="text-foreground/80 leading-relaxed">
-                                O Sem Filtros foi fundado em 2024 por um grupo de jornalistas angolanos frustrados com as limitações éditoriais
-                                dos meios de comunicação tradicionais. Com recursos limitados mas com determinação inabalável, começámos a publicar
-                                conteúdo online, focando em investigações que os outros jornais optavam por ignorar.
+                                O Sem Filtros foi fundado em 2024 por um grupo de profissionais angolanos com a missão de elevar 
+                                o nível do debate público no país. Focámo-nos desde o início numa linha editorial contributiva, destacando soluções 
+                                e avanços num panorama que precisava de perspectivas mais construtivas.
                             </p>
                             <p className="text-foreground/80 leading-relaxed">
                                 Em poucos meses, o portal ganhou projecção nas redes sociais e tornou-se numa das referências de informação
