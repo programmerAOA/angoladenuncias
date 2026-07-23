@@ -291,7 +291,7 @@ const AdminPage = () => {
 
   // Site Settings
   const [siteSettingsForm, setSiteSettingsForm] = useState({
-    siteName: "", primaryColor: "", facebookUrl: "", instagramUrl: "", youtubeUrl: "", contactEmail: "", whatsappNumber: "", copyrightText: "", logoUrl: "", geminiApiKey: ""
+    siteName: "", primaryColor: "", facebookUrl: "", instagramUrl: "", youtubeUrl: "", contactEmail: "", whatsappNumber: "", copyrightText: "", logoUrl: "", geminiApiKey: "", puterApiKey: ""
   });
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [savingSiteSettings, setSavingSiteSettings] = useState(false);
@@ -301,7 +301,7 @@ const AdminPage = () => {
     setSiteSettingsLoading(true);
     const { data } = await supabase.from("site_config" as any).select("key, value");
     if (data) {
-      const map: any = { site_name: "siteName", site_logo_url: "logoUrl", primary_color: "primaryColor", facebook_url: "facebookUrl", instagram_url: "instagramUrl", youtube_url: "youtubeUrl", contact_email: "contactEmail", whatsapp_number: "whatsappNumber", copyright_text: "copyrightText", gemini_api_key: "geminiApiKey" };
+      const map: any = { site_name: "siteName", site_logo_url: "logoUrl", primary_color: "primaryColor", facebook_url: "facebookUrl", instagram_url: "instagramUrl", youtube_url: "youtubeUrl", contact_email: "contactEmail", whatsapp_number: "whatsappNumber", copyright_text: "copyrightText", gemini_api_key: "geminiApiKey", puter_api_key: "puterApiKey" };
       const config: any = { ...siteSettingsForm };
       data.forEach(row => { if (map[row.key] && row.value) config[map[row.key]] = row.value });
       setSiteSettingsForm(config as any);
@@ -332,7 +332,8 @@ const AdminPage = () => {
         contact_email: siteSettingsForm.contactEmail,
         whatsapp_number: siteSettingsForm.whatsappNumber,
         copyright_text: siteSettingsForm.copyrightText,
-        gemini_api_key: siteSettingsForm.geminiApiKey
+        gemini_api_key: siteSettingsForm.geminiApiKey,
+        puter_api_key: siteSettingsForm.puterApiKey
       };
 
       for (const [key, value] of Object.entries(configToSave)) {
@@ -1374,7 +1375,10 @@ const AdminPage = () => {
           throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
         }
 
-        await puter.auth.setAuthToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ');
+        const { data: puterConfig } = await supabase.from("site_config" as any).select("value").eq("key", "puter_api_key").maybeSingle() as any;
+        const puterToken = puterConfig?.value || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ';
+
+        await puter.auth.setAuthToken(puterToken);
         const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
@@ -1385,15 +1389,7 @@ const AdminPage = () => {
         }
 
         let cleanedJsonText = rawText.trim();
-        if (cleanedJsonText.startsWith("```json")) {
-          cleanedJsonText = cleanedJsonText.substring(7);
-        } else if (cleanedJsonText.startsWith("```")) {
-          cleanedJsonText = cleanedJsonText.substring(3);
-        }
-        if (cleanedJsonText.endsWith("```")) {
-          cleanedJsonText = cleanedJsonText.substring(0, cleanedJsonText.length - 3);
-        }
-        cleanedJsonText = cleanedJsonText.trim();
+        cleanedJsonText = cleanedJsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
         data = JSON.parse(cleanedJsonText);
       }
@@ -1560,7 +1556,10 @@ const AdminPage = () => {
           throw new Error("Não foi possível aceder ao servidor de Inteligência Artificial. Por favor, adicione uma chave de API Gemini no painel de administração ou verifique se o script do Puter.js foi bloqueado pelo seu navegador.");
         }
 
-        await puter.auth.setAuthToken('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ');
+        const { data: puterConfig } = await supabase.from("site_config" as any).select("value").eq("key", "puter_api_key").maybeSingle() as any;
+        const puterToken = puterConfig?.value || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ';
+
+        await puter.auth.setAuthToken(puterToken);
         const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
@@ -1571,15 +1570,7 @@ const AdminPage = () => {
         }
 
         let cleanedJsonText = rawText.trim();
-        if (cleanedJsonText.startsWith("```json")) {
-          cleanedJsonText = cleanedJsonText.substring(7);
-        } else if (cleanedJsonText.startsWith("```")) {
-          cleanedJsonText = cleanedJsonText.substring(3);
-        }
-        if (cleanedJsonText.endsWith("```")) {
-          cleanedJsonText = cleanedJsonText.substring(0, cleanedJsonText.length - 3);
-        }
-        cleanedJsonText = cleanedJsonText.trim();
+        cleanedJsonText = cleanedJsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
         data = JSON.parse(cleanedJsonText);
       }
@@ -3818,11 +3809,9 @@ const AdminPage = () => {
                           <option value="sidebar_carousel">Carrossel Lateral</option>
                           <option value="sidebar_video">Vídeo Vertical</option>
                           <option value="video_section_sidebar">Destaque Vídeos (Lateral)</option>
-                          <option value="newspaper_full">Jornal (Pág. Inteira)</option>
-                          <option value="newspaper_half_h">Jornal (Meia Horizontal)</option>
-                          <option value="newspaper_half_v">Jornal (Meia Vertical)</option>
-                          <option value="newspaper_quarter">Jornal (Um Quarto)</option>
-                          <option value="newspaper_banner">Jornal (Rodapé/Banner)</option>
+                          <option value="newspaper_full">Jornal (Pág. Inteira - 180×257mm)</option>
+                          <option value="newspaper_half_h">Jornal (Meia Horiz. - 180×120mm)</option>
+                          <option value="newspaper_banner">Jornal (Rodapé/Banner - 180×60mm)</option>
                         </select>
                       </div>
                       <div>
@@ -3934,7 +3923,7 @@ const AdminPage = () => {
                 )}
 
                 {/* Ads list grouped by slot */}
-                {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar", "newspaper_full", "newspaper_half_h", "newspaper_half_v", "newspaper_quarter", "newspaper_banner"].map(slot => {
+                {["banner_top", "banner_bottom", "sidebar_carousel", "sidebar_video", "video_section_sidebar", "newspaper_full", "newspaper_half_h", "newspaper_banner"].map(slot => {
                   const slotAds = advertisements.filter(a => a.slot === slot);
                   const labels: Record<string, string> = {
                     banner_top: "Banner Topo",
@@ -3942,11 +3931,9 @@ const AdminPage = () => {
                     sidebar_carousel: "Carrossel Lateral",
                     sidebar_video: "Vídeo Vertical",
                     video_section_sidebar: "Destaque Vídeos (Lateral)",
-                    newspaper_full: "Jornal (Pág. Inteira)",
-                    newspaper_half_h: "Jornal (Meia Horizontal)",
-                    newspaper_half_v: "Jornal (Meia Vertical)",
-                    newspaper_quarter: "Jornal (Um Quarto)",
-                    newspaper_banner: "Jornal (Rodapé/Banner)"
+                    newspaper_full: "Jornal (Pág. Inteira - 180×257mm)",
+                    newspaper_half_h: "Jornal (Meia Horizontal - 180×120mm)",
+                    newspaper_banner: "Jornal (Rodapé/Banner - 180×60mm)"
                   };
                   return (
                     <div key={slot} className="mb-8">
@@ -4433,6 +4420,11 @@ const AdminPage = () => {
                         <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Chave de API Gemini (Editor-Chefe Inteligente)</label>
                         <input type="password" value={siteSettingsForm.geminiApiKey} onChange={e => setSiteSettingsForm(f => ({ ...f, geminiApiKey: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary font-mono" placeholder="AQ.Ab8RN..." />
                         <p className="text-[10px] text-muted-foreground mt-1">Insira a chave obtida no Google AI Studio. Esta chave será usada no servidor de produção de forma segura para reescrever as notícias livre de bloqueios CORS do navegador.</p>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">Token / Chave de API Puter.js (Fallback de IA)</label>
+                        <input type="password" value={siteSettingsForm.puterApiKey} onChange={e => setSiteSettingsForm(f => ({ ...f, puterApiKey: e.target.value }))} className="w-full bg-secondary border border-border px-3 py-2 text-sm focus:border-primary font-mono" placeholder="eyJhbGciOiJIUzI1Ni..." />
+                        <p className="text-[10px] text-muted-foreground mt-1">Token de autenticação do Puter.js utilizado como sistema de reserva (fallback) client-side quando a API Gemini não estiver configurada no servidor.</p>
                       </div>
                     </div>
                   </div>

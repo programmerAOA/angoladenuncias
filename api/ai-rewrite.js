@@ -258,15 +258,7 @@ ${cleanContent}
 
         // Clean JSON formatting if Gemini returned backticks surrounding it
         let cleanedJsonText = rawText.trim();
-        if (cleanedJsonText.startsWith("```json")) {
-            cleanedJsonText = cleanedJsonText.substring(7);
-        } else if (cleanedJsonText.startsWith("```")) {
-            cleanedJsonText = cleanedJsonText.substring(3);
-        }
-        if (cleanedJsonText.endsWith("```")) {
-            cleanedJsonText = cleanedJsonText.substring(0, cleanedJsonText.length - 3);
-        }
-        cleanedJsonText = cleanedJsonText.trim();
+        cleanedJsonText = cleanedJsonText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
 
         // Perform validation parse
         const parsed = JSON.parse(cleanedJsonText);
