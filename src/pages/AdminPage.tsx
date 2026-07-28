@@ -1378,7 +1378,7 @@ const AdminPage = () => {
         const { data: puterConfig } = await supabase.from("site_config" as any).select("value").eq("key", "puter_api_key").maybeSingle() as any;
         const puterToken = puterConfig?.value || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ';
 
-        await puter.auth.setAuthToken(puterToken);
+        // await puter.auth.setAuthToken(puterToken);
         const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
@@ -1559,7 +1559,7 @@ const AdminPage = () => {
         const { data: puterConfig } = await supabase.from("site_config" as any).select("value").eq("key", "puter_api_key").maybeSingle() as any;
         const puterToken = puterConfig?.value || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6InYyIn0.eyJ0IjoidCIsInYiOiIyIiwidG9rZW5fdWlkIjoiYzNhMThkYjgtNTc2NS00NjFiLThkYzQtYzFmNGE0YjhmNWRkIiwidXUiOiJjdnZSNHRTMlRXQ3ZQRnZNTzlIdDNBPT0iLCJzdSI6Iko2ZVlIa1BoUjg2VkZwMWliaUVsYnc9PSIsImFpIjoiY3Z2UjR0UzJUV0N2UEZ2TU85SHQzQT09IiwiZnVsbF9hY2Nlc3MiOnRydWUsImlhdCI6MTc4NDU3NTA0Nn0.K6gql00PGBMWr1N-Anlx8XHZ2e52ejIuHCti5JsGPLQ';
 
-        await puter.auth.setAuthToken(puterToken);
+        // await puter.auth.setAuthToken(puterToken);
         const puterResponse = await puter.ai.chat(puterPrompt, {
           model: 'gemini-3.5-flash'
         });
