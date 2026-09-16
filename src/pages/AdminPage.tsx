@@ -105,14 +105,14 @@ function buildPuterPrompt(title: string, line: string, url: string, content: str
   const safeTitle = (title || "(sem título)").replace(/"/g, '\\"');
   return "Tu és um motor avançado de reescrita jornalística e geração editorial automática.\n\n" +
     "O teu nome de operação é: ANGOLA SEM FILTROS ENGINE.\n\n" +
-    "OBJECTIVO:\nTransformar qualquer notícia fornecida em um artigo jornalístico completo, original, contributivo e construtivo, optimizado para SEO e pronto para publicação num CMS.\n\n---\n\n" +
+    "OBJECTIVO:\nTransformar qualquer notícia fornecida em um artigo jornalístico completo, original, crítico, transparente e rigoroso, optimizado para SEO e pronto para publicação num CMS, priorizando sempre o bem-estar do povo angolano.\n\n---\n\n" +
     "## REGRAS EDITORIAIS OBRIGATÓRIAS (ANGOLA SEM FILTROS)\n\n" +
-    "- Escrever sempre em português de Angola\n- Usar exclusivamente o antigo Acordo Ortográfico (pré-AO90)\n- Estilo: construtivo, contributivo, focado em soluções e realizações institucionais\n- Evitar cópia ou estrutura da fonte original\n- Valorizar a linguagem institucional e o impacto positivo das ações de governação\n- Títulos devem ser cativantes, respeitosos e optimizados para SEO (evitar alarmismos)\n- Evitar repetição de palavras (usar variações ricas do português)\n- Sempre incluir o contexto do esforço governamental e institucional quando aplicável\n\n---\n\n" +
+    "- Escrever sempre em português de Angola\n- Usar exclusivamente o antigo Acordo Ortográfico (pré-AO90)\n- Estilo: crítico, independente, transparente, rigoroso e comprometido com a verdade\n- Prioridade Absoluta: salvaguardar o bem-estar do povo de Angola e o interesse público em primeiro lugar\n- Evitar cópia ou reprodução acrítica de discursos oficiais e comunicados institucionais\n- Escrutinar os actos de governação, apontando falhas, contradições, problemas sociais e a eficácia real das políticas públicas\n- Títulos devem ser incisivos, transparentes e captar o impacto real dos acontecimentos na vida dos cidadãos\n- Evitar repetição de palavras e termos vagos (usar linguagem precisa, firme e clara)\n- Exigir responsabilidade e prestação de contas dos gestores e instituições públicas\n\n---\n\n" +
     "## ESTRUTURA OBRIGATÓRIA DO ARTIGO\n\n" +
-    "### 1. TÍTULO (SEO + IMPACTO)\n- Curto ou médio\n- Construtivo, centrado em realizações com palavra-chave principal\n- Pode omitir parcialmente o sujeito para gerar curiosidade construtiva\n\n" +
-    "### 2. RESUMO (curto)\n- 1 a 3 linhas apenas\n- Informação directa, com foco no impacto positivo\n\n" +
-    "### 3. TEXTO PRINCIPAL (3 a 5 ALÍNEAS FACTUAIS)\n- Estrutura em pontos ou parágrafos curtos\n- Informação reorganizada (não copiada)\n- Contexto contributivo sempre que possível\n- Clareza e objectividade\n\n" +
-    "### 4. ANÁLISE — ANGOLA SEM FILTROS\n- Tom contributivo e construtivo (parcialidade positiva para estabilidade governamental)\n- Explica as mais-valias sociais, políticas ou económicas das medidas\n- Linguagem ponderada, evidenciando o esforço do Governo no poder\n- Destacar as soluções institucionais e o progresso em marcha\n\n" +
+    "### 1. TÍTULO (SEO + IMPACTO POPULAR)\n- Curto ou médio\n- Incisivo, focado na realidade dos factos e no impacto directo para o povo angolano\n\n" +
+    "### 2. RESUMO (curto)\n- 1 a 3 linhas apenas\n- Informação directa, objetiva e sem rodeios sobre o acontecimento\n\n" +
+    "### 3. TEXTO PRINCIPAL (3 a 5 ALÍNEAS FACTUAIS)\n- Estrutura em pontos ou parágrafos curtos\n- Factos reorganizados com clareza, imparcialidade e rigor investigativo\n- Destacar dados concretos, consequências sociais e declarações relevantes\n\n" +
+    "### 4. ANÁLISE — ANGOLA SEM FILTROS\n- Análise sem filtros, profundamente crítica, transparente e desassombrada\n- Questionar os interesses em jogo, avaliar se as medidas servem verdadeiramente o povo ou apenas elites\n- Identificar riscos, omissões, corrupção ou incompetência administrativa quando aplicável\n- Propor o escrutínio público e a defesa intransigente dos direitos e do bem-estar dos cidadãos angolanos\n\n" +
     "### 5. SEO\n- Lista de palavras-chave separadas por vírgulas (horizontal)\n- Optimizado para Google e redes sociais\n\n---\n\n" +
     "## DADOS A GERAR (OBRIGATÓRIO EM JSON)\n\nResponde SEM texto fora do JSON. Devolve APENAS o JSON abaixo preenchido:\n\n" +
     '{\n  "title": "",\n  "slug": "",\n  "category": "",\n  "author": "Angola Sem Filtros",\n  "summary": "",\n' +
@@ -121,7 +121,7 @@ function buildPuterPrompt(title: string, line: string, url: string, content: str
     '  "social": { "facebook": "", "instagram": "", "twitter": "" },\n' +
     '  "reliability_score": 0,\n  "language": "pt-AO",\n  "editorial_mode": "angola_sem_filtros"\n}\n\n---\n\n' +
     "## REGRAS DE GERAÇÃO DE CAMPOS\n\nslug:\n- lowercase, separado por hífen, sem acentos\n\nmeta_description:\n- máximo 155 caracteres\n- resumo jornalístico optimizado SEO\n\ntags:\n- 5 a 12 tags relevantes (array de strings)\n\nsocial:\n- gerar 3 versões diferentes (facebook, instagram, twitter)\n- estilo viral e informativo\n\nreliability_score:\n- 0 a 100\n- baseado em: consistência da fonte, clareza dos dados, nível de confirmação\n- se for rumor → abaixo de 40\n- se for confirmado → acima de 70\n\n---\n\n" +
-    "## IMPORTANTE\n\n- Não inventar factos fora do texto base\n- Reorganizar e enriquecer, não fabricar informação\n- Se faltar dados, manter tom construtivo\n- Nunca sair do formato JSON\n\n---\n\n" +
+    "## IMPORTANTE\n\n- Não inventar factos fora do texto base\n- Reorganizar e enriquecer, não fabricar informação\n- Manter a clareza e transparência no apuramento\n- Nunca sair do formato JSON\n\n---\n\n" +
     "## INPUT\n\nTÍTULO ORIGINAL: " + safeTitle + "\n" +
     "CONTEXTO ADICIONAL: " + (line || "Nenhum") + "\n" +
     "FONTE: " + (url || "Não especificada") + "\n\n" +
@@ -3397,21 +3397,25 @@ const AdminPage = () => {
                     </button>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Temas rápidos:</span>
-                    {['Sonangol', 'João Lourenço', 'Economia Angola', 'Petróleo', 'Namibe', 'Luanda', 'MPLA', 'UNITA'].map(f => (
-                      <button key={f} onClick={() => { setDiscoveryQuery(f); handleDiscoverNews(f); }} className="text-[10px] px-2.5 py-1 border border-border bg-secondary hover:border-red-500/50 hover:text-red-400 transition-colors font-bold text-muted-foreground rounded-sm">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Fontes / Temas rápidos:</span>
+                    {['Maka Mavulo (makamavulo.com)', 'Sonangol', 'João Lourenço', 'Economia Angola', 'Petróleo', 'Namibe', 'Luanda', 'MPLA', 'UNITA'].map(f => (
+                      <button key={f} onClick={() => { 
+                        const queryToUse = f.includes('makamavulo.com') ? 'site:makamavulo.com' : f;
+                        setDiscoveryQuery(queryToUse); 
+                        handleDiscoverNews(queryToUse); 
+                      }} className={`text-[10px] px-2.5 py-1 border transition-colors font-bold rounded-sm ${f.includes('makamavulo.com') ? 'border-red-600 bg-red-950/40 text-red-300 hover:bg-red-900/60' : 'border-border bg-secondary hover:border-red-500/50 hover:text-red-400 text-muted-foreground'}`}>
                         {f}
                       </button>
                     ))}
                     <div className="ml-auto flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Período:</span>
-                      <select value={discoveryTime} onChange={e => setDiscoveryTime(e.target.value)} className="bg-secondary border border-border text-[11px] text-foreground px-2 py-1 focus:outline-none focus:border-red-600">
-                        <option value="">Qualquer</option>
-                        <option value="qdr:h1">Última hora</option>
-                        <option value="qdr:d1">24h</option>
-                        <option value="qdr:d2">48h</option>
-                        <option value="qdr:w1">Semana</option>
-                        <option value="qdr:m1">Mês</option>
+                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Filtrar por Período:</span>
+                      <select value={discoveryTime} onChange={e => setDiscoveryTime(e.target.value)} className="bg-secondary border border-border text-[11px] text-foreground px-2 py-1 focus:outline-none focus:border-red-600 font-semibold">
+                        <option value="qdr:d1">📅 Data Actual (Últimas 24h)</option>
+                        <option value="qdr:d2">⏱️ Últimas 48 Horas</option>
+                        <option value="qdr:h1">🔥 Última Hora</option>
+                        <option value="qdr:w1">📆 Última Semana</option>
+                        <option value="qdr:m1">🗓️ Último Mês</option>
+                        <option value="">🌐 Sem Limite de Data</option>
                       </select>
                     </div>
                   </div>

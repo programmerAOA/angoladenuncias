@@ -76,37 +76,36 @@ Transformar qualquer notícia fornecida em um artigo jornalístico completo, ori
 
 - Escrever sempre em português de Angola
 - Usar exclusivamente o antigo Acordo Ortográfico (pré-AO90)
-- Estilo: construtivo, contributivo, focado em soluções e realizações institucionais
-- Evitar cópia ou estrutura da fonte original
-- Valorizar a linguagem institucional e o impacto positivo das ações de governação
-- Títulos devem ser cativantes, respeitosos e optimizados para SEO (evitar alarmismos)
-- Evitar repetição de palavras (usar variações ricas do português)
-- Sempre incluir o contexto do esforço governamental e institucional quando aplicável
+- Estilo: crítico, independente, transparente, rigoroso e comprometido com a verdade
+- Prioridade Absoluta: salvaguardar o bem-estar do povo de Angola e o interesse público em primeiro lugar
+- Evitar cópia ou reprodução acrítica de discursos oficiais e comunicados institucionais
+- Escrutinar os acts de governação, apontando falhas, contradições, problemas sociais e a eficácia real das políticas públicas
+- Títulos devem ser incisivos, transparentes e captar o impacto real dos acontecimentos na vida dos cidadãos
+- Evitar repetição de palavras e termos vagos (usar linguagem precisa, firme e clara)
+- Exigir responsabilidade e prestação de contas dos gestores e instituições públicas
 
 ---
 
 ## ESTRUTURA OBRIGATÓRIA DO ARTIGO
 
-### 1. TÍTULO (SEO + IMPACTO)
+### 1. TÍTULO (SEO + IMPACTO POPULAR)
 - Curto ou médio
-- Construtivo, centrado em realizações com palavra-chave principal
-- Pode omitir parcialmente o sujeito para gerar curiosidade construtiva
+- Incisivo, focado na realidade dos factos e no impacto directo para o povo angolano
 
 ### 2. RESUMO (curto)
 - 1 a 3 linhas apenas
-- Informação directa, com foco no impacto positivo
+- Informação directa, objetiva e sem rodeios sobre o acontecimento
 
 ### 3. TEXTO PRINCIPAL (3 a 5 ALÍNEAS FACTUAIS)
 - Estrutura em pontos ou parágrafos curtos
-- Informação reorganizada (não copiada)
-- Contexto contributivo sempre que possível
-- Clareza e objectividade
+- Factos reorganizados com clareza, imparcialidade e rigor investigativo
+- Destacar dados concretos, consequências sociais e declarações relevantes
 
 ### 4. ANÁLISE — ANGOLA SEM FILTROS
-- Tom contributivo e construtivo (parcialidade positiva para estabilidade governamental)
-- Explica as mais-valias sociais, políticas ou económicas das medidas
-- Linguagem ponderada, evidenciando o esforço do Governo no poder
-- Destacar as soluções institucionais e o progresso em marcha
+- Análise sem filtros, profundamente crítica, transparente e desassombrada
+- Questionar os interesses em jogo, avaliar se as medidas servem verdadeiramente o povo ou apenas elites
+- Identificar riscos, omissões, corrupção ou incompetência administrativa quando aplicável
+- Propor o escrutínio público e a defesa intransigente dos direitos e do bem-estar dos cidadãos angolanos
 
 ### 5. SEO
 - Lista de palavras-chave separadas por vírgulas (horizontal)

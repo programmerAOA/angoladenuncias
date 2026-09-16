@@ -37,12 +37,113 @@ serve(async (req: Request) => {
         });
     }
 
-    // tbs dinâmico: qdr:h1 (1h), qdr:d1 (24h), qdr:d2 (48h), qdr:w1 (1 semana), qdr:m1 (1 mês), "" (qualquer)
+    // tbs dinâmico: qdr:h1 (1h), qdr:d1 (24h/data actual), qdr:d2 (48h), qdr:w1 (1 semana), qdr:m1 (1 mês), "" (qualquer)
     const tbsParam = tbs ? `&tbs=${encodeURIComponent(tbs)}` : "";
     const serpUrl = `https://serpapi.com/search?engine=google_news&q=${encodeURIComponent(query)}&gl=ao&hl=pt${tbsParam}&api_key=${apiKey}`;
 
-    // ── Helper: fetch Correio Kianda RSS and filter by query keywords ──────
-    const fetchCorreioKianda = async (searchQuery: string): Promise<any[]> => {
+    // ── Helper: Calculate max age in hours from tbs param ───────────────
+    const getMaxAgeHours = (tbsFilter: string): number => {
+        if (tbsFilter === 'qdr:d1') return 24; // Data actual (hoje / 24h)
+        if (tbsFilter === 'qdr:d2') return 48; // Últimas 48 horas
+        if (tbsFilter === 'qdr:h1') return 1;
+        if (tbsFilter === 'qdr:w1') return 168; // 7 dias
+        if (tbsFilter === 'qdr:m1') return 720; // 30 dias
+        return 0; // Sem filtro
+    };
+
+    // ── Helper: fetch Maka Mavulo RSS and filter by query & date ─────────
+    const fetchMakaMavulo = async (searchQuery: string, tbsFilter: string): Promise<any[]> => {
+        try {
+            const rssResponse = await fetch("https://makamavulo.com/feed/", {
+                headers: { 'User-Agent': 'AngolaNews-OSINT/1.0' }
+            });
+            if (!rssResponse.ok) return [];
+
+            const rssText = await rssResponse.text();
+
+            const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+            const titleRegex = /<title><!\[CDATA\[(.*?)\]\]><\/title>|<title>(.*?)<\/title>/;
+            const linkRegex = /<link>(.*?)<\/link>/;
+            const pubDateRegex = /<pubDate>(.*?)<\/pubDate>/;
+            const descRegex = /<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description>([\s\S]*?)<\/description>/;
+            const mediaRegex = /<media:content[^>]+url="([^"]+)"|<enclosure[^>]+url="([^"]+)"|<img[^>]+src="([^"]+)"/;
+
+            const cleanedQuery = searchQuery.replace(/site:makamavulo\.com/gi, "").trim();
+            const keywords = cleanedQuery
+                .toLowerCase()
+                .split(/\s+/)
+                .filter((k: string) => k.length > 2 && k !== 'angola' && k !== 'makamavulo' && k !== 'makamavulo.com');
+
+            const now = Date.now();
+            const maxAgeHours = getMaxAgeHours(tbsFilter);
+
+            const results: any[] = [];
+            let match;
+
+            while ((match = itemRegex.exec(rssText)) !== null) {
+                const itemXml = match[1];
+
+                const titleMatch = titleRegex.exec(itemXml);
+                const title = (titleMatch?.[1] || titleMatch?.[2] || "").trim();
+
+                const linkMatch = linkRegex.exec(itemXml);
+                const url = (linkMatch?.[1] || "").trim();
+
+                const pubDateMatch = pubDateRegex.exec(itemXml);
+                const pubDateStr = (pubDateMatch?.[1] || "").trim();
+
+                const itemDate = pubDateStr ? new Date(pubDateStr) : new Date();
+                const itemTime = itemDate.getTime();
+
+                // Filtrar por data se houver limite de tempo ativo
+                if (maxAgeHours > 0 && (now - itemTime) > (maxAgeHours * 60 * 60 * 1000)) {
+                    continue;
+                }
+
+                const descMatch = descRegex.exec(itemXml);
+                const rawDesc = (descMatch?.[1] || descMatch?.[2] || "").trim();
+                const snippet = rawDesc
+                    .replace(/<[^>]+>/g, " ")
+                    .replace(/O conteúdo .+ aparece primeiro em .+\./g, "")
+                    .replace(/\s+/g, " ")
+                    .trim()
+                    .substring(0, 300);
+
+                const mediaMatch = mediaRegex.exec(itemXml);
+                const image = mediaMatch?.[1] || mediaMatch?.[2] || mediaMatch?.[3] || "";
+
+                if (!title || !url) continue;
+
+                const isGeneric = keywords.length === 0;
+                const titleLower = title.toLowerCase();
+                const snippetLower = snippet.toLowerCase();
+                const hasMatch = isGeneric || keywords.some((k: string) => titleLower.includes(k) || snippetLower.includes(k));
+
+                if (hasMatch) {
+                    results.push({
+                        title,
+                        source: "Maka Mavulo",
+                        date: itemDate.toISOString(),
+                        category: "Geral",
+                        snippet,
+                        content: snippet,
+                        url,
+                        image,
+                        isTranslated: false,
+                        reliability: 85
+                    });
+                }
+            }
+
+            return results;
+        } catch (err) {
+            console.error("Maka Mavulo RSS error:", err);
+            return [];
+        }
+    };
+
+    // ── Helper: fetch Correio Kianda RSS and filter by query & date ──────
+    const fetchCorreioKianda = async (searchQuery: string, tbsFilter: string): Promise<any[]> => {
         try {
             const rssResponse = await fetch("https://correiokianda.info/feed/", {
                 headers: { 'User-Agent': 'AngolaNews-OSINT/1.0' }
@@ -58,11 +159,13 @@ serve(async (req: Request) => {
             const descRegex = /<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>|<description>([\s\S]*?)<\/description>/;
             const mediaRegex = /<media:content[^>]+url="([^"]+)"|<enclosure[^>]+url="([^"]+)"/;
 
-            // Keywords to filter results (ignore short/generic words)
             const keywords = searchQuery
                 .toLowerCase()
                 .split(/\s+/)
                 .filter((k: string) => k.length > 2 && k !== 'angola');
+
+            const now = Date.now();
+            const maxAgeHours = getMaxAgeHours(tbsFilter);
 
             const results: any[] = [];
             let match;
@@ -77,7 +180,14 @@ serve(async (req: Request) => {
                 const url = (linkMatch?.[1] || "").trim();
 
                 const pubDateMatch = pubDateRegex.exec(itemXml);
-                const pubDate = (pubDateMatch?.[1] || "").trim();
+                const pubDateStr = (pubDateMatch?.[1] || "").trim();
+
+                const itemDate = pubDateStr ? new Date(pubDateStr) : new Date();
+                const itemTime = itemDate.getTime();
+
+                if (maxAgeHours > 0 && (now - itemTime) > (maxAgeHours * 60 * 60 * 1000)) {
+                    continue;
+                }
 
                 const descMatch = descRegex.exec(itemXml);
                 const rawDesc = (descMatch?.[1] || descMatch?.[2] || "").trim();
@@ -103,7 +213,7 @@ serve(async (req: Request) => {
                     results.push({
                         title,
                         source: "Correio Kianda",
-                        date: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
+                        date: itemDate.toISOString(),
                         category: "Geral",
                         snippet,
                         content: snippet,
@@ -123,10 +233,11 @@ serve(async (req: Request) => {
     };
 
     try {
-        // Fetch SerpApi and Correio Kianda in parallel
-        const [serpResponse, kiandaResults] = await Promise.all([
+        // Fetch SerpApi, Maka Mavulo RSS and Correio Kianda in parallel
+        const [serpResponse, makaMavuloResults, kiandaResults] = await Promise.all([
             fetch(serpUrl),
-            fetchCorreioKianda(query)
+            fetchMakaMavulo(query, tbs),
+            fetchCorreioKianda(query, tbs)
         ]);
 
         const data = await serpResponse.json();
@@ -145,9 +256,15 @@ serve(async (req: Request) => {
             isTranslated: false
         }));
 
-        // Merge results: SerpApi first, then Correio Kianda (deduplicate by URL)
+        // Merge results: Maka Mavulo first if requested or general, then SerpApi, then Correio Kianda
         const seenUrls = new Set<string>();
-        const merged = [...serpResults, ...kiandaResults].filter((item: any) => {
+        const isMakaMavuloSearch = query.toLowerCase().includes("makamavulo");
+
+        const combined = isMakaMavuloSearch
+            ? [...makaMavuloResults, ...serpResults, ...kiandaResults]
+            : [...serpResults, ...makaMavuloResults, ...kiandaResults];
+
+        const merged = combined.filter((item: any) => {
             if (!item.url || seenUrls.has(item.url)) return false;
             seenUrls.add(item.url);
             return true;

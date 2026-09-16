@@ -233,8 +233,8 @@ const Index = ({ defaultCategory }: IndexProps) => {
   return (
     <div className="min-h-screen bg-background">
       <SEOMetadata
-        title="Sem Filtros | Análise Contributiva e Notícias de Angola"
-        description="Portal de notícias dedicado à análise contributiva, construtiva e informação sobre o desenvolvimento de Angola e o mundo."
+        title="Sem Filtros | Análise Crítica, Transparente e Notícias de Angola"
+        description="Portal de notícias independente dedicado à análise crítica sem filtros, transparência total e defesa do bem-estar do povo de Angola."
       />
       <Header
         selectedCategory={selectedCategory}
@@ -252,7 +252,7 @@ const Index = ({ defaultCategory }: IndexProps) => {
       <AdBanner slot="banner_top" />
 
       <main>
-        <h1 className="sr-only">Sem Filtros Notícias e Análise Contributiva</h1>
+        <h1 className="sr-only">Sem Filtros — Notícias, Análise Crítica e Transparência em Angola</h1>
         {loading ? (
           <LoadingSpinner fullScreen />
         ) : isFiltering ? (

@@ -31,8 +31,8 @@ const AboutPage = () => {
                         Sobre o Sem Filtros
                     </h1>
                     <p className="text-xl text-muted-foreground leading-relaxed max-w-3xl">
-                        Somos um portal de jornalismo construtivo e investigativo dedicado a informar os angolanos
-                        com rigor, transparência e responsabilidade cidadã, focando num jornalismo contributivo.
+                        Somos um portal de jornalismo independente e investigativo dedicado a informar os angolanos
+                        com rigor, transparência total e responsabilidade cidadã, salvaguardando em primeiro lugar o bem-estar do povo.
                     </p>
                 </header>
 
@@ -46,17 +46,14 @@ const AboutPage = () => {
                         </div>
                         <div className="prose prose-zinc dark:prose-invert max-w-none text-justify">
                             <p className="text-foreground/80 leading-relaxed text-lg">
-                                O <strong>Sem Filtros</strong> nasceu da convicção de que Angola merece um jornalismo livre, responsável e sem autocensura.
-                                A nossa missão é simples: publicar a verdade, documentar os factos e dar voz aos cidadãos que raramente aparecem
-                                nas páginas dos meios de comunicação convencionais.
+                                O <strong>Sem Filtros</strong> nasceu da convicção de que Angola merece um jornalismo livre, crítico, transparente e sem autocensura.
+                                A nossa missão é publicar a verdade crua, documentar os factos com rigor investigativo e dar voz aos cidadãos angolanos.
                             </p>
                             <p className="text-foreground/80 leading-relaxed text-lg mt-4">
-                                Em Angola, o Sem Filtros
-                                posiciona-se como uma plataforma editorial contributiva. O nosso compromisso é com o leitor, com a verdade dos factos e com o destaque das acções positivas que contribuem para a estabilidade e progresso da nação.
+                                Em Angola, o Sem Filtros posiciona-se como uma plataforma de escrutínio rigoroso. O nosso único compromisso é com o leitor, com o bem-estar do povo angolano e com a denúncia de irregularidades que afetem a sociedade.
                             </p>
                             <p className="text-foreground/80 leading-relaxed text-lg mt-4">
-                                Acreditamos que cidadãos bem informados constroem democracias mais sólidas. Por isso, trabalhamos todos os dias
-                                para produzir artigos aprofundados, investigações rigorosas e análises contributivas que sirvam o interesse público, destaquem soluções e promovam o avanço institucional do país.
+                                Acreditamos que cidadãos informados com transparência constroem uma sociedade mais justa. Por isso, trabalhamos diariamente para produzir análises sem filtros que fiscalizem a gestão pública e protejam o interesse coletivo.
                             </p>
                         </div>
                     </section>
@@ -69,14 +66,13 @@ const AboutPage = () => {
                         </div>
                         <div className="p-8 bg-primary/5 border-l-4 border-primary rounded-r-xl">
                             <p className="text-foreground/90 leading-relaxed text-lg italic">
-                                "Ser a referência de jornalismo construtivo em Angola, contribuindo para uma
-                                sociedade mais informada, mais proactiva e parceira do desenvolvimento do país."
+                                "Ser a voz independente e intransigente na defesa dos direitos do povo angolano, promovendo a transparência, a prestação de contas e a verdade sem rodeios."
                             </p>
                         </div>
                         <div className="prose prose-zinc dark:prose-invert max-w-none text-justify mt-6">
                             <p className="text-foreground/80 leading-relaxed">
-                                Queremos ser reconhecidos não pela rapidez na publicação, mas pela qualidade, profundidade e rigor editorial.
-                                Cada artigo publicado no Sem Filtros passa por um processo de verificação interna antes de ser disponibilizado ao público.
+                                Queremos ser reconhecidos pelo rigor investigativo e pela coragem editorial.
+                                Cada artigo publicado no Sem Filtros passa por um processo rigoroso de verificação de factos e cruzamento de fontes primárias.
                                 Os erros são corrigidos publicamente e de forma transparente, conforme estabelecido na nossa{" "}
                                 <button onClick={() => navigate("/correcoes")} className="text-primary hover:underline font-semibold">
                                     Política de Correções
@@ -93,12 +89,12 @@ const AboutPage = () => {
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             {[
-                                { title: "Positivismo Institucional", desc: "Destacamos os esforços governamentais e institucionais que trazem impacto positivo à vida dos angolanos." },
-                                { title: "Rigor Factual", desc: "Todos os factos publicados são verificados junto de fontes primárias ou documentos oficiais antes da publicação." },
-                                { title: "Transparência", desc: "Identificamos sempre as nossas fontes quando possível. Quando usamos fontes confidenciais, explicamos o porquê." },
-                                { title: "Responsabilidade", desc: "Corrigimos os nossos erros abertamente e sem hesitação. O leitor tem o direito de ser bem informado." },
-                                { title: "Pluralismo", desc: "Damos espaço a diferentes perspectivas e vozes, valorizando a crítica construtiva." },
-                                { title: "Contribuição Social", desc: "Priorizamos temas que promovem o desenvolvimento de Angola e valorizam a estabilidade nacional." },
+                                { title: "Bem-Estar do Povo", desc: "Colocamos as necessidades, direitos e dignidade dos cidadãos angolanos acima de quaisquer interesses políticos ou corporativos." },
+                                { title: "Análise Sem Filtros", desc: "Examinamos os factos sem floreados ou propaganda, oferecendo leituras transparentes e críticas sobre a realidade." },
+                                { title: "Fiscalização da Causa Pública", desc: "Escrutinamos rigorosamente a governação e a gestão dos recursos públicos para combater a corrupção e os abusos." },
+                                { title: "Rigor Factual", desc: "Todos os factos são checados e cruzados com fontes primárias antes de qualquer publicação." },
+                                { title: "Independência Absoluta", desc: "Não aceitamos financiamentos nem pressões que condicionem a nossa autonomia editorial." },
+                                { title: "Transparência Total", desc: "Identificamos claramente os factos, revelando o contexto completo e assumindo correções de forma aberta." },
                             ].map((v, i) => (
                                 <div key={i} className="p-6 bg-secondary border border-border rounded-xl">
                                     <h3 className="font-heading font-bold text-foreground mb-2">{v.title}</h3>
