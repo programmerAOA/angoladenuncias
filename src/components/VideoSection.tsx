@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Play, Clock, Eye } from "lucide-react";
+import { Play, Clock, Eye, Volume2, VolumeX } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getYoutubeId } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -72,6 +72,8 @@ const HlsPlayer = ({ src, title }: { src: string; title: string }) => {
 const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const [featuredVideo, setFeaturedVideo] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
 
   const handlePlay = async () => {
@@ -106,10 +108,10 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const isLive = rawUrl.includes('/live/') || rawUrl.includes('youtube.com/live/') || featuredVideo?.category?.toLowerCase() === 'directo';
 
   useEffect(() => {
-    if (isLive && featuredVideo && !playing) {
+    if (featuredVideo) {
       setPlaying(true);
     }
-  }, [isLive, featuredVideo?.id]);
+  }, [featuredVideo?.id, isLive]);
 
   if (videos.length === 0 || !featuredVideo) return null;
 
@@ -117,14 +119,110 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const youtubeId = getYoutubeId(rawUrl);
   const videoType = getVideoType(rawUrl);
 
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const newMuteState = !isMuted;
+    setIsMuted(newMuteState);
+
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      const command = newMuteState ? "mute" : "unMute";
+      iframeRef.current.contentWindow.postMessage(
+        JSON.stringify({ event: "command", func: command, args: [] }),
+        "*"
+      );
+    }
+  };
+
   /** Renderiza o player correto com base no tipo de URL */
   const renderPlayer = () => {
+    // Se for um vídeo em direto (live), desativar controlos e ocultar botões do YouTube, mantendo o botão customizado de som
+    if (isLive) {
+      if (youtubeId) {
+        return (
+          <div className="w-full h-full bg-black flex items-center justify-center relative overflow-hidden group/live">
+            <iframe
+              ref={iframeRef}
+              src={`https://www.youtube.com/embed/${youtubeId}?enablejsapi=1&autoplay=1&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&iv_load_policy=3&disablekb=1&fs=0&cc_load_policy=0&cc_lang_pref=off&playsinline=1`}
+              title={featuredVideo.title}
+              className="w-[125%] h-[128%] -mt-[7%] -mb-[12%] -ml-[12.5%] border-0 pointer-events-none object-cover scale-110"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            />
+            {/* Botão Flutuante Customizado de Volume */}
+            <button
+              onClick={toggleMute}
+              className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md border border-white/20 transition-all transform hover:scale-110 shadow-xl flex items-center justify-center cursor-pointer pointer-events-auto"
+              title={isMuted ? "Activar som" : "Desactivar som"}
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5 text-white" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white" />
+              )}
+            </button>
+          </div>
+        );
+      }
+
+      if (videoType === "hls") {
+        return (
+          <div className="w-full h-full relative group/live">
+            <HlsPlayer src={rawUrl} title={featuredVideo.title} />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsMuted(!isMuted);
+              }}
+              className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md border border-white/20 transition-all transform hover:scale-110 shadow-xl flex items-center justify-center cursor-pointer pointer-events-auto"
+              title={isMuted ? "Activar som" : "Desactivar som"}
+            >
+              {isMuted ? (
+                <VolumeX className="w-5 h-5 text-white" />
+              ) : (
+                <Volume2 className="w-5 h-5 text-white" />
+              )}
+            </button>
+          </div>
+        );
+      }
+
+      return (
+        <div className="w-full h-full bg-black flex items-center justify-center relative group/live">
+          <ReactPlayerComponent
+            url={rawUrl}
+            playing={true}
+            controls={false}
+            muted={isMuted}
+            width="100%"
+            height="100%"
+            style={{ position: 'absolute', top: 0, left: 0 }}
+            onError={() => {
+              console.error("Falha ao carregar vídeo:", rawUrl);
+            }}
+          />
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMuted(!isMuted);
+            }}
+            className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md border border-white/20 transition-all transform hover:scale-110 shadow-xl flex items-center justify-center cursor-pointer pointer-events-auto"
+            title={isMuted ? "Activar som" : "Desactivar som"}
+          >
+            {isMuted ? (
+              <VolumeX className="w-5 h-5 text-white" />
+            ) : (
+              <Volume2 className="w-5 h-5 text-white" />
+            )}
+          </button>
+        </div>
+      );
+    }
+
     // 1. Se for YouTube, usamos o Iframe oficial (mais compatível com lives)
     if (youtubeId) {
       return (
         <div className="w-full h-full bg-black flex items-center justify-center relative">
           <iframe
-            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=${isLive ? 1 : 0}&rel=0&modestbranding=1`}
+            src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&mute=0&rel=0&modestbranding=1`}
             title={featuredVideo.title}
             className="w-full h-full border-0"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -146,7 +244,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
           url={rawUrl}
           playing={true}
           controls={true}
-          muted={isLive}
+          muted={false}
           width="100%"
           height="100%"
           style={{ position: 'absolute', top: 0, left: 0 }}
