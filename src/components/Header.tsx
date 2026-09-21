@@ -227,15 +227,6 @@ const Header = ({ selectedCategory = "Destaque", onCategoryChange, onSearch }: H
             ))}
             <li>
               <button
-                onClick={() => navigate("/edicao-digital")}
-                className={`nav-link flex items-center gap-2 text-primary font-bold bg-primary/5 px-4 py-1.5 rounded-full border border-primary/10 hover:bg-primary/20 transition-all`}
-              >
-                <Newspaper className="w-4 h-4" />
-                Jornal Digital
-              </button>
-            </li>
-            <li>
-              <button
                 onClick={() => navigate("/servicos")}
                 className={`nav-link flex items-center gap-2 text-[#00a651] font-bold bg-[#00a651]/5 px-4 py-1.5 rounded-full border border-[#00a651]/10 hover:bg-[#00a651]/20 transition-all`}
               >
