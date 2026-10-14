@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Newspaper, Video, MessageSquare, Users, Zap, Megaphone,
   Plus, Pencil, Trash2, Eye, EyeOff, LogOut, ArrowLeft, Check, X, Shield, RefreshCw, Lock,
   Globe, Bot, Search as SearchIcon, Sparkles, Wand2, Monitor, FileText, Mail, Copy,
-  ExternalLink, Clock, ChevronDown, ChevronUp, Download, Database, HardDriveDownload, Settings
+  ExternalLink, Clock, ChevronDown, ChevronUp, Download, Database, HardDriveDownload, Settings, Menu
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -158,6 +158,7 @@ const AdminPage = () => {
     }
   }, []);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [articles, setArticles] = useState<Article[]>([]);
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [opinions, setOpinions] = useState<Opinion[]>([]);
@@ -282,12 +283,26 @@ const AdminPage = () => {
   const [generatedArticle, setGeneratedArticle] = useState<any>(null);
   const [generationSteps, setGenerationSteps] = useState<{ label: string; done: boolean; active: boolean }[]>([]);
   const [isPublishingAI, setIsPublishingAI] = useState(false);
+  const [aiPreviewTab, setAiPreviewTab] = useState<'edit' | 'preview' | 'publish'>('edit');
   const [aiFormData, setAiFormData] = useState({
     title: '', summary: '', category: 'Política', author: 'Angola Sem Filtros',
     content: '', seo_keywords: '', image_url: '', meta_description: '',
     slug: '', tags: '', facebook: '', instagram: '', twitter: '',
     reliability_score: 0
   });
+  const [showEditorialModal, setShowEditorialModal] = useState(false);
+  const [pendingNewsItem, setPendingNewsItem] = useState<any>(null);
+  const [editorialLine, setEditorialLine] = useState<string>('angola_sem_filtros');
+
+  const EDITORIAL_LINES: { id: string; label: string; description: string; icon: string; color: string }[] = [
+    { id: 'angola_sem_filtros', label: 'Angola Sem Filtros', description: 'Crítica independente, sem censura, focada no bem-estar popular.', icon: '🔥', color: 'border-red-600 bg-red-950/30 text-red-300' },
+    { id: 'critica', label: 'Crítica', description: 'Análise crítica e questionadora dos factos, com escrutínio aprofundado.', icon: '🔍', color: 'border-orange-500 bg-orange-950/30 text-orange-300' },
+    { id: 'rigida', label: 'Rígida', description: 'Tom formal, seco e rigoroso. Factos apresentados sem qualquer suavização.', icon: '⚖️', color: 'border-slate-500 bg-slate-900/50 text-slate-300' },
+    { id: 'favor_estado', label: 'A Favor do Estado', description: 'Enquadramento institucional positivo das medidas e acções governamentais.', icon: '🏛️', color: 'border-blue-600 bg-blue-950/30 text-blue-300' },
+    { id: 'investigativa', label: 'Investigativa', description: 'Estilo jornalismo de investigação: fontes, dados, contradições e denúncias.', icon: '🕵️', color: 'border-amber-500 bg-amber-950/30 text-amber-300' },
+    { id: 'neutra', label: 'Neutra / Factual', description: 'Relato simples e imparcial dos acontecimentos, sem análise editorial.', icon: '📰', color: 'border-zinc-500 bg-zinc-900/50 text-zinc-300' },
+    { id: 'satirica', label: 'Satírica', description: 'Tom irónico e satírico para expor as contradições do poder.', icon: '🎭', color: 'border-purple-500 bg-purple-950/30 text-purple-300' },
+  ];
 
   // Site Settings
   const [siteSettingsForm, setSiteSettingsForm] = useState({
@@ -1467,10 +1482,19 @@ const AdminPage = () => {
   // ── Editor-Chefe v2 handlers ────────────────────────────────────────────
 
   const handleUseThisNews = (item: any) => {
-    setSelectedNewsItem(item);
+    setPendingNewsItem(item);
+    setShowEditorialModal(true);
+  };
+
+  const handleConfirmEditorialLine = (line: string) => {
+    setEditorialLine(line);
+    setSelectedNewsItem(pendingNewsItem);
     setAiStep('selected');
     setGeneratedArticle(null);
-    toast.info('Notícia importada. Clique em "Gerar Artigo Sem Filtros" para iniciar.');
+    setShowEditorialModal(false);
+    setPendingNewsItem(null);
+    const lineLabel = EDITORIAL_LINES.find(l => l.id === line)?.label || line;
+    toast.info(`Notícia importada com linha editorial: ${lineLabel}`);
   };
 
   const GENERATION_STEP_LABELS = [
@@ -1522,7 +1546,7 @@ const AdminPage = () => {
           body: JSON.stringify({
             content: newsContent,
             title: newsTitle,
-            line: 'angola_sem_filtros',
+            line: editorialLine,
             url: newsUrl,
             apiKey: userApiKey
           })
@@ -1531,7 +1555,7 @@ const AdminPage = () => {
         if (res.status === 404) {
           console.warn("AI: /api/ai-rewrite returned 404. Falling back to Puter.js...");
           usePuterFallback = true;
-          puterPrompt = buildPuterPrompt(newsTitle, 'angola_sem_filtros', newsUrl, newsContent);
+          puterPrompt = buildPuterPrompt(newsTitle, editorialLine, newsUrl, newsContent);
         } else if (!res.ok) {
           const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
           throw new Error(errData.error || `HTTP ${res.status}`);
@@ -1539,14 +1563,14 @@ const AdminPage = () => {
           data = await res.json();
           if (data.status === "missing_api_key") {
             usePuterFallback = true;
-            puterPrompt = data.prompt || buildPuterPrompt(newsTitle, 'angola_sem_filtros', newsUrl, newsContent);
+            puterPrompt = data.prompt || buildPuterPrompt(newsTitle, editorialLine, newsUrl, newsContent);
           }
         }
       } catch (fetchErr: any) {
         if (fetchErr?.message?.includes('HTTP')) throw fetchErr;
         console.warn("AI: fetch to /api/ai-rewrite failed. Falling back to Puter.js...", fetchErr);
         usePuterFallback = true;
-        puterPrompt = buildPuterPrompt(newsTitle, 'angola_sem_filtros', newsUrl, newsContent);
+        puterPrompt = buildPuterPrompt(newsTitle, editorialLine, newsUrl, newsContent);
       }
 
       if (usePuterFallback) {
@@ -1757,31 +1781,55 @@ const AdminPage = () => {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-card border-r border-border flex flex-col flex-shrink-0">
+      {/* ── Mobile sidebar overlay ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — drawer on mobile, fixed on md+ */}
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border flex flex-col transition-transform duration-300
+          md:static md:w-64 md:translate-x-0 md:flex md:shrink-0
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        `}
+      >
         {/* Logo */}
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center gap-2 mb-1">
-            <Shield className="w-4 h-4 text-primary" />
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">Admin</span>
+        <div className="p-5 border-b border-border flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Shield className="w-4 h-4 text-primary" />
+              <span className="text-xs font-semibold uppercase tracking-wider text-primary">Admin</span>
+            </div>
+            <h1 className="font-heading text-xl font-black tracking-tight text-foreground uppercase">Sem Filtros</h1>
+            <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[180px]">{user?.email}</p>
           </div>
-          <h1 className="font-heading text-xl font-black tracking-tight text-foreground uppercase">Sem Filtros</h1>
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">{user?.email}</p>
+          {/* Close button — mobile only */}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="md:hidden text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-1">
+        <nav className="flex-1 p-3 overflow-y-auto">
+          <ul className="space-y-0.5">
             {tabs.map(({ id, label, icon: Icon }) => (
               <li key={id}>
                 <button
-                  onClick={() => setActiveTab(id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors ${activeTab === id
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                    }`}
+                  onClick={() => { setActiveTab(id); setSidebarOpen(false); }}
+                  className={`w-full flex items-center gap-3 px-3 py-3 text-sm font-medium transition-colors rounded-sm ${
+                    activeTab === id
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
                 >
-                  <Icon className="w-4 h-4" />
+                  <Icon className="w-4 h-4 flex-shrink-0" />
                   {label}
                 </button>
               </li>
@@ -1790,17 +1838,17 @@ const AdminPage = () => {
         </nav>
 
         {/* Bottom actions */}
-        <div className="mt-6 pt-6 border-t border-border space-y-2">
+        <div className="p-3 pt-4 border-t border-border space-y-1">
           <button
             onClick={() => { localStorage.clear(); window.location.reload(); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors uppercase tracking-wider font-semibold"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors uppercase tracking-wider font-semibold rounded-sm"
           >
             <RefreshCw className="w-4 h-4" />
             Reiniciar Sessão
           </button>
           <button
             onClick={async () => { await signOut(); navigate("/"); }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider font-semibold"
+            className="w-full flex items-center gap-2 px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground transition-colors uppercase tracking-wider font-semibold rounded-sm"
           >
             <LogOut className="w-4 h-4" />
             Sair
@@ -1809,15 +1857,34 @@ const AdminPage = () => {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {/* Header */}
-        <div className="bg-card border-b border-border px-8 py-4 sticky top-0 z-10">
-          <h2 className="font-heading text-lg font-bold text-foreground capitalize">
+      <main className="flex-1 overflow-auto min-w-0">
+        {/* Header — sticky, includes hamburger on mobile */}
+        <div className="bg-card border-b border-border px-4 md:px-8 py-3.5 sticky top-0 z-30 flex items-center gap-3">
+          {/* Hamburger — mobile only */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden text-muted-foreground hover:text-foreground transition-colors p-1 rounded flex-shrink-0"
+            aria-label="Abrir menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <h2 className="font-heading text-base md:text-lg font-bold text-foreground capitalize flex-1 truncate">
             {tabs.find(t => t.id === activeTab)?.label}
           </h2>
+          {/* Quick action — mobile shortcut to AI Discovery */}
+          {activeTab !== 'ai-discovery' && (
+            <button
+              onClick={() => { setActiveTab('ai-discovery'); setSidebarOpen(false); }}
+              className="md:hidden flex items-center gap-1.5 bg-red-600/15 text-red-400 border border-red-500/30 px-2.5 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-wider flex-shrink-0"
+              title="Descoberta IA"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>IA</span>
+            </button>
+          )}
         </div>
 
-        <div className="p-8">
+        <div className="p-4 md:p-8">
           {/* Dashboard */}
           {activeTab === "dashboard" && (
             <div>
@@ -3360,16 +3427,17 @@ const AdminPage = () => {
                 </div>
                 {/* Step indicators */}
                 <div className="flex items-center gap-1">
-                  {['1 · Pesquisar', '2 · Seleccionar', '3 · Gerar', '4 · Publicar'].map((label, i) => {
+                  {[['1', 'Pesquisar'], ['2', 'Seleccionar'], ['3', 'Gerar'], ['4', 'Publicar']].map(([num, label], i) => {
                     const stepOrder = ['search', 'selected', 'generating', 'preview'];
                     const currentIdx = stepOrder.indexOf(aiStep === 'generating' ? 'generating' : aiStep);
                     const isActive = currentIdx >= i;
                     return (
                       <div key={label} className="flex items-center gap-1 flex-1">
-                        <div className={`flex-1 text-center py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-sm transition-all ${isActive ? 'bg-red-600 text-white' : 'bg-secondary text-muted-foreground'}`}>
-                          {label}
+                        <div className={`flex-1 text-center py-1.5 rounded-sm transition-all ${isActive ? 'bg-red-600 text-white' : 'bg-secondary text-muted-foreground'}`}>
+                          <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-wider">{num} · {label}</span>
+                          <span className="sm:hidden text-[11px] font-black">{num}</span>
                         </div>
-                        {i < 3 && <div className={`w-2 h-px ${isActive && currentIdx > i ? 'bg-red-600' : 'bg-border'}`} />}
+                        {i < 3 && <div className={`w-2 h-px flex-shrink-0 ${isActive && currentIdx > i ? 'bg-red-600' : 'bg-border'}`} />}
                       </div>
                     );
                   })}
@@ -3378,46 +3446,50 @@ const AdminPage = () => {
 
               {/* STEP 1 + 2: Search bar (always visible when not generating/previewing) */}
               {(aiStep === 'search' || aiStep === 'selected') && (
-                <div className="bg-card border border-border p-5">
-                  <div className="flex gap-3 mb-4">
+                <div className="bg-card border border-border p-4">
+                  {/* Search input row */}
+                  <div className="flex gap-2 mb-3">
                     <input
                       value={discoveryQuery}
                       onChange={e => setDiscoveryQuery(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && handleDiscoverNews()}
-                      placeholder="Pesquise um tema: Sonangol, João Lourenço, Economia Angola, Petróleo, Namibe..."
-                      className="flex-1 bg-secondary border border-border text-foreground px-4 py-2.5 text-sm focus:outline-none focus:border-red-600 transition-colors"
+                      placeholder="Tema: Sonangol, João Lourenço, Petróleo..."
+                      className="flex-1 bg-secondary border border-border text-foreground px-3 py-2.5 text-sm focus:outline-none focus:border-red-600 transition-colors min-w-0"
                     />
                     <button
                       onClick={() => handleDiscoverNews()}
                       disabled={isDiscovering}
-                      className="bg-red-600 text-white px-6 py-2.5 text-sm font-bold uppercase tracking-wider hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 flex-shrink-0"
+                      className="bg-red-600 text-white px-4 py-2.5 font-bold hover:bg-red-700 transition-colors flex items-center gap-2 disabled:opacity-50 flex-shrink-0"
                     >
                       {isDiscovering ? <RefreshCw className="w-4 h-4 animate-spin" /> : <SearchIcon className="w-4 h-4" />}
-                      Pesquisar
+                      <span className="hidden sm:inline text-sm uppercase tracking-wider">Pesquisar</span>
                     </button>
                   </div>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Fontes / Temas rápidos:</span>
-                    {['Maka Mavulo (makamavulo.com)', 'Sonangol', 'João Lourenço', 'Economia Angola', 'Petróleo', 'Namibe', 'Luanda', 'MPLA', 'UNITA'].map(f => (
-                      <button key={f} onClick={() => { 
-                        const queryToUse = f.includes('makamavulo.com') ? 'site:makamavulo.com' : f;
-                        setDiscoveryQuery(queryToUse); 
-                        handleDiscoverNews(queryToUse); 
-                      }} className={`text-[10px] px-2.5 py-1 border transition-colors font-bold rounded-sm ${f.includes('makamavulo.com') ? 'border-red-600 bg-red-950/40 text-red-300 hover:bg-red-900/60' : 'border-border bg-secondary hover:border-red-500/50 hover:text-red-400 text-muted-foreground'}`}>
-                        {f}
-                      </button>
-                    ))}
-                    <div className="ml-auto flex items-center gap-2">
-                      <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Filtrar por Período:</span>
-                      <select value={discoveryTime} onChange={e => setDiscoveryTime(e.target.value)} className="bg-secondary border border-border text-[11px] text-foreground px-2 py-1 focus:outline-none focus:border-red-600 font-semibold">
-                        <option value="qdr:d1">📅 Data Actual (Últimas 24h)</option>
-                        <option value="qdr:d2">⏱️ Últimas 48 Horas</option>
-                        <option value="qdr:h1">🔥 Última Hora</option>
-                        <option value="qdr:w1">📆 Última Semana</option>
-                        <option value="qdr:m1">🗓️ Último Mês</option>
-                        <option value="">🌐 Sem Limite de Data</option>
-                      </select>
-                    </div>
+                  {/* Period filter — full width on mobile */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex-shrink-0">Período:</span>
+                    <select value={discoveryTime} onChange={e => setDiscoveryTime(e.target.value)} className="flex-1 bg-secondary border border-border text-[11px] text-foreground px-2 py-1.5 focus:outline-none focus:border-red-600 font-semibold">
+                      <option value="qdr:d1">📅 Últimas 24h</option>
+                      <option value="qdr:d2">⏱️ Últimas 48h</option>
+                      <option value="qdr:h1">🔥 Última Hora</option>
+                      <option value="qdr:w1">📆 Última Semana</option>
+                      <option value="qdr:m1">🗓️ Último Mês</option>
+                      <option value="">🌐 Sem Limite</option>
+                    </select>
+                  </div>
+                  {/* Quick topics — scrollable row on mobile */}
+                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none -mx-1 px-1">
+                    {['Maka Mavulo', 'Sonangol', 'João Lourenço', 'Economia', 'Petróleo', 'Namibe', 'Luanda', 'MPLA', 'UNITA'].map((f, idx) => {
+                      const queries = ['site:makamavulo.com', 'Sonangol', 'João Lourenço', 'Economia Angola', 'Petróleo', 'Namibe', 'Luanda', 'MPLA', 'UNITA'];
+                      return (
+                        <button key={f} onClick={() => { setDiscoveryQuery(queries[idx]); handleDiscoverNews(queries[idx]); }}
+                          className={`text-[10px] px-2.5 py-1 border transition-colors font-bold rounded-sm flex-shrink-0 ${
+                            idx === 0 ? 'border-red-600 bg-red-950/40 text-red-300 hover:bg-red-900/60' : 'border-border bg-secondary hover:border-red-500/50 hover:text-red-400 text-muted-foreground'
+                          }`}>
+                          {f}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -3439,7 +3511,7 @@ const AdminPage = () => {
                       {discoveryResults.length} notícias encontradas
                     </h4>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                     {discoveryResults.map((item, idx) => (
                       <div key={idx} className="bg-card border border-border hover:border-red-600/40 transition-all group overflow-hidden flex flex-col">
                         <div className="h-32 bg-gradient-to-br from-secondary to-muted overflow-hidden relative flex-shrink-0">
@@ -3489,13 +3561,24 @@ const AdminPage = () => {
 
               {/* STEP 2: Selected news + generate button */}
               {aiStep === 'selected' && selectedNewsItem && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="flex flex-col lg:grid lg:grid-cols-2 gap-4">
                   <div className="bg-card border border-red-600/30 p-5">
                     <div className="flex items-center gap-2 mb-4">
                       <Zap className="w-4 h-4 text-red-500 flex-shrink-0" />
                       <span className="text-xs font-bold uppercase tracking-wider text-red-500">Notícia Seleccionada</span>
                       <button onClick={() => { setAiStep('search'); setSelectedNewsItem(null); }} className="ml-auto text-[10px] text-muted-foreground hover:text-foreground underline">Alterar</button>
                     </div>
+                    {/* Editorial line badge */}
+                    {(() => { const el = EDITORIAL_LINES.find(l => l.id === editorialLine); return el ? (
+                      <div className={`flex items-center gap-2 mb-4 border px-3 py-2 rounded-sm ${el.color}`}>
+                        <span className="text-base">{el.icon}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black uppercase tracking-wider">Linha Editorial</p>
+                          <p className="text-xs font-bold">{el.label}</p>
+                        </div>
+                        <button onClick={() => { setPendingNewsItem(selectedNewsItem); setShowEditorialModal(true); }} className="text-[10px] underline opacity-70 hover:opacity-100 flex-shrink-0">Mudar</button>
+                      </div>
+                    ) : null; })()}
                     {selectedNewsItem.image && (
                       <img src={selectedNewsItem.image} alt="" className="w-full h-36 object-cover mb-4 rounded-sm opacity-80" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                     )}
@@ -3555,36 +3638,60 @@ const AdminPage = () => {
                 </div>
               )}
 
-              {/* STEP 4: Preview + auto-filled form */}
+              {/* STEP 4: Preview + auto-filled form — mobile optimised */}
               {aiStep === 'preview' && (
                 <div>
-                  {/* Action bar */}
-                  <div className="bg-card border border-border p-4 mb-5 flex items-center gap-2 flex-wrap">
-                    <button onClick={() => handlePublishArticleFromAI(true)} disabled={isPublishingAI} className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 text-xs font-black uppercase tracking-wider hover:bg-green-700 transition-colors disabled:opacity-50 rounded-sm">
-                      <Check className="w-3.5 h-3.5" />{isPublishingAI ? 'A publicar...' : 'Publicar'}
-                    </button>
-                    <button onClick={() => handlePublishArticleFromAI(false)} disabled={isPublishingAI} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border disabled:opacity-50 rounded-sm">
-                      <FileText className="w-3.5 h-3.5" /> Guardar Rascunho
-                    </button>
-                    <button onClick={handleCopyAIContent} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border rounded-sm">
-                      <Copy className="w-3.5 h-3.5" /> Copiar
-                    </button>
-                    <button onClick={handleExportDocxAI} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border rounded-sm">
-                      <Download className="w-3.5 h-3.5" /> Exportar DOCX
-                    </button>
-                    <button onClick={handleExportPdfAI} className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border rounded-sm">
-                      <Monitor className="w-3.5 h-3.5" /> Exportar PDF
-                    </button>
+                  {/* ── Sticky publish bar (mobile-first) ── */}
+                  <div className="sticky top-0 z-20 bg-card border border-border p-3 mb-4 shadow-md">
                     {aiFormData.reliability_score > 0 && (
-                      <div className={`ml-auto flex items-center gap-2 px-3 py-1.5 rounded-sm text-xs font-bold border ${aiFormData.reliability_score >= 70 ? 'bg-green-500/10 text-green-400 border-green-500/20' : aiFormData.reliability_score >= 40 ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                        Confiabilidade: {aiFormData.reliability_score}%
-                      </div>
+                      <div className={`w-full flex items-center justify-center gap-2 text-[10px] font-bold py-1 mb-2 rounded-sm ${
+                        aiFormData.reliability_score >= 70 ? 'bg-green-500/10 text-green-400' : aiFormData.reliability_score >= 40 ? 'bg-amber-500/10 text-amber-400' : 'bg-red-500/10 text-red-400'
+                      }`}>Confiabilidade: {aiFormData.reliability_score}%</div>
                     )}
+                    <div className="flex gap-2 mb-2">
+                      <button onClick={() => handlePublishArticleFromAI(true)} disabled={isPublishingAI}
+                        className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white py-3 text-xs font-black uppercase tracking-wider hover:bg-green-700 transition-colors disabled:opacity-50 rounded-sm">
+                        <Check className="w-4 h-4" />{isPublishingAI ? 'A publicar...' : 'Publicar'}
+                      </button>
+                      <button onClick={() => handlePublishArticleFromAI(false)} disabled={isPublishingAI}
+                        className="flex-1 flex items-center justify-center gap-2 bg-secondary text-foreground py-3 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border disabled:opacity-50 rounded-sm">
+                        <FileText className="w-4 h-4" /><span className="hidden sm:inline">Rascunho</span><span className="sm:hidden">Guardar</span>
+                      </button>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
+                      <button onClick={handleCopyAIContent} className="flex items-center gap-1.5 bg-secondary/70 text-foreground px-3 py-1.5 text-[11px] font-bold hover:bg-muted border border-border rounded-sm flex-shrink-0">
+                        <Copy className="w-3.5 h-3.5" /> Copiar
+                      </button>
+                      <button onClick={handleExportDocxAI} className="flex items-center gap-1.5 bg-secondary/70 text-foreground px-3 py-1.5 text-[11px] font-bold hover:bg-muted border border-border rounded-sm flex-shrink-0">
+                        <Download className="w-3.5 h-3.5" /> DOCX
+                      </button>
+                      <button onClick={handleExportPdfAI} className="flex items-center gap-1.5 bg-secondary/70 text-foreground px-3 py-1.5 text-[11px] font-bold hover:bg-muted border border-border rounded-sm flex-shrink-0">
+                        <Monitor className="w-3.5 h-3.5" /> PDF
+                      </button>
+                      <button onClick={() => { setAiStep('search'); setSelectedNewsItem(null); setGeneratedArticle(null); }}
+                        className="flex items-center gap-1.5 bg-secondary/70 text-muted-foreground px-3 py-1.5 text-[11px] font-bold hover:bg-muted border border-border rounded-sm flex-shrink-0 ml-auto">
+                        ← Nova pesquisa
+                      </button>
+                    </div>
                   </div>
 
+                  {/* ── Mobile tab switcher (hidden on xl) ── */}
+                  <div className="flex xl:hidden border border-border mb-4 overflow-hidden rounded-sm">
+                    {(['edit', 'preview', 'publish'] as const).map(tab => (
+                      <button key={tab} onClick={() => setAiPreviewTab(tab)}
+                        className={`flex-1 py-2.5 text-[11px] font-black uppercase tracking-wider transition-colors ${
+                          aiPreviewTab === tab ? 'bg-red-600 text-white' : 'bg-secondary text-muted-foreground hover:text-foreground'
+                        }`}>
+                        {tab === 'edit' ? '✏️ Editar' : tab === 'preview' ? '👁 Ver' : '🚀 Publicar'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* ── Desktop: side-by-side / Mobile: tab-based ── */}
                   <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-                    {/* Auto-filled form */}
-                    <div className="space-y-4">
+
+                    {/* FORM — shown when tab=edit or on xl+ */}
+                    <div className={`space-y-4 ${aiPreviewTab !== 'edit' ? 'hidden xl:block' : ''}`}>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Sparkles className="w-3.5 h-3.5 text-red-500" /> Formulário Auto-Preenchido (Editável)</p>
                       <div>
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Título SEO *</label>
@@ -3594,7 +3701,7 @@ const AdminPage = () => {
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Resumo</label>
                         <textarea value={aiFormData.summary} onChange={e => setAiFormData(f => ({ ...f, summary: e.target.value }))} rows={3} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600 resize-none" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Categoria</label>
                           <select value={aiFormData.category} onChange={e => setAiFormData(f => ({ ...f, category: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600">
@@ -3614,7 +3721,7 @@ const AdminPage = () => {
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Palavras-chave SEO</label>
                         <input value={aiFormData.seo_keywords} onChange={e => setAiFormData(f => ({ ...f, seo_keywords: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-sm focus:outline-none focus:border-red-600" />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Slug</label>
                           <input value={aiFormData.slug} onChange={e => setAiFormData(f => ({ ...f, slug: e.target.value }))} className="w-full bg-secondary border border-border text-foreground px-3 py-2 text-xs font-mono focus:outline-none focus:border-red-600" />
@@ -3649,14 +3756,14 @@ const AdminPage = () => {
                       </div>
                     </div>
 
-                    {/* Article preview */}
-                    <div className="space-y-4">
+                    {/* PREVIEW — shown when tab=preview or on xl+ */}
+                    <div className={`space-y-4 ${aiPreviewTab !== 'preview' ? 'hidden xl:block' : ''}`}>
                       <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Monitor className="w-3.5 h-3.5 text-red-500" /> Pré-visualização</p>
-                      <div className="bg-card border border-border overflow-hidden sticky top-4">
+                      <div className="bg-card border border-border overflow-hidden xl:sticky xl:top-4">
                         {aiFormData.image_url && (
                           <img src={aiFormData.image_url} alt="" className="w-full h-44 object-cover" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                         )}
-                        <div className="p-6">
+                        <div className="p-5">
                           <span className="text-[10px] font-black uppercase text-red-500 tracking-widest">{aiFormData.category}</span>
                           <h2 className="font-heading text-xl font-black text-foreground mt-2 mb-3 leading-tight">{aiFormData.title || 'Título do artigo'}</h2>
                           {aiFormData.summary && <p className="text-sm text-muted-foreground border-l-2 border-red-600 pl-3 mb-4 italic">{aiFormData.summary}</p>}
@@ -3668,10 +3775,40 @@ const AdminPage = () => {
                           </div>
                         </div>
                       </div>
-                      <button onClick={() => { setAiStep('search'); setSelectedNewsItem(null); setGeneratedArticle(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground border border-border py-2 hover:bg-secondary transition-colors rounded-sm">
-                        ← Nova pesquisa
-                      </button>
                     </div>
+
+                    {/* QUICK-PUBLISH — mobile only (tab=publish), hidden on xl */}
+                    <div className={`xl:hidden ${aiPreviewTab !== 'publish' ? 'hidden' : ''}`}>
+                      <div className="bg-card border border-border p-5 space-y-4">
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2"><Sparkles className="w-3.5 h-3.5 text-red-500" /> Resumo para Publicação</p>
+                        <div className="bg-secondary/50 border border-border p-3 rounded-sm space-y-1">
+                          <p className="text-xs font-bold text-foreground line-clamp-2">{aiFormData.title || '(sem título)'}</p>
+                          <p className="text-[11px] text-muted-foreground">{aiFormData.category} · {aiFormData.author}</p>
+                          {aiFormData.reliability_score > 0 && (
+                            <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-sm mt-1 ${
+                              aiFormData.reliability_score >= 70 ? 'bg-green-500/20 text-green-400' : aiFormData.reliability_score >= 40 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                            }`}>Confiabilidade: {aiFormData.reliability_score}%</span>
+                          )}
+                        </div>
+                        <button onClick={() => handlePublishArticleFromAI(true)} disabled={isPublishingAI}
+                          className="w-full flex items-center justify-center gap-3 bg-green-600 text-white py-4 text-sm font-black uppercase tracking-widest hover:bg-green-700 transition-colors disabled:opacity-50 rounded-sm shadow-lg shadow-green-600/20">
+                          <Check className="w-5 h-5" />{isPublishingAI ? 'A publicar...' : 'Publicar Agora'}
+                        </button>
+                        <button onClick={() => handlePublishArticleFromAI(false)} disabled={isPublishingAI}
+                          className="w-full flex items-center justify-center gap-3 bg-secondary text-foreground py-3 text-xs font-bold uppercase tracking-wider hover:bg-muted border border-border disabled:opacity-50 rounded-sm">
+                          <FileText className="w-4 h-4" /> Guardar como Rascunho
+                        </button>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button onClick={handleCopyAIContent} className="flex items-center justify-center gap-2 bg-secondary/70 text-foreground py-2.5 text-[11px] font-bold hover:bg-muted border border-border rounded-sm">
+                            <Copy className="w-3.5 h-3.5" /> Copiar
+                          </button>
+                          <button onClick={handleExportDocxAI} className="flex items-center justify-center gap-2 bg-secondary/70 text-foreground py-2.5 text-[11px] font-bold hover:bg-muted border border-border rounded-sm">
+                            <Download className="w-3.5 h-3.5" /> DOCX
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               )}
@@ -3679,6 +3816,53 @@ const AdminPage = () => {
             </div>
           )}
 
+          {/* Editorial Line Selection Modal */}
+          {showEditorialModal && pendingNewsItem && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
+              <div className="bg-card border border-border w-full max-w-2xl rounded-sm shadow-2xl overflow-hidden">
+                {/* Modal header */}
+                <div className="bg-gradient-to-r from-red-950/40 to-card border-b border-border p-5 flex items-center gap-3">
+                  <div className="w-9 h-9 bg-red-600 flex items-center justify-center rounded-sm flex-shrink-0">
+                    <Bot className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-heading font-black text-sm uppercase tracking-tight text-foreground">Escolha a Linha Editorial</h3>
+                    <p className="text-[10px] text-muted-foreground truncate">Artigo: {pendingNewsItem.title}</p>
+                  </div>
+                  <button onClick={() => { setShowEditorialModal(false); setPendingNewsItem(null); }} className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                {/* Grid of editorial lines */}
+                <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[70vh] overflow-y-auto">
+                  {EDITORIAL_LINES.map(option => (
+                    <button
+                      key={option.id}
+                      onClick={() => handleConfirmEditorialLine(option.id)}
+                      className={`flex items-start gap-3 p-4 border-2 rounded-sm text-left transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                        editorialLine === option.id
+                          ? option.color + ' scale-[1.01] shadow-lg'
+                          : 'border-border bg-secondary/50 hover:border-red-600/50 text-foreground'
+                      }`}
+                    >
+                      <span className="text-2xl flex-shrink-0 mt-0.5">{option.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-sm uppercase tracking-tight mb-1">{option.label}</p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed">{option.description}</p>
+                      </div>
+                      {editorialLine === option.id && (
+                        <Check className="w-4 h-4 flex-shrink-0 mt-0.5 text-green-400" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+                <div className="border-t border-border p-4 flex items-center justify-between bg-secondary/20">
+                  <p className="text-[10px] text-muted-foreground">A linha editorial define o tom e a perspectiva do artigo gerado pela IA.</p>
+                  <button onClick={() => { setShowEditorialModal(false); setPendingNewsItem(null); }} className="text-xs text-muted-foreground hover:text-foreground border border-border px-4 py-2 hover:bg-muted transition-colors rounded-sm">Cancelar</button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Ads management */}
           {
