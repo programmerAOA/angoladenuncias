@@ -3,44 +3,198 @@ import { supabase } from "@/integrations/supabase/client";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { withTimeout, getYoutubeId } from "@/lib/utils";
-import { Play, Clock, Eye, ArrowLeft, Loader2 } from "lucide-react";
+import { Play, Clock, Eye, ArrowLeft, Loader2, Volume2, VolumeX, RefreshCw, WifiOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Hls from "hls.js";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 /** Detecta o tipo de URL do vídeo */
-const getVideoType = (url: string): "youtube" | "hls" | "direct" | "unknown" => {
+const getVideoType = (url: string): "youtube" | "hls" | "direct" | "iframe" | "unknown" => {
     if (!url) return "unknown";
     if (getYoutubeId(url)) return "youtube";
     if (url.includes(".m3u8")) return "hls";
-    if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return "direct";
+    // Domínios de streaming conhecidos (fMP4 ao vivo via HTTP)
+    if (
+        url.match(/\.(mp4|webm|ogg)(\?|$)/i) ||
+        url.includes('restream.io') ||
+        url.includes('bozztv.com') ||
+        url.includes('akamaized.net') ||
+        url.includes('cdn.livestream')
+    ) return "direct";
+    // URLs de embed externo (páginas web com player integrado)
+    if (url.match(/\.(php|html|asp)(\?|$)/i) || url.includes('/embed/') || url.includes('/player/') || url.includes('/securelive/') || url.includes('/live/player')) return "iframe";
     return "unknown";
 };
 
-const HlsPlayer = ({ src, title }: { src: string; title: string }) => {
+/** Componente robusto para reproduzir HLS com estados visuais */
+const HlsPlayer = ({ src, title, muted = false, onError }: { src: string; title: string; muted?: boolean; onError?: () => void }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const hlsRef = useRef<Hls | null>(null);
+    const [isMuted, setIsMuted] = useState(muted);
+    const [streamStatus, setStreamStatus] = useState<'loading' | 'playing' | 'error'>('loading');
+    const [retryKey, setRetryKey] = useState(0);
+
+    // Sincronizar muted com o elemento vídeo
+    useEffect(() => {
+        const video = videoRef.current;
+        if (video) {
+            video.muted = isMuted;
+        }
+    }, [isMuted]);
 
     useEffect(() => {
         const video = videoRef.current;
         if (!video) return;
 
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(src);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                video.play().catch(() => { });
-            });
-            return () => hls.destroy();
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            video.src = src;
-            video.addEventListener("loadedmetadata", () => {
-                video.play().catch(() => { });
-            });
-        }
-    }, [src]);
+        setStreamStatus('loading');
+        let retryCount = 0;
+        const MAX_RETRIES = 5;
+        const RETRY_DELAY = 3000;
 
-    return <video ref={videoRef} controls className="w-full h-full object-contain bg-black" title={title} />;
+        const initHls = () => {
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+            }
+
+            if (Hls.isSupported()) {
+                const hls = new Hls({
+                    enableWorker: true,
+                    lowLatencyMode: true,
+                    backBufferLength: 90,
+                    liveSyncDurationCount: 3,
+                    liveMaxLatencyDurationCount: 10,
+                    manifestLoadingTimeOut: 15000,
+                    manifestLoadingMaxRetry: 6,
+                    levelLoadingTimeOut: 15000,
+                    fragLoadingTimeOut: 20000,
+                });
+                hlsRef.current = hls;
+
+                hls.loadSource(src);
+                hls.attachMedia(video);
+
+                hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                    retryCount = 0;
+                    setStreamStatus('playing');
+                    video.play().catch(() => { });
+                });
+
+                hls.on(Hls.Events.ERROR, (_event, data) => {
+                    console.warn('[HLS VideosPage] Erro:', data.type, data.details);
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                if (retryCount < MAX_RETRIES) {
+                                    retryCount++;
+                                    console.log(`[HLS VideosPage] Tentativa de recuperação ${retryCount}/${MAX_RETRIES}...`);
+                                    setTimeout(() => {
+                                        hls.loadSource(src);
+                                        hls.startLoad();
+                                    }, RETRY_DELAY * retryCount);
+                                } else {
+                                    console.error('[HLS VideosPage] Falha após todas as tentativas de recuperação');
+                                    setStreamStatus('error');
+                                    onError?.();
+                                }
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                console.log('[HLS VideosPage] Tentando recuperar erro de media...');
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                console.error('[HLS VideosPage] Erro fatal irrecuperável');
+                                hls.destroy();
+                                setStreamStatus('error');
+                                onError?.();
+                                break;
+                        }
+                    }
+                });
+
+                return () => {
+                    hls.destroy();
+                    hlsRef.current = null;
+                };
+            } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+                video.src = src;
+                video.addEventListener("loadedmetadata", () => {
+                    setStreamStatus('playing');
+                    video.play().catch(() => { });
+                });
+                video.addEventListener("error", () => {
+                    setStreamStatus('error');
+                    onError?.();
+                });
+            }
+        };
+
+        const cleanup = initHls();
+        return () => {
+            cleanup?.();
+            if (hlsRef.current) {
+                hlsRef.current.destroy();
+                hlsRef.current = null;
+            }
+        };
+    }, [src, retryKey]);
+
+    const handleRetry = () => {
+        setStreamStatus('loading');
+        setRetryKey(k => k + 1);
+    };
+
+    return (
+        <div className="relative w-full h-full bg-black">
+            <video
+                ref={videoRef}
+                controls={streamStatus === 'playing'}
+                muted={isMuted}
+                autoPlay
+                playsInline
+                className={`w-full h-full object-contain bg-black ${streamStatus !== 'playing' ? 'hidden' : ''}`}
+                title={title}
+            />
+            {streamStatus === 'playing' && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMuted(!isMuted);
+                    }}
+                    className="absolute bottom-14 right-4 z-30 bg-black/80 hover:bg-primary text-white p-2.5 rounded-full backdrop-blur-md border border-white/20 transition-all transform hover:scale-110 shadow-xl flex items-center justify-center cursor-pointer"
+                    title={isMuted ? "Activar som" : "Desactivar som"}
+                >
+                    {isMuted ? (
+                        <VolumeX className="w-4 h-4 text-white" />
+                    ) : (
+                        <Volume2 className="w-4 h-4 text-white" />
+                    )}
+                </button>
+            )}
+            {streamStatus === 'loading' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-3">
+                    <div className="w-8 h-8 border-2 border-white/30 border-t-primary rounded-full animate-spin" />
+                    <span className="text-xs text-white/60 uppercase tracking-wider">A ligar ao stream...</span>
+                </div>
+            )}
+            {streamStatus === 'error' && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-4">
+                    <WifiOff className="w-10 h-10 text-red-400" />
+                    <div className="text-center">
+                        <p className="text-sm font-semibold text-white/90">Transmissão indisponível</p>
+                        <p className="text-xs text-white/50 mt-1">O stream não está acessível de momento</p>
+                    </div>
+                    <button
+                        onClick={handleRetry}
+                        className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white text-xs font-semibold px-4 py-2 rounded-full transition-all hover:scale-105"
+                    >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Tentar novamente
+                    </button>
+                </div>
+            )}
+        </div>
+    );
 };
 
 const VideosPage = () => {
@@ -111,7 +265,39 @@ const VideosPage = () => {
                 />
             );
         }
-        if (videoType === "hls") return <HlsPlayer src={rawUrl} title={featuredVideo.title} />;
+        if (videoType === "hls") return <HlsPlayer src={rawUrl} title={featuredVideo.title} onError={() => console.error('[VideosPage] HLS stream falhou:', rawUrl)} />;
+
+        // Iframe embed externo (ex: ssh101.com/securelive)
+        if (videoType === "iframe") {
+            return (
+                <iframe
+                    src={rawUrl}
+                    title={featuredVideo.title}
+                    className="w-full h-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                    allowFullScreen
+                    scrolling="no"
+                />
+            );
+        }
+
+        // Vídeo directo (mp4, webm, fMP4 de streaming CDN)
+        if (videoType === "direct") {
+            return (
+                <div className="w-full h-full bg-black flex items-center justify-center relative">
+                    <video
+                        src={rawUrl}
+                        controls
+                        autoPlay
+                        playsInline
+                        crossOrigin="anonymous"
+                        className="w-full h-full object-contain bg-black"
+                        title={featuredVideo.title}
+                        onError={(e) => console.error('[VideosPage] Erro ao reproduzir vídeo directo:', rawUrl, e)}
+                    />
+                </div>
+            );
+        }
 
         return <video src={rawUrl} controls autoPlay className="w-full h-full object-contain bg-black" title={featuredVideo.title} />;
     };

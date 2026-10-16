@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Play, Clock, Eye, Volume2, VolumeX } from "lucide-react";
+import { Play, Clock, Eye, Volume2, VolumeX, RefreshCw, WifiOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getYoutubeId } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,53 +26,187 @@ interface VideoSectionProps {
 }
 
 /** Detecta o tipo de URL do vídeo */
-const getVideoType = (url: string): "youtube" | "hls" | "direct" | "unknown" => {
+const getVideoType = (url: string): "youtube" | "hls" | "direct" | "iframe" | "unknown" => {
   if (!url) return "unknown";
   if (getYoutubeId(url)) return "youtube";
   if (url.includes(".m3u8")) return "hls";
-  if (url.match(/\.(mp4|webm|ogg)(\?|$)/i)) return "direct";
+  // Domínios de streaming conhecidos (fMP4 ao vivo via HTTP)
+  if (
+    url.match(/\.(mp4|webm|ogg)(\?|$)/i) ||
+    url.includes('restream.io') ||
+    url.includes('bozztv.com') ||
+    url.includes('akamaized.net') ||
+    url.includes('cdn.livestream')
+  ) return "direct";
+  // URLs de embed externo (páginas web com player integrado)
+  if (url.match(/\.(php|html|asp)(\?|$)/i) || url.includes('/embed/') || url.includes('/player/') || url.includes('/securelive/') || url.includes('/live/player')) return "iframe";
   return "unknown";
 };
 
-/** Componente interno para reproduzir HLS */
-const HlsPlayer = ({ src, title }: { src: string; title: string }) => {
+/** Componente interno para reproduzir HLS com estados visuais */
+const HlsPlayer = ({ src, title, muted = true, onError }: { src: string; title: string; muted?: boolean; onError?: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const [streamStatus, setStreamStatus] = useState<'loading' | 'playing' | 'error'>('loading');
+  const [retryKey, setRetryKey] = useState(0);
+
+  // Sincronizar muted com o elemento vídeo
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.muted = muted;
+    }
+  }, [muted]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
-    if (Hls.isSupported()) {
-      const hls = new Hls();
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => { });
-      });
-      return () => hls.destroy();
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari suporta HLS nativamente
-      video.src = src;
-      video.addEventListener("loadedmetadata", () => {
-        video.play().catch(() => { });
-      });
-    }
-  }, [src]);
+    setStreamStatus('loading');
+    let retryCount = 0;
+    const MAX_RETRIES = 5;
+    const RETRY_DELAY = 3000;
+
+    const initHls = () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+
+      if (Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 90,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 10,
+          manifestLoadingTimeOut: 15000,
+          manifestLoadingMaxRetry: 6,
+          levelLoadingTimeOut: 15000,
+          fragLoadingTimeOut: 20000,
+        });
+        hlsRef.current = hls;
+
+        hls.loadSource(src);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          retryCount = 0;
+          setStreamStatus('playing');
+          video.play().catch(() => { });
+        });
+
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          console.warn('[HLS] Erro:', data.type, data.details);
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                if (retryCount < MAX_RETRIES) {
+                  retryCount++;
+                  console.log(`[HLS] Tentativa de recuperação ${retryCount}/${MAX_RETRIES}...`);
+                  setTimeout(() => {
+                    hls.loadSource(src);
+                    hls.startLoad();
+                  }, RETRY_DELAY * retryCount);
+                } else {
+                  console.error('[HLS] Falha após todas as tentativas de recuperação');
+                  setStreamStatus('error');
+                  onError?.();
+                }
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.log('[HLS] Tentando recuperar erro de media...');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error('[HLS] Erro fatal irrecuperável');
+                hls.destroy();
+                setStreamStatus('error');
+                onError?.();
+                break;
+            }
+          }
+        });
+
+        return () => {
+          hls.destroy();
+          hlsRef.current = null;
+        };
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = src;
+        video.addEventListener("loadedmetadata", () => {
+          setStreamStatus('playing');
+          video.play().catch(() => { });
+        });
+        video.addEventListener("error", () => {
+          setStreamStatus('error');
+          onError?.();
+        });
+      }
+    };
+
+    const cleanup = initHls();
+    return () => {
+      cleanup?.();
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [src, retryKey]);
+
+  const handleRetry = () => {
+    setStreamStatus('loading');
+    setRetryKey(k => k + 1);
+  };
 
   return (
-    <video
-      ref={videoRef}
-      controls
-      className="w-full h-full object-contain bg-black"
-      title={title}
-    />
+    <div className="relative w-full h-full bg-black">
+      <video
+        ref={videoRef}
+        controls={streamStatus === 'playing'}
+        muted={muted}
+        autoPlay
+        playsInline
+        className={`w-full h-full object-contain bg-black ${streamStatus !== 'playing' ? 'hidden' : ''}`}
+        title={title}
+      />
+      {streamStatus === 'loading' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-3">
+          <div className="w-8 h-8 border-2 border-white/30 border-t-primary rounded-full animate-spin" />
+          <span className="text-xs text-white/60 uppercase tracking-wider">A ligar ao stream...</span>
+        </div>
+      )}
+      {streamStatus === 'error' && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-4">
+          <WifiOff className="w-10 h-10 text-red-400" />
+          <div className="text-center">
+            <p className="text-sm font-semibold text-white/90">Transmissão indisponível</p>
+            <p className="text-xs text-white/50 mt-1">O stream não está acessível de momento</p>
+          </div>
+          <button
+            onClick={handleRetry}
+            className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white text-xs font-semibold px-4 py-2 rounded-full transition-all hover:scale-105"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Tentar novamente
+          </button>
+        </div>
+      )}
+    </div>
   );
 };
 
 const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const [featuredVideo, setFeaturedVideo] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(true);
+  const [directStatus, setDirectStatus] = useState<'loading'|'playing'|'error'>('loading');
+  // Reset status when a new direct stream URL is loaded
+  useEffect(() => {
+    if (videoType === 'direct') {
+      setDirectStatus('loading');
+    }
+  }, [rawUrl, videoType]);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const navigate = useNavigate();
 
@@ -105,7 +239,8 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
 
   // Autoplay para directos (live streams)
   const rawUrl = featuredVideo?.video_url || featuredVideo?.videoUrl || "";
-  const isLive = rawUrl.includes('/live/') || rawUrl.includes('youtube.com/live/') || featuredVideo?.category?.toLowerCase() === 'directo';
+  const videoType = getVideoType(rawUrl);
+  const isLive = rawUrl.includes('/live/') || rawUrl.includes('youtube.com/live/') || featuredVideo?.category?.toLowerCase() === 'directo' || (videoType === 'hls' && featuredVideo?.category?.toLowerCase() !== 'vídeo') || videoType === 'iframe' || videoType === 'direct';
 
   useEffect(() => {
     if (featuredVideo) {
@@ -117,7 +252,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
 
   // Extrair ID do vídeo se for YouTube
   const youtubeId = getYoutubeId(rawUrl);
-  const videoType = getVideoType(rawUrl);
+  // videoType já calculado acima
 
   const toggleMute = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -135,7 +270,7 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
 
   /** Renderiza o player correto com base no tipo de URL */
   const renderPlayer = () => {
-    // Se for um vídeo em direto (live), desativar controlos e ocultar botões do YouTube, mantendo o botão customizado de som
+    const [directStatus, setDirectStatus] = useState<'loading'|'playing'|'error'>('loading');
     if (isLive) {
       if (youtubeId) {
         return (
@@ -166,7 +301,12 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
       if (videoType === "hls") {
         return (
           <div className="w-full h-full relative group/live">
-            <HlsPlayer src={rawUrl} title={featuredVideo.title} />
+            <HlsPlayer
+              src={rawUrl}
+              title={featuredVideo.title}
+              muted={isMuted}
+              onError={() => console.error('[VideoSection] HLS stream falhou:', rawUrl)}
+            />
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -181,6 +321,53 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                 <Volume2 className="w-5 h-5 text-white" />
               )}
             </button>
+          </div>
+        );
+      }
+
+      // Vídeo directo ao vivo (fMP4, mp4 de CDN como restream.io)
+      if ((videoType as string) === 'direct') {
+        return (
+          <div className="w-full h-full bg-black flex items-center justify-center relative group/live">
+            <ReactPlayerComponent
+              url={rawUrl}
+              playing={true}
+              controls={true}
+              muted={isMuted}
+              width="100%"
+              height="100%"
+              style={{ position: 'absolute', top: 0, left: 0 }}
+              config={{
+                file: {
+                  attributes: { crossOrigin: 'anonymous', playsInline: true },
+                  forceVideo: true,
+                }
+              }}
+              onError={(e: any) => console.error('[VideoSection] Erro no stream directo:', rawUrl, e)}
+            />
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+              className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md border border-white/20 transition-all transform hover:scale-110 shadow-xl flex items-center justify-center cursor-pointer pointer-events-auto"
+              title={isMuted ? 'Activar som' : 'Desactivar som'}
+            >
+              {isMuted ? <VolumeX className="w-5 h-5 text-white" /> : <Volume2 className="w-5 h-5 text-white" />}
+            </button>
+          </div>
+        );
+      }
+
+      // Iframe embed externo (ex: ssh101.com/securelive)
+      if ((videoType as string) === "iframe") {
+        return (
+          <div className="w-full h-full bg-black flex items-center justify-center relative group/live">
+            <iframe
+              src={rawUrl}
+              title={featuredVideo.title}
+              className="w-full h-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              scrolling="no"
+            />
           </div>
         );
       }
@@ -234,10 +421,55 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
 
     // 2. Se for HLS (m3u8), usamos o componente customizado com hls.js
     if (videoType === "hls") {
-      return <HlsPlayer src={rawUrl} title={featuredVideo.title} />;
+      return <HlsPlayer src={rawUrl} title={featuredVideo.title} muted={false} />;
     }
 
-    // 3. Para outros formatos suportados, usamos ReactPlayer
+    // 3. Se for iframe embed externo
+    if ((videoType as string) === "iframe") {
+      return (
+        <div className="w-full h-full bg-black flex items-center justify-center relative">
+          <iframe
+            src={rawUrl}
+            title={featuredVideo.title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            scrolling="no"
+          />
+        </div>
+      );
+    }
+
+    // 4. Vídeo directo (mp4, webm, fMP4 de streaming CDN como restream.io)
+    if ((videoType as string) === "direct") {
+      return (
+        <div className="w-full h-full bg-black flex items-center justify-center relative">
+          <ReactPlayerComponent
+            url={rawUrl}
+            playing={true}
+            controls={true}
+            muted={false}
+            width="100%"
+            height="100%"
+            style={{ position: 'absolute', top: 0, left: 0 }}
+            config={{
+              file: {
+                attributes: {
+                  crossOrigin: 'anonymous',
+                  playsInline: true,
+                },
+                forceVideo: true,
+              }
+            }}
+            onError={(e: any) => {
+              console.error("[VideoSection] Falha ao carregar vídeo directo:", rawUrl, e);
+            }}
+          />
+        </div>
+      );
+    }
+
+    // 5. Para outros formatos suportados, usamos ReactPlayer
     return (
       <div className="w-full h-full bg-black flex items-center justify-center relative">
         <ReactPlayerComponent
