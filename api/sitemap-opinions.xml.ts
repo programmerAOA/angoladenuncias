@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from "http";
 import { createClient } from "@supabase/supabase-js";
 
 const SITE_URL = "https://www.semfiltros.com";
@@ -11,7 +12,7 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
   const supabaseKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -20,7 +21,9 @@ export default async function handler(req: Request): Promise<Response> {
     "";
 
   if (!supabaseUrl || !supabaseKey) {
-    return new Response("Missing Supabase configuration", { status: 500 });
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Missing Supabase configuration");
+    return;
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -37,13 +40,15 @@ export default async function handler(req: Request): Promise<Response> {
 
   if (error) {
     console.error("Supabase error:", error);
-    return new Response("Error fetching opinions", { status: 500 });
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Error fetching opinions");
+    return;
   }
 
   const urls = (opinions || [])
-    .filter((o) => o.slug)
-    .map((o) => {
-      const loc = `${SITE_URL}/opiniao/${escapeXml(o.slug!)}`;
+    .filter((o: any) => o.slug)
+    .map((o: any) => {
+      const loc = `${SITE_URL}/opiniao/${escapeXml(o.slug)}`;
       const lastmod = o.updated_at || o.scheduled_at || o.created_at || now;
       return `  <url>
     <loc>${loc}</loc>
@@ -59,11 +64,9 @@ export default async function handler(req: Request): Promise<Response> {
 ${urls}
 </urlset>`;
 
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-    },
+  res.writeHead(200, {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
   });
+  res.end(xml);
 }

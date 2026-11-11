@@ -1,10 +1,9 @@
+import type { IncomingMessage, ServerResponse } from "http";
 import { createClient } from "@supabase/supabase-js";
 
 const SITE_URL = "https://www.semfiltros.com";
 const PUBLICATION_NAME = "Sem Filtros";
 const PUBLICATION_LANGUAGE = "pt";
-
-// Google News Sitemap: apenas notícias das últimas 48 horas
 const NEWS_WINDOW_HOURS = 48;
 
 function getCategorySlug(category: string): string {
@@ -24,7 +23,7 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
   const supabaseKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
@@ -33,11 +32,12 @@ export default async function handler(req: Request): Promise<Response> {
     "";
 
   if (!supabaseUrl || !supabaseKey) {
-    return new Response("Missing Supabase configuration", { status: 500 });
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Missing Supabase configuration");
+    return;
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
-
   const now = new Date();
   const windowStart = new Date(now.getTime() - NEWS_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
   const nowIso = now.toISOString();
@@ -55,14 +55,16 @@ export default async function handler(req: Request): Promise<Response> {
 
   if (error) {
     console.error("Supabase error:", error);
-    return new Response("Error fetching news articles", { status: 500 });
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Error fetching news articles");
+    return;
   }
 
   const urls = (articles || [])
-    .filter((a) => a.slug && a.category)
-    .map((a) => {
-      const catSlug = getCategorySlug(a.category!);
-      const loc = `${SITE_URL}/${catSlug}/${escapeXml(a.slug!)}`;
+    .filter((a: any) => a.slug && a.category)
+    .map((a: any) => {
+      const catSlug = getCategorySlug(a.category);
+      const loc = `${SITE_URL}/${catSlug}/${escapeXml(a.slug)}`;
       const pubDate = a.scheduled_at || a.created_at || nowIso;
       const title = escapeXml(a.title || "");
       const keywords = a.seo_keywords ? escapeXml(a.seo_keywords) : "";
@@ -93,12 +95,9 @@ export default async function handler(req: Request): Promise<Response> {
 ${urls}
 </urlset>`;
 
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      // Cache curto — Google News deve ser actualizado a cada 5 min
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
-    },
+  res.writeHead(200, {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
   });
+  res.end(xml);
 }

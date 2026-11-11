@@ -1,3 +1,5 @@
+import type { IncomingMessage, ServerResponse } from "http";
+
 const SITE_URL = "https://www.semfiltros.com";
 
 const STATIC_PAGES = [
@@ -26,7 +28,7 @@ const STATIC_PAGES = [
   { path: "/privacidade", changefreq: "yearly", priority: "0.3" },
 ];
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const today = new Date().toISOString().split("T")[0];
 
   const urls = STATIC_PAGES.map(
@@ -43,11 +45,9 @@ export default async function handler(req: Request): Promise<Response> {
 ${urls}
 </urlset>`;
 
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
-    },
+  res.writeHead(200, {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
   });
+  res.end(xml);
 }

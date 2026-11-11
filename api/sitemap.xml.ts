@@ -1,6 +1,8 @@
+import type { IncomingMessage, ServerResponse } from "http";
+
 const SITE_URL = "https://www.semfiltros.com";
 
-export default async function handler(req: Request): Promise<Response> {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const now = new Date().toISOString();
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
@@ -23,11 +25,9 @@ export default async function handler(req: Request): Promise<Response> {
   </sitemap>
 </sitemapindex>`;
 
-  return new Response(xml, {
-    status: 200,
-    headers: {
-      "Content-Type": "application/xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
-    },
+  res.writeHead(200, {
+    "Content-Type": "application/xml; charset=utf-8",
+    "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
   });
+  res.end(xml);
 }
