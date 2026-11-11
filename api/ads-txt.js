@@ -30,18 +30,14 @@ async function fetchFromSupabase(key) {
     }
 }
 
+const DEFAULT_ADS_TXT = "google.com, pub-4560407429890237, DIRECT, f08c47fec0942fa0";
+
 export default async function handler(req) {
     try {
         const settings = await fetchFromSupabase('site_validation');
+        const content = (settings && settings.content) ? settings.content : DEFAULT_ADS_TXT;
 
-        if (!settings || settings.method !== 'ads.txt' || !settings.content) {
-            return new Response('', {
-                status: 200,
-                headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-            });
-        }
-
-        return new Response(settings.content, {
+        return new Response(content.trim() + "\n", {
             headers: {
                 'Content-Type': 'text/plain; charset=utf-8',
                 'Cache-Control': 'public, max-age=3600, s-maxage=3600',
@@ -49,8 +45,8 @@ export default async function handler(req) {
         });
     } catch (err) {
         console.error('ads.txt generation error:', err);
-        return new Response('', {
-            status: 500,
+        return new Response(DEFAULT_ADS_TXT + "\n", {
+            status: 200,
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         });
     }
