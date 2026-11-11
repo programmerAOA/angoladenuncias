@@ -200,15 +200,21 @@ const HlsPlayer = ({ src, title, muted = true, onError }: { src: string; title: 
 const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   const [featuredVideo, setFeaturedVideo] = useState<any>(null);
   const [playing, setPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const [directStatus, setDirectStatus] = useState<'loading'|'playing'|'error'>('loading');
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const navigate = useNavigate();
+
+  const rawUrl = featuredVideo?.video_url || featuredVideo?.videoUrl || "";
+  const videoType = getVideoType(rawUrl);
+  const isLive = rawUrl.includes('/live/') || rawUrl.includes('youtube.com/live/') || featuredVideo?.category?.toLowerCase() === 'directo' || (videoType === 'hls' && featuredVideo?.category?.toLowerCase() !== 'vídeo') || videoType === 'iframe' || videoType === 'direct';
+
   // Reset status when a new direct stream URL is loaded
   useEffect(() => {
     if (videoType === 'direct') {
       setDirectStatus('loading');
     }
   }, [rawUrl, videoType]);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const navigate = useNavigate();
 
   const handlePlay = async () => {
     if (!featuredVideo) return;
@@ -238,10 +244,6 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
   }, [videos, featuredVideo]);
 
   // Autoplay para directos (live streams)
-  const rawUrl = featuredVideo?.video_url || featuredVideo?.videoUrl || "";
-  const videoType = getVideoType(rawUrl);
-  const isLive = rawUrl.includes('/live/') || rawUrl.includes('youtube.com/live/') || featuredVideo?.category?.toLowerCase() === 'directo' || (videoType === 'hls' && featuredVideo?.category?.toLowerCase() !== 'vídeo') || videoType === 'iframe' || videoType === 'direct';
-
   useEffect(() => {
     if (featuredVideo) {
       setPlaying(true);
@@ -270,7 +272,6 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
 
   /** Renderiza o player correto com base no tipo de URL */
   const renderPlayer = () => {
-    const [directStatus, setDirectStatus] = useState<'loading'|'playing'|'error'>('loading');
     if (isLive) {
       if (youtubeId) {
         return (
@@ -343,8 +344,34 @@ const VideoSection = ({ videos = [] }: VideoSectionProps) => {
                   forceVideo: true,
                 }
               }}
-              onError={(e: any) => console.error('[VideoSection] Erro no stream directo:', rawUrl, e)}
+              onReady={() => setDirectStatus('playing')}
+              onError={(e: any) => {
+                console.error('[VideoSection] Erro no stream directo:', rawUrl, e);
+                setDirectStatus('error');
+              }}
             />
+            {directStatus === 'loading' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-3 z-20">
+                <div className="w-8 h-8 border-2 border-white/30 border-t-primary rounded-full animate-spin" />
+                <span className="text-xs text-white/60 uppercase tracking-wider">A ligar ao stream...</span>
+              </div>
+            )}
+            {directStatus === 'error' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-white gap-4 z-20">
+                <WifiOff className="w-10 h-10 text-red-400" />
+                <div className="text-center">
+                  <p className="text-sm font-semibold text-white/90">Transmissão indisponível</p>
+                  <p className="text-xs text-white/50 mt-1">O stream não está acessível de momento</p>
+                </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setDirectStatus('loading'); }}
+                  className="flex items-center gap-2 bg-primary hover:bg-primary/80 text-white text-xs font-semibold px-4 py-2 rounded-full transition-all hover:scale-105 pointer-events-auto"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  Tentar novamente
+                </button>
+              </div>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
               className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-primary text-white p-3 rounded-full backdrop-blur-md border border-white/20 transition-all transform hover:scale-110 shadow-xl flex items-center justify-center cursor-pointer pointer-events-auto"
