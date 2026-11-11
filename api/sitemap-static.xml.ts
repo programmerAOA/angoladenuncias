@@ -1,8 +1,5 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-
 const SITE_URL = "https://www.semfiltros.com";
 
-// Prioridade decrescente — páginas mais importantes primeiro
 const STATIC_PAGES = [
   { path: "/", changefreq: "hourly", priority: "1.0" },
   { path: "/sociedade", changefreq: "hourly", priority: "0.9" },
@@ -29,13 +26,13 @@ const STATIC_PAGES = [
   { path: "/privacidade", changefreq: "yearly", priority: "0.3" },
 ];
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const now = new Date().toISOString();
+export default async function handler(req: Request): Promise<Response> {
+  const today = new Date().toISOString().split("T")[0];
 
   const urls = STATIC_PAGES.map(
     ({ path, changefreq, priority }) => `  <url>
     <loc>${SITE_URL}${path}</loc>
-    <lastmod>${now.split("T")[0]}</lastmod>
+    <lastmod>${today}</lastmod>
     <changefreq>${changefreq}</changefreq>
     <priority>${priority}</priority>
   </url>`
@@ -46,7 +43,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 ${urls}
 </urlset>`;
 
-  res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=604800");
-  res.status(200).send(xml);
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=86400, stale-while-revalidate=604800",
+    },
+  });
 }

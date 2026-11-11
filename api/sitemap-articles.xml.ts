@@ -1,4 +1,3 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { createClient } from "@supabase/supabase-js";
 
 const SITE_URL = "https://www.semfiltros.com";
@@ -20,16 +19,16 @@ function escapeXml(str: string): string {
     .replace(/'/g, "&apos;");
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+export default async function handler(req: Request): Promise<Response> {
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "";
   const supabaseKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||
-    process.env.SUPABASE_ANON_KEY;
+    process.env.SUPABASE_ANON_KEY ||
+    "";
 
   if (!supabaseUrl || !supabaseKey) {
-    res.status(500).send("Missing Supabase configuration");
-    return;
+    return new Response("Missing Supabase configuration", { status: 500 });
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
@@ -47,8 +46,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (error) {
     console.error("Supabase error:", error);
-    res.status(500).send("Error fetching articles");
-    return;
+    return new Response("Error fetching articles", { status: 500 });
   }
 
   const urls = (articles || [])
@@ -71,7 +69,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 ${urls}
 </urlset>`;
 
-  res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
-  res.status(200).send(xml);
+  return new Response(xml, {
+    status: 200,
+    headers: {
+      "Content-Type": "application/xml; charset=utf-8",
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+    },
+  });
 }
