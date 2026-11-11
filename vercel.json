@@ -41,6 +41,11 @@
             "permanent": true
         },
         {
+            "source": "/mundo",
+            "destination": "/internacional",
+            "permanent": true
+        },
+        {
             "source": "/mundo/:slug*",
             "destination": "/internacional/:slug*",
             "permanent": true

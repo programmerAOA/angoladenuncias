@@ -6,8 +6,8 @@ const SITE_URL = 'https://www.semfiltros.com';
 const SITE_NAME = 'Sem Filtros';
 
 async function fetchFromSupabase(table, selectFields, filter = '') {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || "https://qsjhkhiohpfslfkpjoeb.supabase.co";
+    const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || "sb_publishable_-cH7Xx0cAUTgGeK7KLFP4w_a2TLTf9x";
 
     const url = `${supabaseUrl}/rest/v1/${table}?select=${selectFields}${filter}&order=created_at.desc&limit=2000`;
 

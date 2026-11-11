@@ -3,13 +3,8 @@ export const config = {
 };
 
 async function fetchFromSupabase(key) {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-        console.error('Missing Supabase environment variables');
-        return null;
-    }
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://qsjhkhiohpfslfkpjoeb.supabase.co";
+    const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_-cH7Xx0cAUTgGeK7KLFP4w_a2TLTf9x";
 
     const url = `${supabaseUrl}/rest/v1/system_settings?select=value&key=eq.${key}&limit=1`;
 
