@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { categories } from "@/constants/categories";
@@ -20,7 +20,11 @@ import {
   Database,
   ArrowRight,
   Radio,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Share2,
+  FileText,
+  ClipboardPaste,
+  Layers
 } from "lucide-react";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
@@ -28,18 +32,28 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 export default function MobileAdminPage() {
   const { user, isAdmin, isEditor, signOut, loading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<"ai-generator" | "settings">("ai-generator");
+  const [generatorMode, setGeneratorMode] = useState<"facebook" | "osint">("facebook");
 
   // Login local state se não logado
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Estados do Gerador IA
+  // Estados do Gerador OSINT
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [discoveryResults, setDiscoveryResults] = useState<any[]>([]);
+
+  // Estados do Filtro Inteligente Facebook
+  const [facebookUrl, setFacebookUrl] = useState("");
+  const [facebookText, setFacebookText] = useState("");
+  const [isAnalyzingFacebook, setIsAnalyzingFacebook] = useState(false);
+
+  // Estado geral de IA e Publicação
   const [isAdapting, setIsAdapting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const editorRef = useRef<HTMLDivElement>(null);
 
   // Artigo em edição
   const [editorialArticle, setEditorialArticle] = useState({
@@ -50,7 +64,7 @@ export default function MobileAdminPage() {
     imageUrl: "",
     sourceUrl: "",
     sourceName: "",
-    editorialLine: "Investigativo, rigoroso, independente e sem censura. Foco no interesse público angolano.",
+    editorialLine: "Investigativo, rigoroso, factual, independente e sem censura. Foco no interesse público e contexto angolano.",
     isBreaking: false,
     isHero: false
   });
@@ -111,21 +125,18 @@ export default function MobileAdminPage() {
   const handleSaveSettings = async () => {
     setIsSavingSettings(true);
     try {
-      // Salvar Chave Gemini
       await supabase.from("system_settings").upsert({
         key: "gemini_api_key",
         value: geminiApiKey,
         updated_at: new Date().toISOString()
       });
 
-      // Salvar Ticker
       await supabase.from("system_settings").upsert({
         key: "ticker",
         value: { speed: tickerSpeed },
         updated_at: new Date().toISOString()
       });
 
-      // Salvar ads.txt se preenchido
       if (adsTxtContent) {
         await supabase.from("system_settings").upsert({
           key: "site_validation",
@@ -164,7 +175,143 @@ export default function MobileAdminPage() {
     }
   };
 
-  // 1. Pesquisa OSINT de Notícias
+  // 1. FILTRO INTELIGENTE DE POSTS DO FACEBOOK
+  const handleProcessFacebookPost = async () => {
+    const rawUrl = facebookUrl.trim();
+    const rawText = facebookText.trim();
+
+    if (!rawUrl && !rawText) {
+      toast.warning("Insira o link da publicação do Facebook ou cole o texto do post.");
+      return;
+    }
+
+    setIsAnalyzingFacebook(true);
+    toast.info("A analisar a publicação e a preparar o enquadramento jornalístico...");
+
+    try {
+      let postTitle = "";
+      let postDescription = rawText;
+      let postImage = "";
+
+      // Se foi fornecido URL, tentar extrair OpenGraph preview da publicação
+      if (rawUrl) {
+        try {
+          const res = await fetch("/api/extract-post", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: rawUrl })
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data?.title) postTitle = data.title;
+            if (data?.description && !rawText) postDescription = data.description;
+            if (data?.image) postImage = data.image;
+          }
+        } catch (e) {
+          console.warn("Extração direta de metadados falhou, usando texto informado...", e);
+        }
+      }
+
+      const combinedSourceContent = [
+        rawText ? `[Texto do Post / Denúncia no Facebook]:\n${rawText}` : "",
+        postTitle ? `[Título / Resumo da Página]:\n${postTitle}` : "",
+        postDescription && postDescription !== rawText ? `[Descrição Extraída]:\n${postDescription}` : ""
+      ].filter(Boolean).join("\n\n");
+
+      // Prompt com rigor jornalístico e enquadramento editorial Sem Filtros
+      const prompt = `És o Editor-Chefe e Jornalista Sénior de Investigação do portal 'Sem Filtros' (https://www.semfiltros.com).
+Temos aqui uma publicação ou denúncia que circulou na rede social Facebook:
+
+LINK DO POST: ${rawUrl || "Não fornecido"}
+CONTEÚDO DO POST / DENÚNCIA:
+"""
+${combinedSourceContent}
+"""
+
+A TUA TAREFA:
+Cria uma notícia jornalística completa, profissional e factual respeitando rigorosamente a LINHA EDITORIAL do Sem Filtros:
+1. Enquadramento jornalístico sério: elimina gírias de redes sociais, emojis em excesso, ódios pessoais ou termos sensacionalistas.
+2. Trata denúncias com responsabilidade ética (ex: 'Segundo informações veiculadas nas redes sociais...', 'O caso gerou forte repercussão pública...').
+3. Responde aos pilares do jornalismo: Quem, O Quê, Onde, Quando, Porquê e Qual o Impacto para a sociedade angolana.
+4. Adiciona obrigatoriamente a secção de contextualização crítica: '<h3>Análise – Sem Filtros</h3>'.
+5. Escolhe a categoria mais precisa entre: Sociedade, Política, Crimes, Economia, Internacional, Desporto, Cultura, Tecnologia, Saúde.
+
+Responde ESTRITAMENTE em formato JSON:
+{
+  "title": "Título forte, cativante e rigoroso em português de Angola",
+  "summary": "Resumo de 2 a 3 frases para o lead e redes sociais",
+  "content": "<p>Primeiro parágrafo informativo com os fatos principais...</p><p>Segundo parágrafo detalhando o ocorrido e as reações...</p><p>Terceiro parágrafo com as implicações...</p><h3>Análise – Sem Filtros</h3><p>Análise editorial independente e crítica sobre o caso...</p>",
+  "category": "Sociedade",
+  "seo_keywords": "termo1, termo2, termo3, angola, sem filtros"
+}`;
+
+      let generatedArticle: any = null;
+
+      // 1ª Tentativa: endpoint /api/ai-rewrite
+      try {
+        const res = await fetch("/api/ai-rewrite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: combinedSourceContent,
+            title: postTitle || "Publicação do Facebook",
+            line: editorialArticle.editorialLine,
+            url: rawUrl,
+            apiKey: geminiApiKey
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.title && data?.content) generatedArticle = data;
+        }
+      } catch (e) {
+        console.warn("Chamada a /api/ai-rewrite falhou, usando Puter.js...");
+      }
+
+      // 2ª Tentativa: Puter.js
+      if (!generatedArticle) {
+        const puter = (window as any).puter;
+        if (puter?.ai) {
+          const aiRes = await puter.ai.chat(prompt, { model: "gemini-2.5-flash" });
+          const text = typeof aiRes === "string" ? aiRes : aiRes?.message?.content || "";
+          const match = text.match(/\{[\s\S]*\}/);
+          if (match) {
+            generatedArticle = JSON.parse(match[0]);
+          }
+        }
+      }
+
+      if (generatedArticle) {
+        setEditorialArticle(prev => ({
+          ...prev,
+          title: generatedArticle.title || prev.title,
+          summary: generatedArticle.summary || "",
+          content: generatedArticle.content || "",
+          category: generatedArticle.category || "Sociedade",
+          imageUrl: postImage || prev.imageUrl || "https://www.semfiltros.com/logo.png",
+          sourceUrl: rawUrl || prev.sourceUrl,
+          sourceName: "Facebook / Redes Sociais"
+        }));
+
+        toast.success("Notícia gerada com enquadramento profissional!");
+
+        // Scroll suave até ao editor
+        setTimeout(() => {
+          editorRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 150);
+      } else {
+        throw new Error("A IA não conseguiu estruturar o artigo. Tente adicionar mais texto do post.");
+      }
+    } catch (err: any) {
+      console.error("Erro no filtro do Facebook:", err);
+      toast.error("Erro ao processar post: " + (err.message || "Tente novamente"));
+    } finally {
+      setIsAnalyzingFacebook(false);
+    }
+  };
+
+  // 2. PESQUISA OSINT
   const handleSearchOSINT = async () => {
     if (!searchQuery.trim()) {
       toast.warning("Digite um tema ou termo de pesquisa.");
@@ -174,7 +321,6 @@ export default function MobileAdminPage() {
     setDiscoveryResults([]);
 
     try {
-      // Tentar via endpoint de descoberta ou buscar tópicos relevantes
       const res = await fetch("/api/ai-discovery", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -190,7 +336,6 @@ export default function MobileAdminPage() {
         }
       }
 
-      // Fallback: usar Puter.js / IA para simular busca estruturada de fatos
       const puter = (window as any).puter;
       if (puter?.ai) {
         const prompt = `Actua como jornalista de investigação angolano. Com base no tema "${searchQuery}", lista 3 fatos ou notícias recentes verificáveis em formato JSON array:
@@ -215,7 +360,7 @@ Devolve APENAS o JSON válido.`;
     }
   };
 
-  // 2. Reescrita com IA
+  // 3. REESCRITA COM IA (MODO OSINT)
   const handleRewriteWithAI = async (itemTitle: string, itemContent: string, itemUrl?: string) => {
     setIsAdapting(true);
     toast.info("A reescrever a matéria com o tom editorial Sem Filtros...");
@@ -240,7 +385,6 @@ Responde APENAS com o JSON.`;
 
       let generatedJson: any = null;
 
-      // Tentar via /api/ai-rewrite
       try {
         const res = await fetch("/api/ai-rewrite", {
           method: "POST",
@@ -261,7 +405,6 @@ Responde APENAS com o JSON.`;
         console.warn("Endpoint /api/ai-rewrite inacessível, usando IA de fallback...");
       }
 
-      // Fallback via Puter.js
       if (!generatedJson) {
         const puter = (window as any).puter;
         if (puter?.ai) {
@@ -285,6 +428,10 @@ Responde APENAS com o JSON.`;
           sourceName: prev.sourceName || "Agência"
         }));
         toast.success("Matéria reescrita com sucesso! Pronta para revisão e publicação.");
+
+        setTimeout(() => {
+          editorRef.current?.scrollIntoView({ behavior: "smooth" });
+        }, 150);
       } else {
         throw new Error("Não foi possível gerar a resposta com a IA.");
       }
@@ -295,7 +442,7 @@ Responde APENAS com o JSON.`;
     }
   };
 
-  // 3. Publicar Artigo
+  // 4. PUBLICAR ARTIGO NO SUPABASE
   const handlePublishArticle = async (publishNow = true) => {
     if (!editorialArticle.title.trim()) {
       toast.error("O título é obrigatório.");
@@ -328,17 +475,14 @@ Responde APENAS com o JSON.`;
         is_hero: editorialArticle.isHero
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from("news_articles")
-        .insert(articlePayload)
-        .select("id, slug, category")
-        .single();
+        .insert(articlePayload);
 
       if (error) throw error;
 
       toast.success(publishNow ? "Notícia publicada no portal com sucesso!" : "Rascunho guardado!");
 
-      // Limpar formulário
       setEditorialArticle({
         title: "",
         summary: "",
@@ -347,10 +491,12 @@ Responde APENAS com o JSON.`;
         imageUrl: "",
         sourceUrl: "",
         sourceName: "",
-        editorialLine: "Investigativo, rigoroso, independente e sem censura. Foco no interesse público angolano.",
+        editorialLine: "Investigativo, rigoroso, factual, independente e sem censura. Foco no interesse público e contexto angolano.",
         isBreaking: false,
         isHero: false
       });
+      setFacebookUrl("");
+      setFacebookText("");
     } catch (err: any) {
       console.error("Erro ao publicar:", err);
       toast.error("Erro ao salvar: " + (err.message || "Erro desconhecido"));
@@ -359,7 +505,24 @@ Responde APENAS com o JSON.`;
     }
   };
 
-  // Ecrã de carregamento
+  // Colar conteúdo do clipboard
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) {
+        if (text.startsWith("http://") || text.startsWith("https://")) {
+          setFacebookUrl(text);
+          toast.success("Link colado da área de transferência!");
+        } else {
+          setFacebookText(text);
+          toast.success("Texto colado da área de transferência!");
+        }
+      }
+    } catch (e) {
+      toast.info("Permita o acesso à área de transferência ou cole manualmente.");
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex flex-col items-center justify-center p-4">
@@ -369,7 +532,6 @@ Responde APENAS com o JSON.`;
     );
   }
 
-  // Ecrã de Login para não autenticados
   if (!user || (!isAdmin && !isEditor)) {
     return (
       <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-center px-6 py-12">
@@ -450,68 +612,168 @@ Responde APENAS com o JSON.`;
       </header>
 
       {/* Conteúdo Principal */}
-      <main className="flex-1 p-4 max-w-lg mx-auto w-full space-y-6">
+      <main className="flex-1 p-4 max-w-lg mx-auto w-full space-y-5">
         {/* ABA: GERADOR DE NOTÍCIAS COM IA */}
         {activeTab === "ai-generator" && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Bloco 1: Pesquisa OSINT & Fatos */}
-            <section className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <Sparkles className="w-4 h-4 text-red-500" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-zinc-200">
-                  Descoberta & Pauta Inteligente
-                </h2>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && handleSearchOSINT()}
-                  placeholder="Ex: Luanda, Sonangol, Tribunal, BNA..."
-                  className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
-                />
-                <button
-                  onClick={handleSearchOSINT}
-                  disabled={isSearching}
-                  className="bg-red-600 active:bg-red-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-red-600/20"
-                >
-                  {isSearching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
-                  Pesquisar
-                </button>
-              </div>
+          <div className="space-y-5 animate-fade-in">
+            {/* Seletor de Modo: Facebook vs OSINT */}
+            <div className="grid grid-cols-2 p-1 bg-zinc-900 border border-zinc-800 rounded-xl">
+              <button
+                onClick={() => setGeneratorMode("facebook")}
+                className={`py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  generatorMode === "facebook"
+                    ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                <Share2 className="w-3.5 h-3.5" />
+                Filtro Facebook
+              </button>
 
-              {/* Resultados da Pesquisa */}
-              {discoveryResults.length > 0 && (
-                <div className="mt-4 space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                  {discoveryResults.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-zinc-950 border border-zinc-800/80 rounded-xl p-3 flex flex-col justify-between gap-2 hover:border-zinc-700 transition-colors"
-                    >
-                      <div>
-                        <h3 className="text-xs font-bold text-zinc-200 line-clamp-2">{item.title}</h3>
-                        <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">{item.snippet || item.content}</p>
-                      </div>
-                      <button
-                        onClick={() => handleRewriteWithAI(item.title, item.snippet || item.content || item.title, item.url)}
-                        disabled={isAdapting}
-                        className="self-end bg-zinc-800 hover:bg-red-600 active:bg-red-700 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all"
-                      >
-                        <Wand2 className="w-3 h-3 text-red-400" />
-                        Reescrever com IA
-                      </button>
+              <button
+                onClick={() => setGeneratorMode("osint")}
+                className={`py-2 px-3 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-all ${
+                  generatorMode === "osint"
+                    ? "bg-red-600 text-white shadow-md shadow-red-600/30"
+                    : "text-zinc-400 hover:text-white"
+                }`}
+              >
+                <Search className="w-3.5 h-3.5" />
+                Pesquisa OSINT
+              </button>
+            </div>
+
+            {/* MODO 1: FILTRO INTELIGENTE DE POSTS DO FACEBOOK */}
+            {generatorMode === "facebook" && (
+              <section className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-4 shadow-sm space-y-3.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 bg-blue-600/20 text-blue-400 rounded-lg flex items-center justify-center">
+                      <Share2 className="w-4 h-4" />
                     </div>
-                  ))}
-                </div>
-              )}
-            </section>
+                    <div>
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                        Filtro de Posts Facebook
+                      </h2>
+                      <p className="text-[10px] text-zinc-400">
+                        Transforma publicações e denúncias em notícia profissional
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Bloco 2: Formulário / Revisão Editorial */}
-            <section className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-4 shadow-sm">
+                  <button
+                    onClick={handlePasteFromClipboard}
+                    className="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-[10px] flex items-center gap-1"
+                    title="Colar da área de transferência"
+                  >
+                    <ClipboardPaste className="w-3.5 h-3.5" /> Colar
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1">
+                    Link da Publicação do Facebook
+                  </label>
+                  <input
+                    type="url"
+                    value={facebookUrl}
+                    onChange={e => setFacebookUrl(e.target.value)}
+                    placeholder="https://www.facebook.com/... ou https://fb.watch/..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-zinc-300 mb-1 flex items-center justify-between">
+                    <span>Texto / Legenda do Post (Opcional)</span>
+                    <span className="text-[10px] text-zinc-500 lowercase font-normal">útil se o post for privado</span>
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={facebookText}
+                    onChange={e => setFacebookText(e.target.value)}
+                    placeholder="Cole aqui o texto ou denúncia que circulou na publicação..."
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                  />
+                </div>
+
+                <button
+                  onClick={handleProcessFacebookPost}
+                  disabled={isAnalyzingFacebook}
+                  className="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
+                >
+                  {isAnalyzingFacebook ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> A enquadrar e redigir a notícia...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="w-4 h-4" /> Filtrar e Criar Notícia Profissional
+                    </>
+                  )}
+                </button>
+              </section>
+            )}
+
+            {/* MODO 2: PESQUISA OSINT */}
+            {generatorMode === "osint" && (
+              <section className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-4 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-red-500" />
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-200">
+                    Descoberta & Pauta Inteligente
+                  </h2>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleSearchOSINT()}
+                    placeholder="Ex: Luanda, Sonangol, Tribunal, BNA..."
+                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-red-500"
+                  />
+                  <button
+                    onClick={handleSearchOSINT}
+                    disabled={isSearching}
+                    className="bg-red-600 active:bg-red-700 text-white px-3.5 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-md shadow-red-600/20"
+                  >
+                    {isSearching ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                    Pesquisar
+                  </button>
+                </div>
+
+                {discoveryResults.length > 0 && (
+                  <div className="mt-3 space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    {discoveryResults.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-zinc-950 border border-zinc-800/80 rounded-xl p-3 flex flex-col justify-between gap-2 hover:border-zinc-700 transition-colors"
+                      >
+                        <div>
+                          <h3 className="text-xs font-bold text-zinc-200 line-clamp-2">{item.title}</h3>
+                          <p className="text-[11px] text-zinc-400 mt-1 line-clamp-2">{item.snippet || item.content}</p>
+                        </div>
+                        <button
+                          onClick={() => handleRewriteWithAI(item.title, item.snippet || item.content || item.title, item.url)}
+                          disabled={isAdapting}
+                          className="self-end bg-zinc-800 hover:bg-red-600 active:bg-red-700 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all"
+                        >
+                          <Wand2 className="w-3 h-3 text-red-400" />
+                          Reescrever com IA
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
+
+            {/* Bloco 3: Formulário / Revisão Editorial */}
+            <section ref={editorRef} className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 space-y-4 shadow-sm">
               <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-300 flex items-center gap-1.5">
-                  <Wand2 className="w-3.5 h-3.5 text-red-500" /> Redação Editorial
+                  <FileText className="w-3.5 h-3.5 text-red-500" /> Redação Editorial
                 </span>
                 {isAdapting && (
                   <span className="text-[11px] text-amber-400 flex items-center gap-1">
@@ -551,7 +813,7 @@ Responde APENAS com o JSON.`;
                     type="text"
                     value={editorialArticle.sourceName}
                     onChange={e => setEditorialArticle({ ...editorialArticle, sourceName: e.target.value })}
-                    placeholder="Ex: Angop, BNA..."
+                    placeholder="Ex: Facebook, Angop, BNA..."
                     className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500"
                   />
                 </div>
