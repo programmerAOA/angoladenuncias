@@ -252,6 +252,7 @@ export type Database = {
       }
       news_articles: {
         Row: {
+          audio_url: string | null
           author: string | null
           category: string | null
           content: string | null
@@ -262,13 +263,17 @@ export type Database = {
           is_hero: boolean | null
           published: boolean | null
           scheduled_at: string | null
+          seo_keywords: string | null
+          slug: string | null
+          source_name: string | null
+          source_url: string | null
           summary: string | null
           title: string
           updated_at: string | null
           views: number | null
-          seo_keywords: string | null
         }
         Insert: {
+          audio_url?: string | null
           author?: string | null
           category?: string | null
           content?: string | null
@@ -279,13 +284,17 @@ export type Database = {
           is_hero?: boolean | null
           published?: boolean | null
           scheduled_at?: string | null
+          seo_keywords?: string | null
+          slug?: string | null
+          source_name?: string | null
+          source_url?: string | null
           summary?: string | null
           title: string
           updated_at?: string | null
           views?: number | null
-          seo_keywords?: string | null
         }
         Update: {
+          audio_url?: string | null
           author?: string | null
           category?: string | null
           content?: string | null
@@ -296,11 +305,14 @@ export type Database = {
           is_hero?: boolean | null
           published?: boolean | null
           scheduled_at?: string | null
+          seo_keywords?: string | null
+          slug?: string | null
+          source_name?: string | null
+          source_url?: string | null
           summary?: string | null
           title?: string
           updated_at?: string | null
           views?: number | null
-          seo_keywords?: string | null
         }
         Relationships: []
       }
@@ -339,6 +351,7 @@ export type Database = {
       }
       opinion_articles: {
         Row: {
+          audio_url: string | null
           author: string
           avatar_url: string | null
           content: string | null
@@ -347,12 +360,14 @@ export type Database = {
           id: string
           published: boolean | null
           scheduled_at: string | null
+          seo_keywords: string | null
+          slug: string | null
           title: string
           updated_at: string | null
           views: number | null
-          seo_keywords: string | null
         }
         Insert: {
+          audio_url?: string | null
           author: string
           avatar_url?: string | null
           content?: string | null
@@ -361,12 +376,14 @@ export type Database = {
           id?: string
           published?: boolean | null
           scheduled_at?: string | null
+          seo_keywords?: string | null
+          slug?: string | null
           title: string
           updated_at?: string | null
           views?: number | null
-          seo_keywords?: string | null
         }
         Update: {
+          audio_url?: string | null
           author?: string
           avatar_url?: string | null
           content?: string | null
@@ -375,10 +392,11 @@ export type Database = {
           id?: string
           published?: boolean | null
           scheduled_at?: string | null
+          seo_keywords?: string | null
+          slug?: string | null
           title?: string
           updated_at?: string | null
           views?: number | null
-          seo_keywords?: string | null
         }
         Relationships: []
       }

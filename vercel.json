@@ -8,6 +8,24 @@
                     "value": "index, follow"
                 }
             ]
+        },
+        {
+            "source": "/admin(.*)",
+            "headers": [
+                {
+                    "key": "x-robots-tag",
+                    "value": "noindex, nofollow"
+                }
+            ]
+        },
+        {
+            "source": "/auth(.*)",
+            "headers": [
+                {
+                    "key": "x-robots-tag",
+                    "value": "noindex, nofollow"
+                }
+            ]
         }
     ],
     "redirects": [
@@ -29,8 +47,24 @@
             "destination": "/api/sitemap.xml"
         },
         {
+            "source": "/sitemap-index.xml",
+            "destination": "/api/sitemap.xml"
+        },
+        {
             "source": "/sitemap-news.xml",
             "destination": "/api/sitemap-news.xml"
+        },
+        {
+            "source": "/sitemap-articles.xml",
+            "destination": "/api/sitemap-articles.xml"
+        },
+        {
+            "source": "/sitemap-opinions.xml",
+            "destination": "/api/sitemap-opinions.xml"
+        },
+        {
+            "source": "/sitemap-static.xml",
+            "destination": "/api/sitemap-static.xml"
         },
         {
             "source": "/ads.txt",

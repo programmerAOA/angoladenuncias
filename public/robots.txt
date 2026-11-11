@@ -1,12 +1,23 @@
 User-agent: *
 Allow: /
 
+# Áreas privadas — sem acesso
 Disallow: /admin
 Disallow: /admin/
 Disallow: /auth
 Disallow: /auth/
 Disallow: /api/
 
+# Recursos necessários à renderização — permitir explicitamente
+Allow: /api/sitemap.xml
+Allow: /api/sitemap-news.xml
+Allow: /api/sitemap-articles.xml
+Allow: /api/sitemap-opinions.xml
+Allow: /api/sitemap-static.xml
+
+# Crawl-delay sugerido para bots não-Google
+Crawl-delay: 1
+
 # Sitemaps
-Sitemap: https://www.semfiltros.com/api/sitemap.xml
-Sitemap: https://www.semfiltros.com/api/sitemap-news.xml
+Sitemap: https://www.semfiltros.com/sitemap.xml
+Sitemap: https://www.semfiltros.com/sitemap-news.xml
