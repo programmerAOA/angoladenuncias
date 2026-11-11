@@ -24,6 +24,7 @@ import AboutPage from "./pages/AboutPage";
 import FactCheckingPage from "./pages/FactCheckingPage";
 import CorrectionsPage from "./pages/CorrectionsPage";
 import EditorialTeamPage from "./pages/EditorialTeamPage";
+import MobileAdminPage from "./pages/MobileAdminPage";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SecurityLayer from "@/components/SecurityLayer";
 import CookieConsent from "@/components/CookieConsent";
@@ -56,6 +57,8 @@ const App = () => (
                 })}
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/admin" element={<AdminPage />} />
+                <Route path="/mobile" element={<MobileAdminPage />} />
+                <Route path="/app" element={<MobileAdminPage />} />
                 <Route path="/admin/gerar-jornal" element={<DigitalNewspaperTemplate />} />
                 <Route path="/opinioes" element={<Index defaultCategory="Opinião" />} />
                 <Route path="/edicao-digital" element={<DigitalEditions />} />

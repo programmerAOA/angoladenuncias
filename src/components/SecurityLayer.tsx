@@ -13,9 +13,13 @@ const SecurityLayer = ({ children }: { children: React.ReactNode }) => {
             return;
         }
 
-        // Se estiver na rota de admin, não aplicar (para evitar lentidão no painel de gestão)
-        if (window.location.pathname.startsWith("/admin")) {
-            console.log("[Security] Rota admin detectada, ignorando monitorização pesada.");
+        // Se estiver na rota de admin ou mobile app, não aplicar (para permitir edição e evitar lentidão)
+        if (
+            window.location.pathname.startsWith("/admin") ||
+            window.location.pathname.startsWith("/mobile") ||
+            window.location.pathname.startsWith("/app")
+        ) {
+            console.log("[Security] Rota admin/mobile detectada, ignorando monitorização pesada.");
             return;
         }
 
