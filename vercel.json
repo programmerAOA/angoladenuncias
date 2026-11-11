@@ -39,6 +39,11 @@
             ],
             "destination": "https://www.semfiltros.com/:path*",
             "permanent": true
+        },
+        {
+            "source": "/mundo/:slug*",
+            "destination": "/internacional/:slug*",
+            "permanent": true
         }
     ],
     "rewrites": [
