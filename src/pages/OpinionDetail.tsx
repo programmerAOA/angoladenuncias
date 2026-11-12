@@ -24,10 +24,14 @@ const OpinionDetail = () => {
     const handleShare = async () => {
         if (!opinion) return;
 
+        const canonicalUrl = opinion.slug
+            ? `https://www.semfiltros.com/opiniao/${opinion.slug}`
+            : window.location.href;
+
         const shareData = {
             title: opinion.title,
-            text: `Opinião de ${opinion.author}`,
-            url: window.location.href,
+            text: `Opinião de ${opinion.author} | Sem Filtros`,
+            url: canonicalUrl,
         };
 
         try {
@@ -35,7 +39,7 @@ const OpinionDetail = () => {
                 await navigator.share(shareData);
                 toast.success("Opinião partilhada!");
             } else {
-                await navigator.clipboard.writeText(window.location.href);
+                await navigator.clipboard.writeText(canonicalUrl);
                 toast.success("Link copiado para a área de transferência!");
             }
         } catch (err) {

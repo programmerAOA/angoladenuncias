@@ -41,7 +41,12 @@ function escapeHtml(str) {
 function buildOgHtml({ title, description, image, url, type = 'article', category, author, publishedDate, keywords }) {
     const safeTitle = escapeHtml(title || SITE_NAME);
     const safeDesc = escapeHtml(description || 'Sem Filtros - O seu portal de notícias de confiança sem filtros.');
-    const safeImage = image || DEFAULT_IMAGE;
+    let safeImage = (image || DEFAULT_IMAGE).trim();
+    if (safeImage.startsWith('//')) {
+        safeImage = `https:${safeImage}`;
+    } else if (safeImage.startsWith('/')) {
+        safeImage = `${SITE_URL}${safeImage}`;
+    }
     const safeUrl = url || SITE_URL;
     const safeKeywords = keywords || DEFAULT_KEYWORDS;
 
@@ -116,13 +121,18 @@ function buildOgHtml({ title, description, image, url, type = 'article', categor
     <meta name="keywords" content="${safeKeywords}" />
     <meta name="robots" content="index, follow" />
 
-    <!-- Open Graph -->
+    <!-- Open Graph / WhatsApp / Facebook -->
     <meta property="og:type" content="${type}" />
     <meta property="og:site_name" content="${SITE_NAME}" />
     <meta property="og:title" content="${safeTitle}" />
     <meta property="og:description" content="${safeDesc}" />
     <meta property="og:image" content="${safeImage}" />
+    <meta property="og:image:secure_url" content="${safeImage}" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="${safeTitle}" />
     <meta property="og:url" content="${safeUrl}" />
+    <meta property="og:locale" content="pt_AO" />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -130,9 +140,12 @@ function buildOgHtml({ title, description, image, url, type = 'article', categor
     <meta name="twitter:title" content="${safeTitle}" />
     <meta name="twitter:description" content="${safeDesc}" />
     <meta name="twitter:image" content="${safeImage}" />
+    <meta name="twitter:image:alt" content="${safeTitle}" />
 
     <link rel="canonical" href="${safeUrl}" />
     <link rel="icon" type="image/png" href="/logo.png" />
+    <meta http-equiv="refresh" content="0;url=${safeUrl}" />
+    <script>window.location.replace("${safeUrl}");</script>
     
     <script type="application/ld+json">
         ${JSON.stringify(jsonLd)}
@@ -144,33 +157,33 @@ function buildOgHtml({ title, description, image, url, type = 'article', categor
 </html>`;
 }
 
-async function fetchFromSupabase(table, filterField, filterValue, selectFields) {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "https://qsjhkhiohpfslfkpjoeb.supabase.co";
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_-cH7Xx0cAUTgGeK7KLFP4w_a2TLTf9x";
 
-    if (!supabaseUrl || !supabaseKey) {
-        console.error('Missing Supabase environment variables');
+async function fetchFromSupabase(table, filterField, filterValue, selectFields) {
+    if (!SUPABASE_URL || !SUPABASE_KEY || !filterValue) {
         return null;
     }
 
-    const url = `${supabaseUrl}/rest/v1/${table}?${filterField}=eq.${filterValue}&select=${selectFields}`;
+    const encodedVal = encodeURIComponent(filterValue);
+    const url = `${SUPABASE_URL}/rest/v1/${table}?${filterField}=eq.${encodedVal}&select=${selectFields}&limit=1`;
 
     try {
         const response = await fetch(url, {
             headers: {
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`,
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
                 'Accept': 'application/json',
             },
         });
 
         if (!response.ok) {
-            console.error(`Supabase fetch error: ${response.status}`);
+            console.error(`Supabase fetch error for ${filterValue}: ${response.status}`);
             return null;
         }
 
         const data = await response.json();
-        return data && data.length > 0 ? data[0] : null;
+        return Array.isArray(data) && data.length > 0 ? data[0] : null;
     } catch (err) {
         console.error('Supabase fetch exception:', err);
         return null;
@@ -179,26 +192,19 @@ async function fetchFromSupabase(table, filterField, filterValue, selectFields) 
 
 export default async function handler(req) {
     const url = new URL(req.url);
-    const path = url.searchParams.get('path') || '';
-
-    // Legacy Redirects Check (Middleware should handle this, but as fallback)
-    const legacyArticleMatch = path.match(/^\/article\/([a-f0-9-]+)$/i);
-    const legacyOpinionMatch = path.match(/^\/opinion\/([a-f0-9-]+)$/i);
-
-    // New Slug-based paths
-    const articleSlugMatch = path.match(/^\/([a-z0-9-]+)\/([a-z0-9-]+)$/i);
-    const opinionSlugMatch = path.match(/^\/opiniao\/([a-z0-9-]+)$/i);
-    const categoryMatch = path.match(/^\/([a-z0-9-]+)$/i);
+    const rawPath = url.searchParams.get('path') || '';
+    const cleanPath = (rawPath.split('?')[0] || '').replace(/^\/+/, '').replace(/\/+$/, '');
+    const segments = cleanPath.split('/').filter(Boolean);
 
     try {
-        // 1. Category Pages
-        if (categoryMatch && !legacyArticleMatch && !legacyOpinionMatch && !articleSlugMatch && !opinionSlugMatch) {
-            const slug = categoryMatch[1].toLowerCase();
-            if (VALID_CATEGORIES[slug]) {
+        // 1. Category Pages (e.g. /politica, /sociedade)
+        if (segments.length === 1) {
+            const catKey = segments[0].toLowerCase();
+            if (VALID_CATEGORIES[catKey]) {
                 return new Response(buildOgHtml({
-                    title: `Notícias sobre ${VALID_CATEGORIES[slug]} - ${SITE_NAME}`,
-                    description: `Acompanhe as últimas notícias e reportagens de ${VALID_CATEGORIES[slug]} no ${SITE_NAME}. Jornalismo de investigação independente e atualizações em tempo real.`,
-                    url: `${SITE_URL}/${slug}`,
+                    title: `Notícias sobre ${VALID_CATEGORIES[catKey]} - ${SITE_NAME}`,
+                    description: `Acompanhe as últimas notícias e reportagens de ${VALID_CATEGORIES[catKey]} no ${SITE_NAME}. Jornalismo de investigação independente e actualizações em tempo real.`,
+                    url: `${SITE_URL}/${catKey}`,
                     type: 'website',
                 }), {
                     headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -206,26 +212,28 @@ export default async function handler(req) {
             }
         }
 
-        // 2. News Articles (UUID or Slug)
-        if (legacyArticleMatch || articleSlugMatch) {
-            const filterField = legacyArticleMatch ? 'id' : 'slug';
-            const filterValue = legacyArticleMatch ? legacyArticleMatch[1] : articleSlugMatch[2];
-
-            const data = await fetchFromSupabase(
+        // 2. Direct Legacy Article /article/:id or /article/:slug
+        if (segments[0] === 'article' && segments[1]) {
+            const val = segments[1];
+            let data = await fetchFromSupabase(
                 'news_articles',
-                filterField,
-                filterValue,
+                'id',
+                val,
                 'slug,title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
             );
-
+            if (!data) {
+                data = await fetchFromSupabase(
+                    'news_articles',
+                    'slug',
+                    val,
+                    'slug,title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
+                );
+            }
             if (data) {
                 const categorySlug = data.category
                     ? data.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')
                     : 'geral';
-                // ALWAYS use the canonical slug URL, even if accessed via UUID
-                const canonicalUrl = data.slug
-                    ? `${SITE_URL}/${categorySlug}/${data.slug}`
-                    : `${SITE_URL}/article/${filterValue}`;
+                const canonicalUrl = data.slug ? `${SITE_URL}/${categorySlug}/${data.slug}` : `${SITE_URL}/article/${val}`;
                 return new Response(buildOgHtml({
                     title: data.title,
                     description: data.summary || `Artigo por ${data.author} - ${SITE_NAME}`,
@@ -242,27 +250,71 @@ export default async function handler(req) {
             }
         }
 
-        // 3. Opinion Articles (UUID or Slug)
-        if (legacyOpinionMatch || opinionSlugMatch) {
-            const filterField = legacyOpinionMatch ? 'id' : 'slug';
-            const filterValue = legacyOpinionMatch ? legacyOpinionMatch[1] : opinionSlugMatch[1];
-
-            const data = await fetchFromSupabase(
+        // 3. Opinion Articles /opinion/:id or /opiniao/:slug
+        if ((segments[0] === 'opinion' || segments[0] === 'opiniao') && segments[1]) {
+            const val = segments[1];
+            let data = await fetchFromSupabase(
                 'opinion_articles',
-                filterField,
-                filterValue,
-                'title,author,excerpt,avatar_url,created_at,scheduled_at,seo_keywords'
+                'slug',
+                val,
+                'slug,title,author,excerpt,avatar_url,created_at,scheduled_at,seo_keywords'
             );
-
+            if (!data) {
+                data = await fetchFromSupabase(
+                    'opinion_articles',
+                    'id',
+                    val,
+                    'slug,title,author,excerpt,avatar_url,created_at,scheduled_at,seo_keywords'
+                );
+            }
             if (data) {
+                const canonicalUrl = `${SITE_URL}/opiniao/${data.slug || val}`;
                 return new Response(buildOgHtml({
                     title: `"${data.title}" — ${data.author}`,
                     description: data.excerpt || `Opinião de ${data.author} - ${SITE_NAME}`,
                     image: data.avatar_url,
-                    url: legacyOpinionMatch ? `${SITE_URL}/opinion/${filterValue}` : `${SITE_URL}/opiniao/${data.slug}`,
+                    url: canonicalUrl,
                     type: 'article',
                     author: data.author,
                     category: 'Opinião',
+                    publishedDate: data.scheduled_at || data.created_at,
+                    keywords: data.seo_keywords
+                }), {
+                    headers: { 'Content-Type': 'text/html; charset=utf-8' },
+                });
+            }
+        }
+
+        // 4. Category + Article Slug (e.g. /politica/titulo-do-artigo)
+        if (segments.length >= 2) {
+            const articleSlug = segments[segments.length - 1];
+            let data = await fetchFromSupabase(
+                'news_articles',
+                'slug',
+                articleSlug,
+                'slug,title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
+            );
+            if (!data) {
+                data = await fetchFromSupabase(
+                    'news_articles',
+                    'id',
+                    articleSlug,
+                    'slug,title,summary,image_url,author,category,created_at,scheduled_at,seo_keywords'
+                );
+            }
+            if (data) {
+                const categorySlug = data.category
+                    ? data.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')
+                    : segments[0];
+                const canonicalUrl = `${SITE_URL}/${categorySlug}/${data.slug || articleSlug}`;
+                return new Response(buildOgHtml({
+                    title: data.title,
+                    description: data.summary || `Artigo por ${data.author} - ${SITE_NAME}`,
+                    image: data.image_url,
+                    url: canonicalUrl,
+                    type: 'article',
+                    author: data.author,
+                    category: data.category,
                     publishedDate: data.scheduled_at || data.created_at,
                     keywords: data.seo_keywords
                 }), {

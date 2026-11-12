@@ -39,10 +39,17 @@ const ArticleDetail = () => {
     const handleShare = async () => {
         if (!article) return;
 
+        const categorySlug = article.category
+            ? article.category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-')
+            : 'geral';
+        const canonicalUrl = (article.slug && article.category)
+            ? `https://www.semfiltros.com/${categorySlug}/${article.slug}`
+            : window.location.href;
+
         const shareData = {
             title: article.title,
             text: article.summary || article.title,
-            url: window.location.href,
+            url: canonicalUrl,
         };
 
         try {
@@ -50,7 +57,7 @@ const ArticleDetail = () => {
                 await navigator.share(shareData);
                 toast.success("Artigo partilhado!");
             } else {
-                await navigator.clipboard.writeText(window.location.href);
+                await navigator.clipboard.writeText(canonicalUrl);
                 toast.success("Link copiado para a área de transferência!");
             }
         } catch (err) {
