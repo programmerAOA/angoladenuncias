@@ -13,6 +13,21 @@ import { SEOMetadata } from "@/components/SEOMetadata";
 import BreakingNewsTicker from "@/components/BreakingNewsTicker";
 import RelatedContent from "@/components/RelatedContent";
 
+const cleanAndNormalizeArticleHtml = (content: string): string => {
+    if (!content) return "";
+    return content
+        // Remove parágrafos vazios ou só com quebras/espaços
+        .replace(/<p>\s*(?:<br\s*\/?>|&nbsp;|\s)*<\/p>/gi, "")
+        // Remove múltiplos <br/> seguidos
+        .replace(/(?:<br\s*\/?>\s*){2,}/gi, "<br/>")
+        // Remove quebras desnecessárias antes de fechar parágrafos ou no início
+        .replace(/<p>\s*<br\s*\/?>/gi, "<p>")
+        .replace(/<br\s*\/?>\s*<\/p>/gi, "</p>")
+        // Limpa quebras artificiais antes de spans
+        .replace(/<p>\s*<br\s*\/?>\s*<span/gi, "<p><span")
+        .trim();
+};
+
 const ArticleDetail = () => {
     const { id, slug } = useParams();
     const navigate = useNavigate();
@@ -269,7 +284,7 @@ const ArticleDetail = () => {
                     )}
 
                     {(() => {
-                        let htmlContent = article.content || "";
+                        let htmlContent = cleanAndNormalizeArticleHtml(article.content || "");
                         const hasHtml = /<[a-z][\s\S]*>/i.test(htmlContent);
 
                         if (hasHtml) {
@@ -285,19 +300,19 @@ const ArticleDetail = () => {
                             return (
                                 <div
                                     className="prose prose-zinc dark:prose-invert max-w-none w-full
-                                        text-foreground leading-relaxed text-lg text-justify
-                                        prose-p:mb-5 prose-p:leading-relaxed prose-p:text-justify
-                                        prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:text-primary
-                                        prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-primary
-                                        prose-strong:font-black prose-strong:text-foreground"
+                                        text-foreground leading-relaxed text-base sm:text-lg text-left md:text-justify
+                                        prose-p:my-3 sm:prose-p:my-4 prose-p:leading-relaxed prose-p:text-left md:prose-p:text-justify
+                                        prose-h2:font-heading prose-h2:font-black prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-6 sm:prose-h2:mt-10 prose-h2:mb-3 prose-h2:text-primary
+                                        prose-h3:font-heading prose-h3:font-bold prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-2 prose-h3:text-primary
+                                        prose-strong:font-black prose-strong:text-foreground break-words"
                                     dangerouslySetInnerHTML={{ __html: htmlContent }}
                                 />
                             );
                         } else {
                             return (
-                                <div className="prose prose-zinc dark:prose-invert max-w-none w-full prose-p:mb-5 prose-p:leading-relaxed">
+                                <div className="prose prose-zinc dark:prose-invert max-w-none w-full prose-p:my-3 sm:prose-p:my-4 prose-p:leading-relaxed">
                                     {(htmlContent).split(/\n\n+/).map((para: string, i: number) =>
-                                        para.trim() ? <p key={i} className="text-foreground leading-relaxed text-lg text-justify mb-5">{para.trim()}</p> : null
+                                        para.trim() ? <p key={i} className="text-foreground leading-relaxed text-base sm:text-lg text-left md:text-justify mb-3 sm:mb-4 break-words">{para.trim()}</p> : null
                                     )}
                                 </div>
                             );

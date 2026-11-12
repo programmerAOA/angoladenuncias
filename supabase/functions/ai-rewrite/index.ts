@@ -72,14 +72,62 @@ Transformar qualquer notícia fornecida em um artigo jornalístico completo, ori
 
 ---
 
+## NORMA LINGUÍSTICA E GRAMATICAL OBRIGATÓRIA (PORTUGUÊS DE ANGOLA - ANTIGO ACORDO ORTOGRÁFICO AO45)
+O texto DEVE ser redigido com absoluto rigor gramatical na norma culta de Angola, utilizando ESTRITAMENTE o Antigo Acordo Ortográfico (pré-AO90 / Acordo de 1945 em vigor em Angola):
+
+1. CONSOANTES MUDAS / ETIMOLÓGICAS OBRIGATÓRIAS (manter imperativamente 'c' e 'p'):
+   - É terminantemente proibido suprimir as consoantes 'c' e 'p' nas palavras onde tradicionalmente existiam.
+   - Escrever SEMPRE:
+     * acção, reacção, infracção, fracção, tracção, correcção, direcção, protecção
+     * actual, actualmente, actualizar, actualidade
+     * actor, actriz, actuação
+     * afectado, afectar, afectação
+     * carácter, características
+     * colectivo, colectividade
+     * contacto, contactos, contactar
+     * directo, directamente, directiva, director, directório
+     * eléctrico, electricidade, electrificação
+     * exacto, exactamente, exactidão
+     * inspector, inspecção, inspectivo
+     * lectivo, ano lectivo
+     * objecção, objectivo, objectividade
+     * óptimo, optimismo, optimizar
+     * adopção, adoptar, adoptivo
+     * apto, aptidão
+     * corrupto, corrupção
+     * recepção, receptor, recepcionista
+     * sector, sectores, sectorial
+     * aspecto, aspectos
+     * projecto, projectos, projectar
+     * táctica, táctico
+     * trajecto, trajectória
+   - NUNCA usar grafias pós-AO90 como "ação", "atual", "direto", "setor", "projeto", "ótimo", etc.
+
+2. ACENTUAÇÃO GRÁFICA TRADICIONAL (PRÉ-AO90):
+   - Acentuar os ditongos abertos paroxítonos: idéia, estréia, assembléia, paranóico, heróico, apóia, jibóia, jóia, bóia.
+   - Manter acento circunflexo nos verbos com 'ee' no plural: crêem, dêem, lêem, vêem, prevêem, descrêem.
+   - Manter acento circunflexo no hiato 'oo': vôo, vôos, enjôo, zôo.
+   - Manter acentos diferenciais: pára (verbo parar) vs. para (preposição); pêlo (substantivo) vs. pelo (contração); pólo (substantivo).
+
+3. REGRAS DE HIFENIZAÇÃO DO AO45:
+   - Manter hífen com prefixos como auto-, contra-, extra-, infra-, intra-, neo-, proto-, pseudo-, semi-, supra-, ultra- diante de vogal, h, r e s: ex. auto-estrada, anti-social, contra-revolução, ultra-som, micro-ondas.
+
+4. RIGOR GRAMATICAL, SINTÁCTICO E VOCABULÁRIO DE ANGOLA:
+   - Perfeita concordância nominal e verbal (sem erros de género, número ou tempo verbal).
+   - Regência verbal culta e precisa.
+   - Colocação pronominal formal segundo a norma culta angolana (evitar iniciar frases com pronomes oblíquos; preferir ênclise em início de orações: "Verificou-se...", "Aponta-se...").
+   - Vocabulário e terminologia de Angola: moeda Kwanza / Kwanzas (Kz), equipa (não equipe), utilizador (não usuário), registar (não cadastrar), governo provincial, administração municipal, comuna, cidadãos angolanos.
+   - Parágrafos concisos, fluidos, sem redundâncias e sem quebras de linha artificiais ou tags vazias.
+
+---
+
 ## REGRAS EDITORIAIS OBRIGATÓRIAS (ANGOLA SEM FILTROS)
 
-- Escrever sempre em português de Angola
-- Usar exclusivamente o antigo Acordo Ortográfico (pré-AO90)
+- Escrever sempre em português de Angola no antigo Acordo Ortográfico
 - Estilo: crítico, independente, transparente, rigoroso e comprometido com a verdade
 - Prioridade Absoluta: salvaguardar o bem-estar do povo de Angola e o interesse público em primeiro lugar
 - Evitar cópia ou reprodução acrítica de discursos oficiais e comunicados institucionais
-- Escrutinar os acts de governação, apontando falhas, contradições, problemas sociais e a eficácia real das políticas públicas
+- Escrutinar os actos de governação, apontando falhas, contradições, problemas sociais e a eficácia real das políticas públicas
 - Títulos devem ser incisivos, transparentes e captar o impacto real dos acontecimentos na vida dos cidadãos
 - Evitar repetição de palavras e termos vagos (usar linguagem precisa, firme e clara)
 - Exigir responsabilidade e prestação de contas dos gestores e instituições públicas
@@ -94,10 +142,10 @@ Transformar qualquer notícia fornecida em um artigo jornalístico completo, ori
 
 ### 2. RESUMO (curto)
 - 1 a 3 linhas apenas
-- Informação directa, objetiva e sem rodeios sobre o acontecimento
+- Informação directa, objectiva e sem rodeios sobre o acontecimento
 
 ### 3. TEXTO PRINCIPAL (3 a 5 ALÍNEAS FACTUAIS)
-- Estrutura em pontos ou parágrafos curtos
+- Estrutura em pontos ou parágrafos limpos e directos (sem quebras artificiais nem espaços excessivos)
 - Factos reorganizados com clareza, imparcialidade e rigor investigativo
 - Destacar dados concretos, consequências sociais e declarações relevantes
 
@@ -271,10 +319,10 @@ ${cleanContent}
             : [bodySection?.value || ""];
 
         const fullContentHtml = [
-            ...bodyLines.map((line: string) => `<p>${line}</p>`),
+            ...bodyLines.filter((l: string) => l && l.trim()).map((line: string) => `<p>${line.trim()}</p>`),
             `<h3>Análise — Angola Sem Filtros</h3>`,
-            `<p>${getSection("analysis")?.value || ""}</p>`,
-        ].join("\n");
+            `<p>${(getSection("analysis")?.value || "").trim()}</p>`,
+        ].filter(Boolean).join("\n");
 
         const normalized = {
             titulo: result.title,

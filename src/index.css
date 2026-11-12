@@ -169,14 +169,40 @@
     @apply text-primary;
   }
 }
-/* Justificar textos automaticamente */
+/* Tipografia e alinhamento responsivo de artigos (evita espaçamentos exagerados no mobile) */
 .text-justify {
-  text-align: justify;
-  text-justify: inter-word;
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .text-justify {
+    text-align: justify;
+    text-justify: inter-word;
+  }
 }
 
 .prose p,
 .article-body p {
-  text-align: justify;
-  text-justify: inter-word;
+  text-align: left;
+  line-height: 1.65;
+  margin-top: 0.75rem;
+  margin-bottom: 0.75rem;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 768px) {
+  .prose p,
+  .article-body p {
+    text-align: justify;
+    text-justify: inter-word;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Eliminar espaçamentos fantasma criados por tags vazias ou quebras consecutivas */
+.prose p:empty,
+.prose p:has(> br:only-child) {
+  display: none !important;
 }

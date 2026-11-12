@@ -221,7 +221,10 @@ const OpinionDetail = () => {
                     <div className="relative">
                         <Quote className="absolute -top-6 -left-6 w-12 h-12 text-primary/10 -z-10" />
                         {(() => {
-                            let htmlContent = opinion.content || "";
+                            let htmlContent = (opinion.content || "")
+                                .replace(/<p>\s*(?:<br\s*\/?>|&nbsp;|\s)*<\/p>/gi, "")
+                                .replace(/(?:<br\s*\/?>\s*){2,}/gi, "<br/>")
+                                .trim();
                             const hasHtml = /<[a-z][\s\S]*>/i.test(htmlContent);
 
                             if (hasHtml) {
@@ -234,19 +237,19 @@ const OpinionDetail = () => {
                                 return (
                                     <div
                                         className="prose prose-zinc dark:prose-invert max-w-none w-full
-                                            text-foreground leading-relaxed text-xl text-justify font-serif
-                                            prose-p:mb-6 prose-p:leading-relaxed prose-p:text-justify
-                                            prose-h2:font-heading prose-h2:font-black prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h2:text-primary
-                                            prose-h3:font-heading prose-h3:font-bold prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-h3:text-primary
-                                            prose-strong:font-bold prose-strong:text-foreground"
+                                            text-foreground leading-relaxed text-base sm:text-xl text-left md:text-justify font-serif
+                                            prose-p:my-3 sm:prose-p:my-5 prose-p:leading-relaxed prose-p:text-left md:prose-p:text-justify
+                                            prose-h2:font-heading prose-h2:font-black prose-h2:text-xl sm:prose-h2:text-2xl prose-h2:mt-6 sm:prose-h2:mt-10 prose-h2:mb-3 prose-h2:text-primary
+                                            prose-h3:font-heading prose-h3:font-bold prose-h3:text-lg sm:prose-h3:text-xl prose-h3:mt-6 sm:prose-h3:mt-8 prose-h3:mb-2 prose-h3:text-primary
+                                            prose-strong:font-bold prose-strong:text-foreground break-words"
                                         dangerouslySetInnerHTML={{ __html: htmlContent }}
                                     />
                                 );
                             } else {
                                 return (
-                                    <div className="prose prose-zinc dark:prose-invert max-w-none w-full prose-p:mb-6 prose-p:leading-relaxed">
+                                    <div className="prose prose-zinc dark:prose-invert max-w-none w-full prose-p:my-3 sm:prose-p:my-5 prose-p:leading-relaxed">
                                         {(htmlContent).split(/\n\n+/).map((para: string, i: number) =>
-                                            para.trim() ? <p key={i} className="text-foreground leading-relaxed text-xl text-justify mb-6 font-serif">{para.trim()}</p> : null
+                                            para.trim() ? <p key={i} className="text-foreground leading-relaxed text-base sm:text-xl text-left md:text-justify mb-3 sm:mb-5 font-serif break-words">{para.trim()}</p> : null
                                         )}
                                     </div>
                                 );

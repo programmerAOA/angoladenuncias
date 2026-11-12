@@ -231,17 +231,22 @@ ${combinedSourceContent}
 
 A TUA TAREFA:
 Cria uma notícia jornalística completa, profissional e factual respeitando rigorosamente a LINHA EDITORIAL do Sem Filtros:
-1. Enquadramento jornalístico sério: elimina gírias de redes sociais, emojis em excesso, ódios pessoais ou termos sensacionalistas.
-2. Trata denúncias com responsabilidade ética (ex: 'Segundo informações veiculadas nas redes sociais...', 'O caso gerou forte repercussão pública...').
-3. Responde aos pilares do jornalismo: Quem, O Quê, Onde, Quando, Porquê e Qual o Impacto para a sociedade angolana.
-4. Adiciona obrigatoriamente a secção de contextualização crítica: '<h3>Análise – Sem Filtros</h3>'.
-5. Escolhe a categoria mais precisa entre: Sociedade, Política, Crimes, Economia, Internacional, Desporto, Cultura, Tecnologia, Saúde.
+1. NORMA LINGUÍSTICA OBRIGATÓRIA: Português de Angola no ANTIGO ACORDO ORTOGRÁFICO (AO45 / pré-AO90):
+   - Consoantes mudas/etimológicas mantidas imperativamente: acção, actual, actor, afectado, colectivo, contacto, directo, director, eléctrico, exacto, inspector, lectivo, objectivo, óptimo, adopção, corrupto, recepção, sector, aspecto, projecto, táctica, trajecto. Jamais suprimir o 'c' ou 'p'.
+   - Acentuação tradicional: idéia, estréia, assembléia, crêem, dêem, lêem, vêem, vôo, pára (verbo), pêlo.
+   - Hífen AO45: auto-estrada, anti-social, contra-revolução, ultra-som.
+   - Rigor gramatical estrito: concordância perfeita, regência culta e vocabulário de Angola (Kwanza/Kwanzas, equipa, utilizador, registar).
+2. Enquadramento jornalístico sério: elimina gírias de redes sociais, emojis em excesso, ódios pessoais ou termos sensacionalistas.
+3. Trata denúncias com responsabilidade ética (ex: 'Segundo informações veiculadas nas redes sociais...', 'O caso gerou forte repercussão pública...').
+4. Responde aos pilares do jornalismo: Quem, O Quê, Onde, Quando, Porquê e Qual o Impacto para a sociedade angolana.
+5. Adiciona obrigatoriamente a secção de contextualização crítica: '<h3>Análise – Sem Filtros</h3>'.
+6. Escolhe a categoria mais precisa entre: Sociedade, Política, Crimes, Economia, Internacional, Desporto, Cultura, Tecnologia, Saúde.
 
 Responde ESTRITAMENTE em formato JSON:
 {
-  "title": "Título forte, cativante e rigoroso em português de Angola",
+  "title": "Título forte, cativante e rigoroso em português de Angola (antigo acordo)",
   "summary": "Resumo de 2 a 3 frases para o lead e redes sociais",
-  "content": "<p>Primeiro parágrafo informativo com os fatos principais...</p><p>Segundo parágrafo detalhando o ocorrido e as reações...</p><p>Terceiro parágrafo com as implicações...</p><h3>Análise – Sem Filtros</h3><p>Análise editorial independente e crítica sobre o caso...</p>",
+  "content": "<p>Primeiro parágrafo informativo com os factos principais...</p><p>Segundo parágrafo detalhando o ocorrido e as reacções...</p><p>Terceiro parágrafo com as implicações...</p><h3>Análise – Sem Filtros</h3><p>Análise editorial independente e crítica sobre o caso...</p>",
   "category": "Sociedade",
   "seo_keywords": "termo1, termo2, termo3, angola, sem filtros"
 }`;
@@ -367,7 +372,13 @@ Devolve APENAS o JSON válido.`;
 
     try {
       const prompt = `És o Editor-Chefe do portal independente angolano 'Sem Filtros'.
-Reescreve a notícia a seguir no nosso tom editorial: rigoroso, sem censura, factual, direto e com análise crítica do interesse público angolano.
+Reescreve a notícia a seguir no nosso tom editorial: rigoroso, factual, directo e com análise crítica do interesse público angolano.
+
+REGRAS DE LÍNGUA E GRAMÁTICA:
+- Português de Angola no ANTIGO ACORDO ORTOGRÁFICO (AO45 / pré-AO90).
+- Consoantes mudas mantidas: acção, actual, actor, afectado, colectivo, contacto, directo, director, exacto, inspector, lectivo, objectivo, óptimo, adopção, corrupto, recepção, sector, aspecto, projecto, táctica. Jamais usar grafias pós-AO90 como "ação", "atual", "direto", "projeto".
+- Acentuação tradicional: idéia, estréia, assembléia, crêem, vêem, vôo, pára (verbo), pêlo.
+- Rigor gramatical estrito e vocabulário angolano (Kwanza, equipa, utilizador, registar).
 
 Título original: ${itemTitle}
 Conteúdo/Fonte: ${itemContent}
@@ -375,9 +386,9 @@ Link original: ${itemUrl || ""}
 
 Formato de resposta OBRIGATÓRIO em JSON:
 {
-  "title": "Título forte, cativante e factual em português de Angola",
-  "summary": "Resumo de 2 frases diretas para o leitor e redes sociais",
-  "content": "<p>Primeiro parágrafo direto.</p><p>Segundo parágrafo com contexto...</p><h3>Análise – Angola Sem Filtros</h3><p>Análise crítica independente...</p>",
+  "title": "Título forte, cativante e factual em português de Angola (antigo acordo)",
+  "summary": "Resumo de 2 frases directas para o leitor e redes sociais",
+  "content": "<p>Primeiro parágrafo directo.</p><p>Segundo parágrafo com contexto e factos...</p><h3>Análise – Angola Sem Filtros</h3><p>Análise crítica independente...</p>",
   "category": "Sociedade",
   "seo_keywords": "palavra1, palavra2, angola"
 }
